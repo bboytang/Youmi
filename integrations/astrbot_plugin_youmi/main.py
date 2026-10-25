@@ -16,7 +16,7 @@ from astrbot.core.provider.entities import ProviderRequest
 from astrbot.core.star.star_handler import EventType
 
 from .client import BridgeClient, BridgeError
-from .media import original_text, save_wav, selected_image_file, source_kind
+from .media import original_text, prune_media, save_wav, selected_image_file, source_kind
 from .turn_state import CompletionOutbox, CONTEXT_MARKER, TurnState, merge_system
 
 
@@ -210,6 +210,10 @@ class YoumiConnector(Star):
                             updated.append(part)
                             continue
                         prepared = await meme.compat_prepare_message(event, part.get('text', ''))
+                        files = event.get_extra('youmi_tool_files', {})
+                        owned = files.setdefault(id(tool_args), [])
+                        owned.extend(prepared['temp_files'])
+                        event.set_extra('youmi_tool_files', files)
                         updated.extend({'type': 'plain', 'text': item.text} for item in prepared['cleaned_chain'].chain
                                        if isinstance(item, Plain))
                         if attach:
@@ -217,11 +221,8 @@ class YoumiConnector(Star):
                                 from astrbot.core.utils.astrbot_path import get_astrbot_temp_path
                                 path = await asyncio.to_thread(selected_image_file, await image.convert_to_file_path(),
                                                                get_astrbot_temp_path())
-                                prepared['temp_files'].append(str(path))
+                                owned.append(str(path))
                                 updated.append({'type': 'image', 'path': str(path)})
-                        files = event.get_extra('youmi_tool_files', {})
-                        files.setdefault(id(tool_args), []).extend(prepared['temp_files'])
-                        event.set_extra('youmi_tool_files', files)
                     parts = tool_args['messages'] = updated
                 plain = [part for part in parts if part.get('type') == 'plain']
                 text = ''.join(part.get('text', '') for part in plain)
@@ -236,7 +237,21 @@ class YoumiConnector(Star):
                 # AstrBot logs/catches hook errors; mutate the outgoing visible
                 # send call to missing required arguments before returning.
                 tool_args.clear()
+                self.cleanup_tool_files(event, id(tool_args))
                 logger.warning('Youmi visible send tool rejected: context unavailable')
+
+    @staticmethod
+    def cleanup_tool_files(event, key=None):
+        files = event.get_extra('youmi_tool_files', {})
+        groups = [files.pop(key, [])] if key is not None else list(files.values())
+        if key is None:
+            files.clear()
+        for group in groups:
+            for path in group:
+                try:
+                    Path(path).unlink(missing_ok=True)
+                except OSError:
+                    logger.warning('Youmi temporary media cleanup pending')
 
     @filter.on_llm_tool_respond(priority=-100000)
     async def tool_done(self, event: AstrMessageEvent, tool, tool_args, tool_result):
@@ -251,12 +266,11 @@ class YoumiConnector(Star):
                                                   if part.get('type') == 'plain'))
                     state.tool_components.extend(part.get('type', '') for part in tool_args.get('messages', []))
         finally:
-            files = event.get_extra('youmi_tool_files', {}).pop(id(tool_args), [])
-            for path in files:
-                Path(path).unlink(missing_ok=True)
+            self.cleanup_tool_files(event, id(tool_args))
 
     @filter.on_agent_done(priority=-100000)
     async def done(self, event: AstrMessageEvent, run_context, response):
+        self.cleanup_tool_files(event)
         state = event.get_extra('youmi_turn')
         if state is None or response is None or response.role != 'assistant':
             return
@@ -369,6 +383,8 @@ class YoumiConnector(Star):
 
     async def retry_completions(self):
         while True:
+            from astrbot.core.utils.astrbot_path import get_astrbot_temp_path
+            await asyncio.to_thread(prune_media, self.directory, get_astrbot_temp_path())
             for body in list(self.outbox.pending()):
                 try:
                     await self.client.call('complete', body)

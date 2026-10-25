@@ -6,6 +6,7 @@ from datetime import datetime, timedelta, timezone
 import json
 from pathlib import Path
 import tempfile
+import time
 from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
@@ -215,6 +216,28 @@ class BridgeHTTPTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(checked['checked_text'], '你好 &&happy&&')
         replaced = await self.post('check', {'turn_token': prepared['turn_token'], 'final_text': '我是ChatGPT'})
         self.assertTrue(replaced['replaced'])
+
+    async def test_local_burst_and_duplicate_completion_keep_one_job_per_turn(self):
+        started = time.monotonic()
+        async def turn(index):
+            prepared = await self.prepare(source_message_id='burst-' + str(index),
+                attempt_id='burst-attempt-' + str(index), query_text='并发协议检查 ' + str(index))
+            body = self.completion(prepared, completion_id='burst-completion-' + str(index))
+            await self.claim(body)
+            results = await asyncio.gather(*(self.post('complete', body) for _ in range(3)))
+            self.assertEqual(results, [results[0]] * 3)
+            self.assertEqual(results[0]['status'], 'completed')
+            return results[0]['memory_job']['id']
+        jobs = await asyncio.gather(*(turn(index) for index in range(40)))
+        self.assertEqual(len(set(jobs)), 40)
+        self.assertEqual(self.worker.calls, 40)
+        self.assertEqual(self.count('mia_jobs'), 40)
+        self.assertEqual(self.count('memories'), 0)  # Admission fixture never pretends to extract facts.
+        self.assertEqual(self.store.db.execute("SELECT COUNT(*) FROM mia_astrbot_turns WHERE status='completed' "
+            "AND payload_json IS NULL").fetchone()[0], 40)
+        print(json.dumps({'bridge_local_load': {'turns': 40, 'complete_requests': 120, 'unique_jobs': 40,
+            'elapsed_seconds': round(time.monotonic() - started, 3),
+            'scope': 'real local HTTP/SQLite/JobStore; manager/model/worker consumption are fixtures'}}))
 
     async def test_single_claim_duplicate_completion_and_scrubbing(self):
         prepared = await self.prepare()

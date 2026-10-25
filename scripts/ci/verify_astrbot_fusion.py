@@ -82,14 +82,14 @@ def connector(cache):
     run(sys.executable, '-m', 'pytest', str(meme / 'tests'), '-q', '-rs', env=env)
 
 
-def manager(cache):
+def manager(cache, *, legacy=False):
     upstream = source('xiaozhi', cache)
     role = upstream / 'main/manager-web/src/views/roleConfig.vue'
     if not role.exists():
         role.parent.mkdir(parents=True, exist_ok=True)
         role.write_bytes(urllib.request.urlopen('https://raw.githubusercontent.com/xinnan-tech/xiaozhi-esp32-server/'
             + PINS['xiaozhi']['sha'] + '/main/manager-web/src/views/roleConfig.vue', timeout=30).read())
-    candidate = cache / 'manager-candidate'
+    candidate = cache / ('manager-legacy-candidate' if legacy else 'manager-candidate')
     if candidate.exists():
         shutil.rmtree(candidate)
     shutil.copytree(upstream, candidate)
@@ -101,7 +101,9 @@ def manager(cache):
     for path in (ROOT / 'server/companion/manager_tests').glob('YoumiPrivate*.java'):
         shutil.copy2(path, tests / path.name)
     shutil.copy2(ROOT / 'server/companion/manager_tests/YoumiBindingAuthorizationTest.java', tests)
-    tls = cache / 'tls'
+    if legacy:
+        run(sys.executable, '-m', 'server.companion.install_astrbot_manager', 'legacy-source', candidate, '--apply')
+    tls = cache / ('tls-legacy' if legacy else 'tls')
     tls.mkdir(exist_ok=True)
     ca, certificate, key = tls / 'ca.pem', tls / 'server.pem', tls / 'server.key'
     run('openssl', 'req', '-x509', '-newkey', 'rsa:2048', '-nodes', '-days', '2', '-keyout', tls / 'ca.key',
@@ -140,19 +142,26 @@ def manager(cache):
         run(*args, 'test', cwd=candidate / 'main/manager-api', env=env)
         run(*[arg for arg in args if arg != '-DskipTests=false'], '-DskipTests=true', 'package',
             cwd=candidate / 'main/manager-api', env=env)
+        if legacy:
+            run(sys.executable, '-m', 'server.companion.install_astrbot_manager', 'package',
+                candidate / 'main/manager-api/target/classes', candidate / 'astrbot-manager-patch.zip')
     finally:
         certifi_path.write_bytes(original_trust)
 
 
+def manager_legacy(cache):
+    manager(cache, legacy=True)
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('check', choices=['backend', 'connector', 'manager'])
+    parser.add_argument('check', choices=['backend', 'connector', 'manager', 'manager-legacy'])
     args = parser.parse_args()
     cache = Path(os.environ.get('YOUMI_TEST_SOURCE_DIR', str(Path(os.environ.get('RUNNER_TEMP', '/tmp')) / 'youmi-fusion-sources')))
     cache.mkdir(parents=True, exist_ok=True)
     print(json.dumps({'check': args.check, 'source_sha': subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip(),
         'act': os.environ.get('ACT') == 'true'}, ensure_ascii=False), flush=True)
-    globals()[args.check](cache)
+    globals()[args.check.replace('-', '_')](cache)
 
 
 if __name__ == '__main__':

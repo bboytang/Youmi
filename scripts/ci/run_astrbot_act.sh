@@ -5,8 +5,8 @@ youmi_results="${YOUMI_ACT_RESULTS:-${TMPDIR:-/tmp}/youmi-act-results}"
 mkdir -p "$youmi_results"
 act --version
 for youmi_job in "${@:-backend}"; do
-  case "$youmi_job" in backend|connector|manager) ;; *) echo "Unknown job: $youmi_job" >&2; exit 2 ;; esac
-  if [[ "$youmi_job" == manager ]]; then
+  case "$youmi_job" in backend|connector|manager|manager-legacy) ;; *) echo "Unknown job: $youmi_job" >&2; exit 2 ;; esac
+  if [[ "$youmi_job" == manager || "$youmi_job" == manager-legacy ]]; then
     docker compose -f "$youmi_root/scripts/ci/astrbot-test-services.yaml" down
     docker compose -f "$youmi_root/scripts/ci/astrbot-test-services.yaml" up -d --wait
     trap 'docker compose -f "$youmi_root/scripts/ci/astrbot-test-services.yaml" down' EXIT

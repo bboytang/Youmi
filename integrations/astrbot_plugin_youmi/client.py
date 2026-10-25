@@ -32,7 +32,10 @@ class BridgeClient:
     async def call(self, action, data):
         if self.session is None:
             self.session = aiohttp.ClientSession(connector=aiohttp.TCPConnector(limit=8))
-        token = Path(self.config['service_credential_file']).read_text(encoding='utf-8').strip()
+        try:
+            token = Path(self.config['service_credential_file']).read_text(encoding='utf-8').strip()
+        except (OSError, UnicodeError):
+            raise BridgeError('service_credential_unavailable') from None
         timeout = self.config.get('timeout_tts', 30) if action == 'tts' else self.config.get(
             'timeout_prepare' if action == 'prepare' else 'timeout_complete', 15 if action == 'prepare' else 10)
         for attempt in range(3 if action in {'prepare', 'complete'} else 1):

@@ -2,8 +2,8 @@
 
 import io
 from pathlib import Path
-import shutil
 import tempfile
+import time
 import wave
 
 
@@ -54,9 +54,29 @@ def selected_image_file(source, directory):
         with source.open('rb') as incoming, tempfile.NamedTemporaryFile(prefix='youmi-meme-', suffix=source.suffix,
                 dir=directory, delete=False) as output:
             target = Path(output.name)
-            shutil.copyfileobj(incoming, output, length=65536)
+            copied = 0
+            while chunk := incoming.read(65536):
+                copied += len(chunk)
+                if copied > 20 * 1024 * 1024:
+                    raise ValueError('unsupported_meme_image')
+                output.write(chunk)
         return target
     except BaseException:
         if target:
             target.unlink(missing_ok=True)
         raise
+
+
+def prune_media(audio_directory, image_directory, *, now=None):
+    """Recover only our expired temporary files after cancellation or process exit."""
+    cutoff = (time.time() if now is None else now) - 300
+    removed = 0
+    for directory, pattern in ((audio_directory, 'youmi-*.wav'), (image_directory, 'youmi-meme-*')):
+        for path in Path(directory).glob(pattern):
+            try:
+                if path.is_file() and path.stat().st_mtime <= cutoff:
+                    path.unlink()
+                    removed += 1
+            except OSError:
+                pass  # Retain it for the next bounded background cleanup pass.
+    return removed

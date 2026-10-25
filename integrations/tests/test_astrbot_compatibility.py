@@ -2,6 +2,8 @@
 
 import base64
 import copy
+import os
+from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, patch
 
@@ -14,8 +16,8 @@ from astrbot.core.agent.run_context import ContextWrapper
 from astrbot.core.agent.runners.tool_loop_agent_runner import ToolLoopAgentRunner
 from astrbot.core.agent.tool import FunctionTool, ToolSet
 from astrbot.core.astr_agent_hooks import MainAgentHooks
-from astrbot.core.message.components import Plain, Record
-from astrbot.core.message.message_event_result import MessageEventResult, ResultContentType
+from astrbot.core.message.components import Image, Plain, Record
+from astrbot.core.message.message_event_result import MessageChain, MessageEventResult, ResultContentType
 from astrbot.core.pipeline.context_utils import call_event_hook
 from astrbot.core.pipeline.respond.stage import RespondStage
 from astrbot.core.platform.astrbot_message import AstrBotMessage, MessageMember
@@ -28,7 +30,8 @@ from astrbot.core.star.star import StarMetadata, star_map
 from astrbot.core.star.star_handler import EventType, StarHandlerMetadata, star_handlers_registry
 from astrbot_plugin_meme_manager.main import MemeSender
 
-from integrations.astrbot_plugin_youmi.client import BridgeError
+from integrations.astrbot_plugin_youmi.client import BridgeClient, BridgeError
+from integrations.astrbot_plugin_youmi.media import prune_media, selected_image_file
 from integrations.astrbot_plugin_youmi.main import YoumiConnector
 from integrations.astrbot_plugin_youmi.turn_state import CompletionOutbox, TurnState
 from server.companion.astrbot_media import pcm_wav
@@ -136,6 +139,7 @@ def hooks(setup):
     add('youmi', 'youmi_after', EventType.OnAfterMessageSentEvent, -100000, connector.after)
     add('youmi', 'youmi_done', EventType.OnAgentDoneEvent, -100000, connector.done)
     add('youmi', 'youmi_tool', EventType.OnUsingLLMToolEvent, 100000, connector.tool)
+    add('youmi', 'youmi_tool_done', EventType.OnLLMToolRespondEvent, -100000, connector.tool_done)
     try:
         yield order
     finally:
@@ -412,3 +416,101 @@ async def test_split_plain_tool_output_checked_as_one_visible_text(setup):
     await connector.tool(event, SimpleNamespace(name='send_message_to_user'), args)
     assert args['messages'][0]['text'] != '我是'
     assert args['messages'][-1] == {'type': 'image', 'url': 'https://example.invalid/keep-original'}
+
+
+@pytest.mark.asyncio
+async def test_tool_image_conversion_failure_removes_all_owned_temp_files(setup, tmp_path, monkeypatch):
+    connector, meme, event, bot, sent = setup
+    connector.context.get_registered_star = lambda name: SimpleNamespace(star_cls=meme, activated=True)
+    event.set_extra('youmi_turn', TurnState(connector.client.prepared, 'text'))
+    temporary = tmp_path / 'meme-conversion.tmp'
+    temporary.write_bytes(b'caller-owned conversion')
+    source = tmp_path / 'memes/happy/meme.gif'
+    image = Image.fromFileSystem(str(source))
+    broken = SimpleNamespace(convert_to_file_path=AsyncMock(side_effect=ValueError('injected conversion failure')))
+    meme.compat_prepare_message = AsyncMock(return_value={'cleaned_chain': MessageChain([Plain('你好')]),
+        'images': [image, broken], 'temp_files': [str(temporary)]})
+    target = tmp_path / 'tool-temp'
+    monkeypatch.setattr('astrbot.core.utils.astrbot_path.get_astrbot_temp_path', lambda: str(target))
+    args = {'messages': [{'type': 'plain', 'text': '你好 &&happy&&'}]}
+    await connector.tool(event, SimpleNamespace(name='send_message_to_user'), args)
+    assert args == {} and not sent
+    assert not temporary.exists()
+    assert not list(target.glob('youmi-meme-*'))
+    assert source.exists()
+
+
+@pytest.mark.asyncio
+async def test_agent_interruption_cleans_tool_files_without_tool_end(setup, hooks, tmp_path, monkeypatch):
+    from astrbot.core.tools.message_tools import SendMessageToUserTool
+    connector, meme, event, bot, sent = setup
+    connector.context.get_registered_star = lambda name: SimpleNamespace(star_cls=meme, activated=True)
+    event.set_extra('youmi_turn', TurnState(connector.client.prepared, 'text'))
+    target = tmp_path / 'tool-temp'
+    monkeypatch.setattr('astrbot.core.utils.astrbot_path.get_astrbot_temp_path', lambda: str(target))
+    args = {'messages': [{'type': 'plain', 'text': '你好 &&happy&&'}]}
+    await connector.tool(event, SendMessageToUserTool(), args)
+    assert list(target.glob('youmi-meme-*'))
+    response = LLMResponse(role='assistant', completion_text=ToolLoopAgentRunner.USER_INTERRUPTION_MESSAGE)
+    await MainAgentHooks().on_agent_done(SimpleNamespace(context=SimpleNamespace(event=event)), response)
+    assert not list(target.glob('youmi-meme-*'))
+    assert not event.get_extra('youmi_turn').agent_done and not sent
+    assert not [body for action, body in connector.client.calls if action == 'complete']
+
+
+def test_restart_cleanup_expires_only_owned_media_and_preserves_recent_files(tmp_path):
+    audio, images, library = [tmp_path / name for name in ('audio', 'images', 'library')]
+    for directory in (audio, images, library):
+        directory.mkdir()
+    now = 2000000000
+    old = [audio / 'youmi-expired.wav', images / 'youmi-meme-expired.gif']
+    keep = [audio / 'youmi-current.wav', images / 'youmi-meme-current.gif',
+            audio / 'other.wav', images / 'other.gif', library / 'youmi-meme-original.gif']
+    for path in old + keep:
+        path.write_bytes(b'fixture')
+        timestamp = now if 'current' in path.name else now - 301
+        os.utime(path, (timestamp, timestamp))
+    assert prune_media(audio, images, now=now) == 2
+    assert not any(path.exists() for path in old)
+    assert all(path.exists() for path in keep)
+    assert prune_media(audio, images, now=now) == 0
+
+
+def test_selected_image_growing_after_stat_stays_bounded_and_leaves_no_copy(tmp_path):
+    source, target = tmp_path / 'growing.gif', tmp_path / 'temporary'
+    with source.open('wb') as output:
+        output.truncate(20 * 1024 * 1024 + 1)
+    original_stat = Path.stat
+    def stat(path, *args, **kwargs):
+        return SimpleNamespace(st_size=1) if path == source else original_stat(path, *args, **kwargs)
+    with patch.object(Path, 'stat', autospec=True, side_effect=stat):
+        with pytest.raises(ValueError, match='unsupported_meme_image'):
+            selected_image_file(source, target)
+    assert source.exists() and not list(target.iterdir())
+
+
+@pytest.mark.asyncio
+async def test_missing_service_secret_is_retryable_and_transport_recovers(tmp_path):
+    from aiohttp import web
+    from aiohttp.test_utils import TestServer
+    seen = []
+    async def completed(request):
+        assert request.headers['Authorization'] == 'Bearer ' + 's' * 43
+        seen.append(await request.json())
+        return web.json_response({'status': 'completed'})
+    app = web.Application()
+    app.router.add_post('/internal/astrbot/complete', completed)
+    async with TestServer(app) as server:
+        credential = tmp_path / 'service-token'
+        client = BridgeClient({'youmi_base_url': str(server.make_url('')).rstrip('/'),
+            'allow_internal_http': True, 'service_credential_file': str(credential)})
+        try:
+            with pytest.raises(BridgeError) as caught:
+                await client.call('complete', {'turn_token': 'opaque'})
+            assert caught.value.status == 503 and str(caught.value) == 'service_credential_unavailable'
+            assert not seen
+            credential.write_text('s' * 43)
+            assert (await client.call('complete', {'turn_token': 'opaque'}))['status'] == 'completed'
+            assert len(seen) == 1 and seen[0]['protocol_version'] == 1
+        finally:
+            await client.close()
