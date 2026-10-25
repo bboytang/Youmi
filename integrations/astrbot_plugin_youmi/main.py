@@ -54,7 +54,44 @@ class YoumiConnector(Star):
     @filter.on_waiting_llm_request(priority=100000)
     async def waiting(self, event: AstrMessageEvent):
         if self.supports(event):
-            event.set_extra('youmi_primary_chat', event.get_extra('provider_request') is None)
+            primary = event.get_extra('provider_request') is None
+            event.set_extra('youmi_primary_chat', primary)
+            records = [part for part in event.get_messages() if isinstance(part, Record)]
+            if (not primary or not records or event.get_platform_name() != 'aiocqhttp'
+                    or event.get_extra('youmi_native_stt_attempted', False)):
+                return
+            event.set_extra('youmi_native_stt_attempted', True)
+            try:
+                # Fixed SnowLuma correlates the original message with its cached
+                # PTT and waits for QQ's real asynchronous transcription result.
+                if len(records) != 1:
+                    raise ValueError('ambiguous_voice_message')
+                result = await asyncio.wait_for(event.bot.call_action('fetch_ptt_text',
+                    message_id=str(event.message_obj.message_id)), timeout=25)
+                text = result.get('text') if isinstance(result, dict) else None
+                if not isinstance(text, str) or not text.strip() or len(text) > 4096:
+                    raise ValueError('transcription_unavailable')
+                text = text.strip()
+            except Exception:
+                event.set_extra('youmi_stt_failed', True)
+                try:
+                    from astrbot.core.astr_main_agent import _select_provider
+                    provider = await _select_provider(event, self.context)
+                    prepared = await self.prepare(event, provider.get_model(),
+                        '收到未能转写的语音；不包含用户自述。', 0, 'media')
+                    state = TurnState(prepared, 'media')
+                    event.set_extra('youmi_turn', state)
+                    await self.notice(event, state, '这段语音没能识别成功，请改发文字或稍后重试。')
+                except Exception as error:
+                    logger.warning('Youmi voice notice stopped (%s)',
+                        error.code if isinstance(error, BridgeError) else 'dependency_unavailable')
+                event.stop_event()
+                event.clear_result()
+                return
+            event.message_obj.message[:] = [Plain(text) if part is records[0] else part
+                                           for part in event.get_messages()]
+            event.message_str += ('\n' if event.message_str else '') + text
+            event.message_obj.message_str += ('\n' if event.message_obj.message_str else '') + text
 
     @filter.command('youmi_memory')
     async def memory_command(self, event: AstrMessageEvent, action: str = 'list', memory_id: str = '', content: str = ''):

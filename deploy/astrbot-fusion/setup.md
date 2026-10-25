@@ -72,7 +72,7 @@ AstrBot 添加 OneBot v11 adapter，监听 `0.0.0.0:6199`，Token 两端一致�
 
 在 Connector 配置填真实后端 DNS URL、secret 路径、adapter platform ID、主动调度用 bot UIN。AstrBot Persona 不放另一套人物故事，保留原授权工具/插件/MCP；同一 QQ 配置关闭长期事实提取、其他自动 TTS、流式和分段输出/中间工具推理发送。Youmi 不禁用 tools，也不修改第三方源码。
 
-原生 STT provider 必须配置，先真机核验 Record 识别再使用。QQ 图片/GIF 走 AstrBot 的视觉或 image caption provider；若聊天模型不支持图片，必须配置原生视觉提供者，不能用文本 fixture 宣称识图。当前 TTS adapter 支持生产 Huoshan 双流模块，取 manager 当下 voice/参数生成有界 WAV；其他 TTS type 返回不支持并回退文字。Record 最终由 SnowLuma 编码，手机可播放必须实测。
+语音先沿用已配置的原生 STT；若仍有单个 Record，Connector 经现有 OneBot 客户端调用固定 SnowLuma 的 `fetch_ptt_text(message_id)`，复用 QQ 原生转写，不需要新增 ASR Key 或基础设施。默认可保持 provider_stt_settings.enable=false 使用这个路径；未做手机实测前不能宣称转写可用。QQ 图片/GIF 走 AstrBot 的视觉或 image caption provider；若聊天模型不支持图片，必须配置原生视觉提供者，不能用文本 fixture 宣称识图。当前 TTS adapter 支持生产 Huoshan 双流模块，取 manager 当下 voice/参数生成有界 WAV；其他 TTS type 返回不支持并回退文字。Record 最终由 SnowLuma 编码，手机可播放必须实测。
 
 主动聊天沿用 AstrBot cron 的静默/限频/工具权限设置；Connector 不自建调度器。原生 cron 在 `on_agent_begin` 注入 scheduled 上下文，禁止把唤醒提示提交为用户事实。Meme 的候选/辅助模型/独立插件输出范围按其原配置逐项验收，不能说所有第三方插件自动兼容。
 

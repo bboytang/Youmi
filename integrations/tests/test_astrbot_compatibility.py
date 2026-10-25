@@ -132,6 +132,8 @@ def hooks(setup):
             return await method(*args)
         star_handlers_registry.append(StarHandlerMetadata(event_type, module + '.' + name, name, module,
                                                          invoke, [], extras_configs={'priority': priority}))
+    add('youmi', 'youmi_waiting', EventType.OnWaitingLLMRequestEvent, 100000, connector.waiting)
+    add('meme', 'meme_waiting', EventType.OnWaitingLLMRequestEvent, 99999, meme._mark_llm_request_origin_impl)
     add('meme', 'meme_response', EventType.OnLLMResponseEvent, 99999, meme._resp_impl)
     add('meme', 'meme_decorate', EventType.OnDecoratingResultEvent, 99999, meme._on_decorating_result_impl)
     add('youmi', 'youmi_decorate', EventType.OnDecoratingResultEvent, -100000, connector.decorate)
@@ -260,6 +262,89 @@ async def test_failed_stt_sends_one_notice_without_fabricated_transcription(setu
     assert len(prepared) == 1 and prepared[0]['source_kind'] == 'media'
     assert len(sent) == 1 and '改发文字' in str(sent)
     assert len([body for action, body in connector.client.calls if action == 'complete']) == 1
+
+
+@pytest.mark.asyncio
+async def test_snowluma_native_transcription_preserves_original_source_and_runs_once(setup, hooks):
+    connector, meme, event, bot, sent = setup
+    event.message_obj.raw_message = {'message': [{'type': 'record', 'data': {'file': 'original-ptt'}}]}
+    original = copy.deepcopy(event.message_obj.raw_message)
+    event.message_obj.message = [Record(file='original-ptt')]
+    event.message_str = event.message_obj.message_str = ''
+    bot.call_action = AsyncMock(return_value={'text': '真实语音转写'})
+    await call_event_hook(event, EventType.OnWaitingLLMRequestEvent)
+    await call_event_hook(event, EventType.OnWaitingLLMRequestEvent)
+    assert hooks[:2] == ['youmi_waiting', 'meme_waiting']
+    assert event.get_extra('meme_manager_llm_request_origin') == 'chat'
+    bot.call_action.assert_awaited_once_with('fetch_ptt_text', message_id='-42')
+    assert event.message_str == event.message_obj.message_str == '真实语音转写'
+    assert event.message_obj.raw_message == original
+    assert [part.text for part in event.get_messages() if isinstance(part, Plain)] == ['真实语音转写']
+    assert not any(isinstance(part, Record) for part in event.get_messages())
+    with patch('astrbot.core.astr_main_agent._select_provider', new=AsyncMock(return_value=SimpleNamespace())):
+        await connector.request(event, ProviderRequest(model='ci-model', prompt=event.message_str))
+    prepared = next(body for action, body in connector.client.calls if action == 'prepare')
+    assert prepared['source_kind'] == 'asr' and prepared['query_text'] == '真实语音转写'
+    assert not sent
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize('result', [{}, {'text': ''}, {'text': 'x' * 4097}, TimeoutError()])
+async def test_snowluma_native_transcription_failure_notices_once_without_model(setup, hooks, result):
+    connector, meme, event, bot, sent = setup
+    event.message_obj.raw_message = {'message': [{'type': 'record', 'data': {}}]}
+    event.message_obj.message = [Record(file='original-ptt')]
+    event.set_extra('meme_manager_llm_request_origin', None)
+    bot.call_action = AsyncMock(side_effect=result) if isinstance(result, Exception) else AsyncMock(return_value=result)
+    provider = SimpleNamespace(get_model=lambda: 'ci-model')
+    with patch('astrbot.core.astr_main_agent._select_provider', new=AsyncMock(return_value=provider)):
+        await connector.waiting(event)
+        await connector.waiting(event)
+    assert event.is_stopped() and bot.call_action.await_count == 1
+    assert len(sent) == 1 and '改发文字' in str(sent)
+    prepared = [body for action, body in connector.client.calls if action == 'prepare']
+    assert len(prepared) == 1 and prepared[0]['source_kind'] == 'media'
+    assert len([body for action, body in connector.client.calls if action == 'complete']) == 1
+
+
+@pytest.mark.asyncio
+async def test_snowluma_transcription_keeps_native_stt_and_plugin_requests(setup):
+    connector, meme, event, bot, sent = setup
+    bot.call_action = AsyncMock()
+    await connector.waiting(event)  # Native STT already produced Plain components.
+    event.message_obj.message = [Record(file='plugin-voice')]
+    event.set_extra('provider_request', ProviderRequest(prompt='independent plugin'))
+    await connector.waiting(event)
+    bot.call_action.assert_not_awaited()
+    assert isinstance(event.get_messages()[0], Record) and not connector.client.calls
+
+
+@pytest.mark.asyncio
+async def test_snowluma_ambiguous_voices_do_not_guess_a_transcript(setup, hooks):
+    connector, meme, event, bot, sent = setup
+    event.message_obj.message = [Record(file='first'), Record(file='second')]
+    bot.call_action = AsyncMock()
+    provider = SimpleNamespace(get_model=lambda: 'ci-model')
+    with patch('astrbot.core.astr_main_agent._select_provider', new=AsyncMock(return_value=provider)):
+        await connector.waiting(event)
+    bot.call_action.assert_not_awaited()
+    assert event.is_stopped() and len(sent) == 1
+    prepared = next(body for action, body in connector.client.calls if action == 'prepare')
+    assert prepared['source_kind'] == 'media'
+
+
+@pytest.mark.asyncio
+async def test_snowluma_failure_notice_preserves_owner_authorization(setup):
+    connector, meme, event, bot, sent = setup
+    event.message_obj.message = [Record(file='voice')]
+    bot.call_action = AsyncMock(return_value={})
+    connector.client.call = AsyncMock(side_effect=BridgeError('owner_authorization_required', 403))
+    provider = SimpleNamespace(get_model=lambda: 'ci-model')
+    with patch('astrbot.core.astr_main_agent._select_provider', new=AsyncMock(return_value=provider)):
+        await connector.waiting(event)
+    assert event.is_stopped() and not sent
+    assert connector.client.call.await_count == 1
+    assert connector.client.call.await_args.args[0] == 'prepare'
 
 
 @pytest.mark.asyncio

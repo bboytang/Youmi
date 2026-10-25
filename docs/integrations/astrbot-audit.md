@@ -4,6 +4,8 @@
 
 部署时补充实物核查：固定 SnowLuma digest 的 `/root/start.sh` 与镜像 WorkingDir 均指向 `/app/snowluma-data`，不是任务书示例中的 `/app/data`；Compose 已据此修正。原启动脚本先chown再以root创建runtime.json，实际触发daemon EACCES；只修新runtime文件1000:1000并重启daemon子进程即可，QQ进程不受影响。生产已获授权切换到V8及两个sidecar，实际镜像/数据校验/插件与真实模型证明见[部署记录](astrbot-production-deployment.md)；下文“未部署”和V7为最初只读审计快照。
 
+QQ登录后补充音频核查：固定SnowLuma的`actions/extended.ts`真实注册`fetch_ptt_text/get_ptt_text/get_record_text`，`modules/media-actions.ts`按messageStore/mediaStore查原始PTT，`core/src/bridge/apis/extras.ts`调用QQ的TransC2CPttReq并等异步Event0x210/61，内部等待20秒。AstrBot原生PreProcess先STT，随后OnWaitingLLMRequest，再构建包含音频附件的Agent请求。因此Connector可在原waiting钩子、Meme之前使用已有OneBot客户端取得转写，替换临时Record并保留raw，避免新造ASR服务或复制ASR Key；不是根据示例假定的接口。
+
 ## 基线与线上只读核查
 
 - `git fetch https://github.com/bboytang/Youmi.git feature/mia-persona-memory-v1.2`：HEAD `739c509eb3f4bc231d879367b33a15a8a94c38f5`；从该提交建立 `feature/astrbot-fusion`。原分支 `feature/YOUMI_ASTRBOT`，未跟踪任务书保留。原 origin 指向更名前的 Mia，未修改。

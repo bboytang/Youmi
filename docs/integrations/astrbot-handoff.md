@@ -1,5 +1,9 @@
 # AstrBot 融合交接记录
 
+**06:43 UTC 最新：QQ已登录，OneBot反向WS真实connected，临时手机桌面已关闭并恢复原Nginx指纹，原QQ进程/登录态保留。好友列表返回0，已通知用户添加专用账号。现正等待用户选择是否允许仅在生产主机内复用原owner有效后台会话来走正常virtual/exchange；未读取token或签发grant，bindings仍为空。不要把QQ登录视为已经取得原App人格/记忆授权。**
+
+新增入站语音适配复用固定SnowLuma原生fetch_ptt_text，等待钩子在Meme之前转换临时Record、保留raw；原native STT若已转换则保持原样。29项直接集成通过；目前工作树包含这一小改动，尚须精确提交act connector和原生插件reload。用户并未提供QQ好友/手机语音/原App双端验收结果。
+
 更新：2026-10-25 06:12 UTC。**生产后端已上线，两sidecar已启动；用户只有手机，已提供临时HTTPS桌面，正在先登录QQ。** 先读[生产部署记录](astrbot-production-deployment.md)，其中包含实际镜像、V8迁移、数据指纹、原生插件/真实模型调用证明和临时入口清理办法。目标仍进行中，不能因上线或本机回归通过就标记完成。
 
 最新完整act代码 `e87596a630d33f6aec47df429ee717ff67c8c4c8` 的四job全过：452 server、98 scripts、39 CI辅助、21 Connector、Meme1045/1skip/85subtests、当前/旧命名Java各190及JAR/严格补丁包。日志在 `/root/tmp/youmi-act-goal-audit`。后续只有Dockerfile/Compose/文档变化，须对相关变更完成最终检查；下文b329段是上一轮历史证据，不能充作最新SHA证明。

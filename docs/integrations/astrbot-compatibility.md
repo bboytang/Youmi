@@ -2,6 +2,8 @@
 
 版本锁见 [versions.json](../../deploy/astrbot-fusion/versions.json)，完整审计见 [audit](astrbot-audit.md)。本文件的通过仅指固定源码与明确 fixture 的集成结果；没有 QQ 手机、真实 LLM/MCP/STT/TTS 或已部署 sidecar 证据。
 
+最新运行状态见[生产记录](astrbot-production-deployment.md)：两个sidecar已运行、真实模型ping通过、QQ已登录且反向WS实际connected。它们不替代本页的消息链fixture与手机端断言。新增SnowLuma原生PTT适配后的当前固定源码集成为29项：使用真实waiting registry验证Youmi100000→Meme99999，覆盖转写保留raw/source、重复钩子、超时/空/超限、多Record、owner授权失败及独立插件请求；QQ转写和投递在此仍为fixture。
+
 ## 实际执行顺序
 
 固定 AstrBot 的 registry 按 priority 降序执行，测试使用真实 registry、MainAgentHooks、ToolLoopAgentRunner、RespondStage、AiocqhttpMessageEvent 和 OneBot serializer。
@@ -32,7 +34,7 @@ Meme Manager 原生完整 suite：1045 passed、1 skipped、85 subtests passed�
 | 普通文字、GIF、Image、多媒体链 | 保留原生链；Youmi只检查Plain | 手机收发、QQ客户端版本、风控未验 |
 | 表情语义/辅助模型 | 原 Meme 能力和配置继续生效 | 未装入用户真实图片包、未调用其语义模型；不可称生产通过 |
 | 工具、MCP、搜索 | 保留 ToolSet 和工具链；无另一个回复模型 | 真实 MCP 服务/权限与联网搜索未测；异常原生处理，不自动重放副作用 |
-| 语音输入 | 原 AstrBot STT；标记ASR来源；失败不伪造转写 | 实际 STT provider 和手机音频格式需配置并验证 |
+| 语音输入 | 原AstrBot STT优先；残留单Record用SnowLuma原生fetch_ptt_text；标记ASR来源；失败不伪造转写 | 不新增ASR Key/服务；真实手机语音/QQ转写与格式仍待验证 |
 | 语音输出 | 当前 Huoshan 音色/config→PCM16 24k WAV→原 Record | 原协议构帧/解析与 WAV通过；供应商、手机播放和SnowLuma转码未验 |
 | 主动消息 | 原生 cron 上下文、Meme公开联动和发送工具 | 真实调度时钟、静默/限频配置、手机送达未验；无用户事实job |
 | 第三方命令/独立LLM插件 | 不误占主对话、保持其原权限和Meme scope | 私有 direct send 不一定经过本Connector；不能保证任意插件的私有回复都由Youmi审核 |

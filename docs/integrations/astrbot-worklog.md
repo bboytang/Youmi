@@ -78,3 +78,11 @@
 - QQ登录、虚拟grant及T01–T30真机断言仍未完成；不以sidecar健康或真实模型ping代替QQ/共享记忆验收。最新状态以production-deployment和handoff开头为准。
 
 06:15 UTC：Compose修订提交14390134本地act backend再次通过452+98+39及Compose config，日志youmi-act-production-config/backend.log与hash已入JSON；Connector/两种Java运行代码仍对应e875四job证据。临时入口清理器补充原生x11vnc disconnect:all，关闭已建立的桌面会话，不重启QQ；只读清理预览验证恢复原Nginx哈希。尚未检测到登录后的QQ账号配置，继续等待用户在手机桌面操作。
+
+## 2026-10-25 06:43 UTC QQ登录后继续
+
+- 用户两次明确已登录；检测到实际账号配置，SnowLuma日志14:22:39 connected，原生connections API返回wsClient=ok/已连接；AstrBot平台running、error_count0。临时桌面已按脚本关闭、htpasswd删除、原Nginx哈希恢复，QQ仍PID75。
+- 原生WebUI按固定发行版完成安装协议登记，并通过原API轮换首次生成的管理密码；新密码只留原主机root0600文件，不改QQ密码。原生好友列表返回0，已通知用户加专用QQ；未自行添加陌生人/白名单。
+- 独立grant尚未签发。用户此前只允许模型Key同机复用，owner后台会话是另一种凭据，已明确询问是否允许在原主机内用有效会话走正常virtual接口；等待选择，未读取token或伪造身份。
+- 发现原生SnowLuma已有fetch_ptt_text，核对actions/extended、media-actions、PTT异步协议及AstrBotPreProcess→waiting→Agent顺序后，补入Connector等待钩子。无需新增ASR服务或Key；成功只换临时Record保留raw，失败走原media-only notice/claim/complete，独立插件请求不改。
+- 新增测试在旧代码上5失败/1通过，证明缺口；修复后完整固定源码集成29通过，含Meme等待优先级、8个新增转写/失败/授权用例。原始before/after日志位于/root/tmp/youmi-snowluma-stt-{before,after}.log；真实手机语音仍未测。正在准备精确提交本地act和线上原生reload。

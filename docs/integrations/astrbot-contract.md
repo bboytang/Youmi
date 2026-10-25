@@ -18,6 +18,8 @@ JSON 最大 64KiB。正常响应 JSON；失败为 `{"error":{"code":"..."}}`，�
 
 STT失败不伪造ASR原话：Connector以media来源prepare，再check/claim发送固定文字提示并complete，不运行回复模型、不创建用户事实/情绪/事件；同一回合不会因重复钩子再发送。后端/授权不可用时仍按下述拒绝策略处理。
 
+入站语音在原生waiting钩子、构建Agent请求前适配：若AstrBot原生STT尚未替换Record，则用现有OneBot客户端调用已核对的SnowLuma扩展 `fetch_ptt_text(message_id)`，返回`{text}`。SnowLuma按原始消息/PTT缓存关联QQ异步结果；调用限时25秒，接受非空且不超过4096字符的转写。只替换临时链内单个主消息Record，raw OneBot和稳定message_id保留；多个Record拒绝猜测，独立插件请求保持原样。此功能新增测试的QQ/API传输为fixture，真实手机转写另验。
+
 冻结派生上下文仅在同一 SQLite 的新增回合表中暂存，最长 300 秒；用户来源摘录最多 512 字，完成/过期/失败立即或定期擦除。已终态只保留散列、状态、授权版本和完成结果，不做第二套事实表。为保证重放去重，终态键不随短期 payload 清理删除。
 
 ## check / claim
