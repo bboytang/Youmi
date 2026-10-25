@@ -118,3 +118,19 @@ jobs:
       - run: |
           cd "${YOUMI_REPO_ROOT:-$GITHUB_WORKSPACE}"
           python scripts/ci/verify_astrbot_fusion.py manager-legacy
+
+  snowluma:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        if: ${{ !env.ACT }}
+      - uses: actions/setup-node@v4
+        if: ${{ !env.ACT }}
+        with:
+          node-version: '22.23.0'
+      - run: corepack enable
+        if: ${{ !env.ACT }}
+      - run: |
+          cd "${YOUMI_REPO_ROOT:-$GITHUB_WORKSPACE}"
+          python scripts/ci/verify_astrbot_fusion.py snowluma

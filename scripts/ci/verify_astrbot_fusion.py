@@ -88,6 +88,14 @@ def connector(cache):
     run(sys.executable, '-m', 'pytest', str(meme / 'tests'), '-q', '-rs', env=env)
 
 
+def snowluma(cache):
+    upstream = source('snowluma', cache)
+    # Fixed upstream suites use fake QQ pipes; real receipt proof is separate.
+    run('pnpm', 'install', '--frozen-lockfile', '--ignore-scripts', cwd=upstream)
+    run('pnpm', '--filter', '@snowluma/bridge', 'test', cwd=upstream)
+    run('pnpm', '--filter', '@snowluma/onebot', 'test', cwd=upstream)
+
+
 def manager(cache, *, legacy=False):
     upstream = source('xiaozhi', cache)
     role = upstream / 'main/manager-web/src/views/roleConfig.vue'
@@ -161,7 +169,7 @@ def manager_legacy(cache):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('check', choices=['backend', 'connector', 'manager', 'manager-legacy'])
+    parser.add_argument('check', choices=['backend', 'connector', 'manager', 'manager-legacy', 'snowluma'])
     args = parser.parse_args()
     cache = Path(os.environ.get('YOUMI_TEST_SOURCE_DIR', str(Path(os.environ.get('RUNNER_TEMP', '/tmp')) / 'youmi-fusion-sources')))
     cache.mkdir(parents=True, exist_ok=True)

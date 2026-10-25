@@ -1,6 +1,6 @@
 {
-  "recorded_at_utc": "2026-10-25T07:06:26.328878+00:00",
-  "code_sha": "55e9428e2da9b40bacc72ab36ad09122de4a7efc",
+  "recorded_at_utc": "2026-10-25T12:54:37.037956+00:00",
+  "code_sha": "ad30209699327de899349743d84d8cc302bf8302",
   "base_sha": "739c509eb3f4bc231d879367b33a15a8a94c38f5",
   "branch": "feature/astrbot-fusion",
   "runner": "nektos/act local self-hosted Linux runner",
@@ -27,8 +27,8 @@
     },
     "snowluma": {
       "repo": "https://github.com/SnowLuma/SnowLuma",
-      "ref": "v1.10.0",
-      "sha": "7f391e065edb0a138b25c0456ed4151afc247ceb"
+      "ref": "v1.10.1",
+      "sha": "f470b7a10cc9da2d13534ea115287a0afc781d31"
     },
     "xiaozhi": {
       "repo": "https://github.com/xinnan-tech/xiaozhi-esp32-server",
@@ -282,12 +282,65 @@
   },
   "component_verification": {
     "connector": "55e9428e2da9b40bacc72ab36ad09122de4a7efc",
-    "backend_and_both_java": "e87596a630d33f6aec47df429ee717ff67c8c4c8",
+    "backend_and_both_java": "backend ad302096; Java unchanged from e87596a630d33f6aec47df429ee717ff67c8c4c8",
     "backend_and_java_files_changed_since_verified_sha": false,
     "compose": "14390134daf413002675a673b53dcf3ccc2ba54f"
   },
   "previous_full_command": {
     "source_sha": "e87596a630d33f6aec47df429ee717ff67c8c4c8",
     "command": "scripts/ci/run_astrbot_act.sh backend connector manager manager-legacy"
+  },
+  "legacy_context_fix_validation": {
+    "source_sha": "ad30209699327de899349743d84d8cc302bf8302",
+    "runner": "local nektos/act",
+    "server_passed": 454,
+    "bridge_passed": 38,
+    "scripts_passed": 98,
+    "ci_helpers_passed": 39,
+    "compose_config": "passed",
+    "log": "/root/tmp/youmi-act-legacy-context/backend.log",
+    "log_sha256": "341527293d9507f3df6a0366f2f360b2006daf9e4778334ddfec668f9c001087",
+    "legacy_source_sha": "b51be7e770161fe759a192a2996031ebba5e54dc",
+    "legacy_context_sha256": "d789354029972261d2ec934d242ee639edd3dd4511e9e7578b03293c865e0214",
+    "regression_before": "two new tests HTTP400",
+    "regression_after": "both passed"
+  },
+  "latest_production_reply": {
+    "user_confirmed_received": true,
+    "snowluma_send_receipt": "timeout after 15 seconds despite actual receipt",
+    "ledger_status": "failed",
+    "associated_jobs": 0,
+    "effects_committed": false,
+    "memory_write_verified": false,
+    "native_qq_restart_in_progress": false,
+    "next_user_message_after_native_fix_pending": true
+  },
+  "production_legacy_context_image": {
+    "tag": "mia-xiaozhi-server:astrbot-ad302096",
+    "id": "sha256:1481eaad587daf6a15441f62186ffc99b011101cc5ea1e3b2c26948d5ee173fc",
+    "integrity": "ok",
+    "scheduled_probe_prepare": 200,
+    "scheduled_probe_claim": 200,
+    "scheduled_probe_failed_completion": 200,
+    "probe_user_evidence": false,
+    "probe_memory_job": "not_submitted",
+    "first_probe_completion_409": "missing mandatory claim in probe; preserved and corrected"
+  },
+  "snowluma_native_receipt_fix": {
+    "ref": "v1.10.1",
+    "sha": "f470b7a10cc9da2d13534ea115287a0afc781d31",
+    "archive_sha256": "b01c081e1e05411fa192ff58623251569e519d4b5c3ad67c4582538fb9c68f2b",
+    "image": "youmi-snowluma:v1.10.1-reviewed",
+    "image_id": "sha256:7abf7dba05c5308ae2324eda3f23d996cefc343d02f508ff2f21cde703071fa2",
+    "startup_network_rkey_and_friend_receipts": true,
+    "friend_count": 3,
+    "native_friend_api_seconds": 0.116,
+    "persistent_login_and_reverse_ws_recovered": true,
+    "native_test_act": "pending",
+    "earlier_daemon_and_qq_restarts_did_not_fix_receipts": true,
+    "build_initial_errors": [
+      "unpinned mirror tag attempted changed parent; stopped candidate client and rebuilt using exact running base digest",
+      "node file capability prevents ordinary BuildKit RUN execution; used offline container with runtime SYS_PTRACE for syntax check"
+    ]
   }
 }

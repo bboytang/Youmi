@@ -1,5 +1,7 @@
 # 回滚（未在生产演练）
 
+当前voice为 `mia-xiaozhi-server:astrbot-ad302096`，前一V8镜像 `mia-xiaozhi-server:astrbot-e87596a6` 保留，但含已确认的旧字段故障；回退优先保持V8-aware镜像并关闭bridge。后者可以止损，不能宣称恢复QQ回复。用户取消本次新增备份，未创建备份或执行回滚。
+
 2026-10-25 已实际升级到 V8，且用户明确取消本次新增备份。当前可用的 V8-aware 镜像为 `mia-xiaozhi-server:astrbot-e87596a6`；回退时保留它并移除 bridge 环境入口，再按原六份 Compose 加最后 override 只重建对应服务。Manager 原镜像 `mia-xiaozhi-web:ota-discovery-c1f03ce` 已保留。不要把旧 V7 语音镜像直接接回现有数据卷。临时手机桌面另按[生产记录](../../docs/integrations/astrbot-production-deployment.md)先清理，不能留下临时公网入口。
 
 1. 停止新增 sidecar：`docker compose --env-file deploy/astrbot-fusion/.env -f deploy/astrbot-fusion/compose.yaml stop astrbot snowluma`。保留 AstrBot data、Meme 资源及 SnowLuma 三个卷，不 down -v，不注销/删除 QQ 登录数据。

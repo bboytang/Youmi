@@ -1,5 +1,13 @@
 # AstrBot 融合审计
 
+## 13:07 UTC SnowLuma补丁实证
+
+**13:07 UTC 接续：** v1.10.1官方补丁版已替换完整运行时，固定源码 `f470b7a10cc9da2d13534ea115287a0afc781d31`、官方archive SHA256 `b01c081e1e05411fa192ff58623251569e519d4b5c3ad67c4582538fb9c68f2b`。仅在原固定基础镜像上打包官方公开原档，未改第三方源码、QQ版本、Key、持久卷。先前QQ进程重启恢复登录但未修复回执；此次sidecar重建后登录自动恢复，反向WS接通，rkeys和好友列表均实际收到响应，好友读取0.116秒/3项（升级前15秒超时/空缓存）。镜像 `youmi-snowluma:v1.10.1-reviewed`，ID `sha256:7abf7dba05c5308ae2324eda3f23d996cefc343d02f508ff2f21cde703071fa2`。
+
+v1.14.11只作只读候选核查，含消息缓存迁移，未部署；选择最小补丁v1.10.1，其bridge/OneBot接口源码不变、EULA/PRIVACY哈希不变。官方SnowLuma桥接/OneBot测试接入新本地act job，待精确提交验证。已请用户发真实偏好继续验发送回执/唯一记忆job，尚未将下一轮QQ记忆写入标通过。
+
+实际v1.10.0镜像native hash匹配审计源码，问题非错装；QQ成功送达但HookPacketClient缺sendReply，守护进程重连及QQ重启均未恢复。v1.10.1只改native产物、系统信息展示与highway重试；bridge/OneBot TS源码逐文件对比无变化。官方补丁包替换后原生请求回执恢复。此前仅online/反向WS不能证明发送回执或好友列表成功，此处补足运行边界。
+
 ## 2026-10-25 12:40 UTC：真实 QQ 无回复故障补审
 
 生产 context.py 的 SHA256 为 `d789354029972261d2ec934d242ee639edd3dd4511e9e7578b03293c865e0214`，与公开提交 `b51be7e770161fe759a192a2996031ebba5e54dc` 完全一致，实际输出 `mia_context/mia_affect`。桥接仅识别当前仓库 `youmi_context/youmi_affect`，导致 prepare 返回400，且会漏掉旧版情绪投影。此前入口补丁测试未覆盖这一生产者契约，是本次审计遗漏。

@@ -6,7 +6,16 @@
 
 ## 版本与本地验证
 
-源码锁在 `versions.json`。Compose 的默认值固定 Linux amd64 manifest digest，已从 registry 获取；arm64 应分别改用 AstrBot `sha256:83cdfefaeb518ed8c6fdea4314e41172ab7564d97ac53c32ec2da9e7849acfc4`、SnowLuma `sha256:52f34aa598778f70eacfe7d4502483cadafa166571be6141198d114e217d49bf` 并复验。镜像 manifest 存在不等于已运行/与手机兼容。
+源码及官方发行包SHA256锁在 `versions.json`。AstrBot固定amd64镜像digest；SnowLuma必须先按下方配方构建本地 `v1.10.1-reviewed` 子镜像，不使用已实测回执超时的裸v1.10.0运行时。其固定基础镜像保留现有QQ与启动/卷布局，只替换官方完整lite运行时，没有第三方源码补丁。当前配方及生产验证仅Linux amd64；arm64需要对应官方包、独立校验及真机复验，不能套用amd64 archive。
+
+先在仓库外新建只含公开发行包的构建目录（不得放入生产配置/Key），下载[官方v1.10.1](https://github.com/SnowLuma/SnowLuma/releases/tag/v1.10.1)的 `SnowLuma-v1.10.1-linux-x64-lite.tar.gz` 并命名为 `release.tar.gz`，复制本目录 `snowluma.Dockerfile` 为该目录Dockerfile，然后执行：
+
+```sh
+docker build --pull=false -t youmi-snowluma:v1.10.1-reviewed /path/to/public-build-context
+docker run --rm --network none --cap-add SYS_PTRACE --security-opt seccomp=unconfined --entrypoint /usr/local/bin/node youmi-snowluma:v1.10.1-reviewed --check /app/snowluma/index.mjs
+```
+
+Dockerfile会严格核验archive SHA256 `b01c081e1e05411fa192ff58623251569e519d4b5c3ad67c4582538fb9c68f2b`。若使用主机已有镜像镜像源，构建参数 `SNOWLUMA_BASE_IMAGE` 也必须保留固定 `@sha256:5680ab02064204668330685548829f12586ad4b5e51d3cc8274461d2c854b749`，不可只用可变tag；不要执行pull来覆盖运行中镜像。原基础Node含capability，普通BuildKit RUN中执行会Operation not permitted，因此语法检查放在上述无网络临时容器中，使用与正式sidecar相同的ptrace权限。此临时检查不挂载生产卷。
 
 ```sh
 cp deploy/astrbot-fusion/.env.example deploy/astrbot-fusion/.env
