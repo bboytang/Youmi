@@ -135,3 +135,5 @@ v1.14.11只作只读候选核查，含消息缓存迁移，未部署；选择最
 这证明真实QQ文字→AstrBot发送→Youmi同owner保存/管理读取链路通过；尚不等于原App/iOS界面召回、连续10轮或手机媒体全项通过。当前已请用户发简短语音，继续验原生转写及当前音色的实际QQ收发/播放。原API/Connector/镜像无新代码变化，沿用既有本地act证据。
 
 13:40 UTC：真实手机语音返回降级提示，原生fetch_ptt_text对负数消息ID超时；核对官方76846f40修复精度/推送关联缺陷。准备固定v2.1.0/8fc68c0ec3580ac6012f770f948c0f91fdb74fff完整包（Node24.21.0），官方SHA256 7d9a29a9f52b30987e0dcdf46993757dd4eafe993e175c8ca40435a56e0b8fbc。尚未升级生产；先测bridge/OneBot/protocol/SQLite，审计消息/媒体原生增量迁移、保留旧媒体记录，待候选验证后切换。文字保存闭环已验证，不重发或回补失败语音为用户事实。
+
+14:10 UTC：v2.1.0/Node24已上线，消息ID30/30保留、两SQLite quick_check=ok、旧媒体2条/5索引保留，原生迁移完成/QQ自动登录/WS重连。新语音仍QQ ASR error9；get_record实测可返回24kHz mono PCM16 WAV。原生产doubao_stream配置/凭据同机复用的真实供应商探针成功识别6字。新增transcribe身份验证、有界WAV、复用真实ASR协议helpers及Connector降级，45项后端专项通过；首次新route trace误当turn_token被测试捕获并已修复。准备精确提交act backend/connector；手机ASR/TTS整链仍未通过，不用供应商探针替代。

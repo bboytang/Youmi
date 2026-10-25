@@ -68,25 +68,25 @@ class AstrBotHandler:
                 ledger.prune()
                 return web.json_response({'protocol_version': 1, 'schema': 8,
                     'worker_available': bool(self.worker and not self.worker.closing)})
-            if request.method != 'POST' or action not in {'prepare', 'check', 'claim', 'complete', 'tts', 'manage', 'status'}:
+            if request.method != 'POST' or action not in {'prepare', 'check', 'claim', 'complete', 'tts', 'manage', 'status', 'transcribe'}:
                 raise TurnConflict('invalid_request', 400)
             raw = bytearray()
             async for chunk in request.content.iter_chunked(4096):
                 raw.extend(chunk)
-                if len(raw) > 65536:
+                if len(raw) > (4 * 1024 * 1024 if action == 'transcribe' else 65536):
                     raise TurnConflict('payload_too_large', 413)
             data = json.loads(raw)
             if not isinstance(data, dict) or type(data.get('protocol_version')) is not int or data['protocol_version'] != 1:
                 raise ValueError()
-            if action == 'manage':
+            if action in {'manage', 'transcribe'}:
                 key = digest([data.get('bot_uin'), data.get('conversation_key')])
             elif action == 'prepare':
                 key = self.prepare_key(data)
             else:
                 key = identifier(data.get('turn_token'))
-            trace = key if action in {'prepare', 'manage'} else ledger.by_token(key, allow_expired=True)['turn_key']
+            trace = key if action in {'prepare', 'manage', 'transcribe'} else ledger.by_token(key, allow_expired=True)['turn_key']
             async with self._lock(key):
-                timeout = 30 if action == 'tts' else 15 if action == 'prepare' else 10
+                timeout = 30 if action in {'tts', 'transcribe'} else 15 if action == 'prepare' else 10
                 result = await asyncio.wait_for(self.dispatch(action, data, ledger), timeout)
                 outcome = 'accepted'
                 return result
@@ -104,7 +104,7 @@ class AstrBotHandler:
             # Never serialize an upstream exception containing model config or user content.
             return web.json_response({'error': {'code': 'dependency_unavailable'}}, status=503)
         finally:
-            if action in {'prepare', 'check', 'claim', 'complete', 'tts', 'manage', 'status'}:
+            if action in {'prepare', 'check', 'claim', 'complete', 'tts', 'manage', 'status', 'transcribe'}:
                 logging.getLogger(__name__).info('Youmi bridge phase=%s trace=%s outcome=%s duration_ms=%d',
                     action, trace, outcome, int((time.monotonic() - started) * 1000))
             if self.authorization is None:
@@ -131,6 +131,17 @@ class AstrBotHandler:
 
     async def dispatch(self, action, data, ledger):
         identity = BridgeIdentity(ledger.authorization, self.bridge['bindings'])
+        if action == 'transcribe':
+            if set(data) != {'protocol_version', 'bot_uin', 'sender_uin', 'conversation_key',
+                             'source_message_id', 'audio_wav_base64'}:
+                raise ValueError()
+            identifier(data['source_message_id'])
+            scope = await identity.resolve(data)
+            from .astrbot_media import transcribe
+            async with self.media_lock:
+                text = await transcribe(self.config, data['audio_wav_base64'])
+            await ledger.authorization.require(scope, 'memory:read')
+            return web.json_response({'text': text, 'source_kind': 'asr'})
         if action == 'manage':
             if set(data) != {'protocol_version', 'bot_uin', 'sender_uin', 'conversation_key', 'request'}:
                 raise ValueError()

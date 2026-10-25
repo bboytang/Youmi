@@ -138,6 +138,38 @@ class BridgeHTTPTests(unittest.IsolatedAsyncioTestCase):
     def count(self, table):
         return self.store.db.execute('SELECT COUNT(*) FROM ' + table).fetchone()[0]
 
+    def transcription(self):
+        return {key: self.body[key] for key in ('bot_uin', 'sender_uin', 'conversation_key', 'source_message_id')} | {
+            'audio_wav_base64': 'A' * 80000}
+
+    async def test_transcription_authorization_large_audio_and_no_memory_effects(self):
+        from unittest.mock import AsyncMock
+        body = self.transcription()
+        with patch('server.companion.astrbot_media.transcribe', new=AsyncMock(return_value='真实语音')) as transcribe:
+            result = await self.post('transcribe', body)
+            self.assertEqual(result, {'text': '真实语音', 'source_kind': 'asr'})
+            await self.post('transcribe', body, 401, 'wrong')
+            await self.post('transcribe', body | {'sender_uin': '99999', 'conversation_key': 'qq:private:99999'}, 403)
+            self.assertEqual(transcribe.await_count, 1)
+        self.assertEqual(self.count('mia_jobs'), 0)
+        self.assertEqual(self.count('mia_affect_turns'), 0)
+        self.assertEqual(self.count('mia_astrbot_turns'), 0)
+
+    async def test_transcription_revocation_during_provider_call_does_not_return_text(self):
+        async def revoke(*args):
+            self.auth.active = False
+            return 'private transcription'
+        with patch('server.companion.astrbot_media.transcribe', side_effect=revoke):
+            await self.post('transcribe', self.transcription(), 403)
+
+    async def test_transcription_body_limit_is_bounded(self):
+        from io import BytesIO
+        raw = json.dumps(self.transcription() | {'protocol_version': 1, 'audio_wav_base64': 'A' * (4 * 1024 * 1024)}).encode()
+        async with self.client.post('/internal/astrbot/transcribe', data=BytesIO(raw),
+                headers={'Authorization': 'Bearer ' + 's' * 43, 'Content-Type': 'application/json'}) as response:
+            self.assertEqual(response.status, 413)
+            await response.read()
+
     def legacy_context(self):
         path = Path(os.environ['YOUMI_LEGACY_CONTEXT_SOURCE'])
         self.assertEqual(hashlib.sha256(path.read_bytes()).hexdigest(),

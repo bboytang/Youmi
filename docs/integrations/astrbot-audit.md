@@ -1,5 +1,9 @@
 # AstrBot 融合审计
 
+## 14:05 UTC 真实语音补审
+
+固定SnowLuma v2.1.0负数ID修复后，两条新语音仍返回QQ ptt translate error=9，不能宣称原生ASR可用。原生get_record(file,out_format=wav)实测返回base64、24kHz/mono/16bit有效WAV。生产实际ASR为doubao_stream，原配置加载及凭据仅在后端内部使用。用其真实构造器、token_auth、framing/parser与当前音频做只读供应商探针成功返回6字转写；未重放QQ回复/用户回合，未改原App设置。新增降级适配只负责有界WAV→现有ASR→文本，不新建识别服务或复制Key到AstrBot。
+
 ## 13:07 UTC SnowLuma补丁实证
 
 **13:07 UTC 接续：** v1.10.1官方补丁版已替换完整运行时，固定源码 `f470b7a10cc9da2d13534ea115287a0afc781d31`、官方archive SHA256 `b01c081e1e05411fa192ff58623251569e519d4b5c3ad67c4582538fb9c68f2b`。仅在原固定基础镜像上打包官方公开原档，未改第三方源码、QQ版本、Key、持久卷。先前QQ进程重启恢复登录但未修复回执；此次sidecar重建后登录自动恢复，反向WS接通，rkeys和好友列表均实际收到响应，好友读取0.116秒/3项（升级前15秒超时/空缓存）。镜像 `youmi-snowluma:v1.10.1-reviewed`，ID `sha256:7abf7dba05c5308ae2324eda3f23d996cefc343d02f508ff2f21cde703071fa2`。

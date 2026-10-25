@@ -66,8 +66,27 @@ class YoumiConnector(Star):
                 # PTT and waits for QQ's real asynchronous transcription result.
                 if len(records) != 1:
                     raise ValueError('ambiguous_voice_message')
-                result = await asyncio.wait_for(event.bot.call_action('fetch_ptt_text',
-                    message_id=str(event.message_obj.message_id)), timeout=25)
+                try:
+                    result = await asyncio.wait_for(event.bot.call_action('fetch_ptt_text',
+                        message_id=str(event.message_obj.message_id)), timeout=25)
+                    if not isinstance(result, dict) or not isinstance(result.get('text'), str) or not result['text'].strip():
+                        raise ValueError('transcription_unavailable')
+                except Exception:
+                    raw = event.message_obj.raw_message
+                    parts = raw.get('message', []) if isinstance(raw, dict) else []
+                    refs = [part.get('data', {}).get('file') for part in parts
+                            if isinstance(part, dict) and part.get('type') == 'record']
+                    if len(refs) != 1 or not isinstance(refs[0], str) or not refs[0]:
+                        raise ValueError('voice_reference_unavailable')
+                    audio = await asyncio.wait_for(event.bot.call_action('get_record',
+                        file=refs[0], out_format='wav'), timeout=20)
+                    encoded = audio.get('base64') if isinstance(audio, dict) else None
+                    if not isinstance(encoded, str) or not 0 < len(encoded) <= 4 * 1024 * 1024:
+                        raise ValueError('voice_payload_unavailable')
+                    result = await self.client.call('transcribe', {
+                        'bot_uin': str(event.message_obj.self_id), 'sender_uin': str(event.get_sender_id()),
+                        'conversation_key': 'qq:private:' + str(event.get_sender_id()),
+                        'source_message_id': str(event.message_obj.message_id), 'audio_wav_base64': encoded})
                 text = result.get('text') if isinstance(result, dict) else None
                 if not isinstance(text, str) or not text.strip() or len(text) > 4096:
                     raise ValueError('transcription_unavailable')

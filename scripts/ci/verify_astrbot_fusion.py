@@ -69,7 +69,8 @@ def backend(cache):
         legacy_context.write_bytes(urllib.request.urlopen(url, timeout=30).read())
     upstream = source('xiaozhi', cache)
     env = os.environ | {'MIA_LEGACY_MEMORY_SOURCE': str(legacy),
-        'YOUMI_LEGACY_CONTEXT_SOURCE': str(legacy_context), 'MIA_MUSIC_TEST_SOURCE': str(
+        'YOUMI_LEGACY_CONTEXT_SOURCE': str(legacy_context), 'YOUMI_ASR_TEST_SOURCE': str(
+            upstream / 'main/xiaozhi-server/core/providers/asr/doubao_stream.py'), 'MIA_MUSIC_TEST_SOURCE': str(
         upstream / 'main/xiaozhi-server/plugins_func/functions/play_music.py'), 'YOUMI_TTS_TEST_SOURCE': str(
         upstream / 'main/xiaozhi-server/core/providers/tts/huoshan_double_stream.py')}
     run(sys.executable, '-m', 'unittest', 'discover', '-s', 'server/tests', '-v', env=env)

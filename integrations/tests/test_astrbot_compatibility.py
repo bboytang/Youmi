@@ -289,6 +289,45 @@ async def test_snowluma_native_transcription_preserves_original_source_and_runs_
 
 
 @pytest.mark.asyncio
+async def test_youmi_asr_fallback_uses_original_record_and_identity_once(setup, hooks):
+    connector, meme, event, bot, sent = setup
+    event.message_obj.raw_message = {'message': [{'type': 'record', 'data': {'file': 'original-ptt'}}]}
+    original = copy.deepcopy(event.message_obj.raw_message)
+    event.message_obj.message = [Record(file='original-ptt')]
+    bot.call_action = AsyncMock(side_effect=[RuntimeError('QQ error 9'), {'base64': 'bounded-fixture-wav'}])
+    call = connector.client.call
+    async def bridge(action, body):
+        if action == 'transcribe':
+            connector.client.calls.append((action, copy.deepcopy(body)))
+            return {'text': '真实语音转写'}
+        return await call(action, body)
+    connector.client.call = bridge
+    await call_event_hook(event, EventType.OnWaitingLLMRequestEvent)
+    await call_event_hook(event, EventType.OnWaitingLLMRequestEvent)
+    assert bot.call_action.await_count == 2
+    bot.call_action.assert_awaited_with('get_record', file='original-ptt', out_format='wav')
+    calls = [body for action, body in connector.client.calls if action == 'transcribe']
+    assert len(calls) == 1 and calls[0]['source_message_id'] == '-42'
+    assert calls[0]['conversation_key'] == 'qq:private:67890'
+    assert event.message_str == '真实语音转写' and event.message_obj.raw_message == original
+    assert not sent
+
+
+@pytest.mark.asyncio
+async def test_youmi_asr_fallback_authorization_failure_does_not_send_or_fabricate_text(setup):
+    connector, meme, event, bot, sent = setup
+    event.message_obj.raw_message = {'message': [{'type': 'record', 'data': {'file': 'original-ptt'}}]}
+    event.message_obj.message = [Record(file='original-ptt')]
+    bot.call_action = AsyncMock(side_effect=[RuntimeError('QQ error 9'), {'base64': 'bounded-fixture-wav'}])
+    connector.client.call = AsyncMock(side_effect=BridgeError('authorization_required', 403))
+    provider = SimpleNamespace(get_model=lambda: 'ci-model')
+    with patch('astrbot.core.astr_main_agent._select_provider', new=AsyncMock(return_value=provider)):
+        await connector.waiting(event)
+    assert event.is_stopped() and not sent
+    assert isinstance(event.get_messages()[0], Record)
+
+
+@pytest.mark.asyncio
 @pytest.mark.parametrize('result', [{}, {'text': ''}, {'text': 'x' * 4097}, TimeoutError()])
 async def test_snowluma_native_transcription_failure_notices_once_without_model(setup, hooks, result):
     connector, meme, event, bot, sent = setup

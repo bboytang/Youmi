@@ -6,16 +6,16 @@
 
 ## 版本与本地验证
 
-源码及官方发行包SHA256锁在 `versions.json`。AstrBot固定amd64镜像digest；SnowLuma必须先按下方配方构建本地 `v1.10.1-reviewed` 子镜像，不使用已实测回执超时的裸v1.10.0运行时。其固定基础镜像保留现有QQ与启动/卷布局，只替换官方完整lite运行时，没有第三方源码补丁。当前配方及生产验证仅Linux amd64；arm64需要对应官方包、独立校验及真机复验，不能套用amd64 archive。
+源码及官方发行包SHA256锁在 `versions.json`。AstrBot固定amd64镜像digest；SnowLuma必须先按下方配方构建本地 `v2.1.0-reviewed` 子镜像，不使用已实测回执超时的裸v1.10.0运行时。其固定基础镜像保留现有QQ与启动/卷布局，只替换官方完整运行时及随包Node24.21.0，没有第三方源码补丁。当前配方及生产验证仅Linux amd64；arm64需要对应官方包、独立校验及真机复验，不能套用amd64 archive。
 
-先在仓库外新建只含公开发行包的构建目录（不得放入生产配置/Key），下载[官方v1.10.1](https://github.com/SnowLuma/SnowLuma/releases/tag/v1.10.1)的 `SnowLuma-v1.10.1-linux-x64-lite.tar.gz` 并命名为 `release.tar.gz`，复制本目录 `snowluma.Dockerfile` 为该目录Dockerfile，然后执行：
+先在仓库外新建只含公开发行包的构建目录（不得放入生产配置/Key），下载[官方v2.1.0](https://github.com/SnowLuma/SnowLuma/releases/tag/v2.1.0)的 `SnowLuma-v2.1.0-linux-x64.tar.gz` 并命名为 `release.tar.gz`，复制本目录 `snowluma.Dockerfile` 为该目录Dockerfile，然后执行：
 
 ```sh
-docker build --pull=false -t youmi-snowluma:v1.10.1-reviewed /path/to/public-build-context
-docker run --rm --network none --cap-add SYS_PTRACE --security-opt seccomp=unconfined --entrypoint /usr/local/bin/node youmi-snowluma:v1.10.1-reviewed --check /app/snowluma/index.mjs
+docker build --pull=false -t youmi-snowluma:v2.1.0-reviewed /path/to/public-build-context
+docker run --rm --network none --cap-add SYS_PTRACE --security-opt seccomp=unconfined --entrypoint /usr/local/bin/node youmi-snowluma:v2.1.0-reviewed --check /app/snowluma/index.mjs
 ```
 
-Dockerfile会严格核验archive SHA256 `b01c081e1e05411fa192ff58623251569e519d4b5c3ad67c4582538fb9c68f2b`。若使用主机已有镜像镜像源，构建参数 `SNOWLUMA_BASE_IMAGE` 也必须保留固定 `@sha256:5680ab02064204668330685548829f12586ad4b5e51d3cc8274461d2c854b749`，不可只用可变tag；不要执行pull来覆盖运行中镜像。原基础Node含capability，普通BuildKit RUN中执行会Operation not permitted，因此语法检查放在上述无网络临时容器中，使用与正式sidecar相同的ptrace权限。此临时检查不挂载生产卷。
+Dockerfile会严格核验archive SHA256 `7d9a29a9f52b30987e0dcdf46993757dd4eafe993e175c8ca40435a56e0b8fbc`。若使用主机已有镜像镜像源，构建参数 `SNOWLUMA_BASE_IMAGE` 也必须保留固定 `@sha256:5680ab02064204668330685548829f12586ad4b5e51d3cc8274461d2c854b749`，不可只用可变tag；不要执行pull来覆盖运行中镜像。基础镜像原Node曾在BuildKit中因capability被拒绝执行；当前配方使用官方完整包的Node24，仍将语法检查放在无网络临时容器中，使用与正式sidecar相同的ptrace权限。此临时检查不挂载生产卷。
 
 ```sh
 cp deploy/astrbot-fusion/.env.example deploy/astrbot-fusion/.env
@@ -92,3 +92,5 @@ AstrBot 添加 OneBot v11 adapter，监听 `0.0.0.0:6199`，Token 两端一致�
 ## 当前主机的 HTTPS 管理入口
 
 AstrBot 为 https://43.143.230.174:6186/ ，保持原生登录/JWT。`astrbot-gateway.conf` 在现有Manager Nginx的http块中include，复用主机已有TLS只读挂载，新增6186端口映射；原443/8002 server保留。不要将两个后台放在同一origin，否则它们的localStorage token会冲突。当前生产override同时只读挂载追加include的nginx.conf与本文件；Nginx -t和Compose config通过后仅重建web容器。证书路径是当前主机实际路径，其他主机需提供自己的证书。后台初始密码不进入仓库，也不覆盖用户修改后的密码。
+
+QQ原生fetch_ptt_text在本机实测返回error=9。Connector新增降级：原生get_record转WAV/base64→经现有绑定授权的Youmi transcribe→复用原全局doubao_stream ASR。仅支持上述已审计provider及Python≤3.12的标准库重采样，凭据不进入AstrBot；不新增ASR服务。接口调用成功不等于手机已播放语音，仍按T08–T10验证。

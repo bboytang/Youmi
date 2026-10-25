@@ -1,5 +1,7 @@
 # 回滚（未在生产演练）
 
+SnowLuma当前v2.1.0采用原生消息/媒体迁移，30个旧消息ID和原media.db记录已核验保留；旧media.db由原生迁移器保留，并非另制生产备份。不要把旧运行时直接写回新格式消息卷；止损时停止sidecar并保留卷或在当前V2运行时关闭集成，勿down -v。此次未演练生产回滚。
+
 当前voice为 `mia-xiaozhi-server:astrbot-ad302096`，前一V8镜像 `mia-xiaozhi-server:astrbot-e87596a6` 保留，但含已确认的旧字段故障；回退优先保持V8-aware镜像并关闭bridge。后者可以止损，不能宣称恢复QQ回复。用户取消本次新增备份，未创建备份或执行回滚。
 
 2026-10-25 已实际升级到 V8，且用户明确取消本次新增备份。当前可用的 V8-aware 镜像为 `mia-xiaozhi-server:astrbot-e87596a6`；回退时保留它并移除 bridge 环境入口，再按原六份 Compose 加最后 override 只重建对应服务。Manager 原镜像 `mia-xiaozhi-web:ota-discovery-c1f03ce` 已保留。不要把旧 V7 语音镜像直接接回现有数据卷。临时手机桌面另按[生产记录](../../docs/integrations/astrbot-production-deployment.md)先清理，不能留下临时公网入口。

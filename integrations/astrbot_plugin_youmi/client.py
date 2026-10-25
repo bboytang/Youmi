@@ -36,7 +36,7 @@ class BridgeClient:
             token = Path(self.config['service_credential_file']).read_text(encoding='utf-8').strip()
         except (OSError, UnicodeError):
             raise BridgeError('service_credential_unavailable') from None
-        timeout = self.config.get('timeout_tts', 30) if action == 'tts' else self.config.get(
+        timeout = self.config.get('timeout_tts', 30) if action in {'tts', 'transcribe'} else self.config.get(
             'timeout_prepare' if action == 'prepare' else 'timeout_complete', 15 if action == 'prepare' else 10)
         for attempt in range(3 if action in {'prepare', 'complete'} else 1):
             try:

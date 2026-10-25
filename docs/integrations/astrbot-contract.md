@@ -6,6 +6,10 @@
 
 JSON 最大 64KiB。正常响应 JSON；失败为 `{"error":{"code":"..."}}`，不含原始异常/私有内容。400 invalid_request，401 service_unauthorized，403 authorization_required，409 duplicate_turn/context_changed/completion_conflict，410 turn_expired，413 payload_too_large，503 dependency_unavailable，504 dependency_timeout。永久冲突不自动重试。
 
+## transcribe
+
+`POST /internal/astrbot/transcribe` 仅接受 `protocol_version,bot_uin,conversation_key,sender_uin,source_message_id,audio_wav_base64`。同服务Bearer/TLS和BridgeIdentity当前Scope验证；前后均检查memory:read。仅此路由body上限4MiB，其他接口保持64KiB；base64严格校验，WAV最多3MiB/30秒、单声道PCM16、采样率8/16/24/48kHz，标准库有界重采样16k。复用原服务配置的doubao_stream ASR auth/framing/parser及现有资源，不向AstrBot暴露ASR Key，不触发回复模型或写任何事实/情绪。30秒总超时、共用媒体并发上限2；返回 `{text,source_kind:"asr"}`，文本1–4096字符。Connector仅对QQ原生转写失败的单个原始Record调用原生get_record转WAV，再调用此接口；保持原OneBot ID/raw，成功后走唯一prepare/claim/complete，失败走既有media-only提示。没有可信转写时不创建用户事实。
+
 ## prepare
 
 `POST /internal/astrbot/prepare` 必填且只接受：`protocol_version:1, bot_uin, conversation_key:"qq:private:<peer>", sender_uin:<peer>, source_message_id, attempt_id, query_text, model, external_input_bytes, origin, source_kind`。ID 为 1–128 字符 `[A-Za-z0-9_:.-]`，bot/peer 为 5–20 位非零开头数字；model 是服务端登记的 1–128 字符名称（允许 provider/model）。origin 为 `user` 或 `scheduled`。source_message_id 直接来自 OneBot（cron 为原生事件 UUID），不从正文生成；attempt_id 为本次处理实例随机 UUID，同一 HTTP 重试不变。`query_text` 为 1–4096 字符。`source_kind` 为 `text/asr/media/scheduled`，scheduled 必须与 origin 一致；只允许 text/asr 建记忆 job。图文混合仅取原始 OneBot text 段作为用户证据，Record+Image 无法区分转写和描述时按 media，不把图片描述作用户自述。
