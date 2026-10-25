@@ -1,6 +1,6 @@
 # Youmi × AstrBot × SnowLuma 当前实施方案与计划
 
-更新时间：2026-10-25 05:03 UTC。**离线实现、自动化验证和开发分支代码推送已完成；生产与真机验收待实际条件。** 开发分支 `feature/astrbot-fusion`，基线 `739c509eb3f4bc231d879367b33a15a8a94c38f5`，通过测试的代码提交 `b329c1e91903eb4ae801444862784ac0c46dc644`；最终文档修订不改变运行代码。
+更新时间：2026-10-25 06:12 UTC。**实际生产后端已切换、两个 sidecar 已启动，正在按用户要求先完成手机 QQ 登录；完整真机验收仍进行中。** 开发分支 `feature/astrbot-fusion`，基线 `739c509eb3f4bc231d879367b33a15a8a94c38f5`。最新完整本地 act 对应代码 `e87596a630d33f6aec47df429ee717ff67c8c4c8`，含原命名与生产旧命名两个 Java job；随后新增镜像配方和经实际镜像核对的 Compose 修订。实时部署状态见[生产记录](astrbot-production-deployment.md)，下文早期 V7/未部署数据为审计时快照。
 
 任务依据：用户附件 `YOUMI_ASTRBOT/YOUMI_ASTRBOT_SNOWLUMA_CODEX_PLAN.md` 与后续明确指令。入口索引：[审计](astrbot-audit.md)、[HTTP 契约](astrbot-contract.md)、[工作记录](astrbot-worklog.md)、[交接记录](astrbot-handoff.md)、[部署](../../deploy/astrbot-fusion/setup.md)、[回滚](../../deploy/astrbot-fusion/rollback.md)。
 
@@ -10,7 +10,7 @@
 - Youmi 是人格、角色、长期记忆、持续情绪、成长的唯一权威。QQ 与原 App/设备使用同一现有 owner/agent/persona（内部 persona_id 仍为 `mia`）。不新建另一套事实数据库、Embedding/RAG 或账号系统。
 - 不增加 QQ 好友白名单。内部服务凭据、manager 当前 Scope、授权绑定版本/过期/撤销校验必须保留。QQ sender 不能当可信 owner。
 - 不重写第三方源码；通过固定版本插件钩子和既有后端扩展接入。不冒称 QQ 原生实时电话；Record 是语音消息。
-- 不切换生产模型/音色，不覆盖角色，不删库、不 down -v，不复制线上密钥、不进行未经授权的生产部署。
+- 不切换生产模型/音色，不覆盖角色，不删库、不 down -v。用户已授权实际部署、取消本次新增备份，并允许 Key 在生产主机内部安全复用；Key 不回传或入库，内部身份检查保留。
 - 用户 2026-10-25 最新要求：后续 Actions **使用本地 nektos/act**；不再触发新的 GitHub 托管运行。另授权清理不会影响 Youmi 和 CodeRove 的其他缓存/临时文件。
 
 ## 已核实的重要事实
@@ -58,10 +58,8 @@ Connector 在 Meme 已处理后的最终 decoration 中，通过 **AstrBot 原 e
 | 幂等/权限/故障/迁移/钩子/媒体验证 | 已通过离线测试 | 448 server、98 scripts、39 CI辅助、16兼容、Meme1045+85子测试、Java190/JAR |
 | T01–T30、工作/交接/部署/回滚 | 已写并同步最终结果 | acceptance/test-evidence/worklog/handoff/setup/rollback |
 | 分支代码交付 | 已推送feature/astrbot-fusion | 精确SHA与后续文档提交见git log，提交带skip ci |
-| 生产和设备验收 | 未执行 | 需要生产修改授权、QQ扫码/手机操作、实际provider配置和本地Mac/Xcode |
+| 生产和设备验收 | 进行中 | 后端已上线、V8/worker/数据指纹通过；两sidecar运行、插件已加载、真实模型调用通过；QQ由用户手机登录，随后验收原App/媒体/工具 |
 
-后续授权操作按setup和T01–T30执行：先在原主机完成一致备份与候选差异核对，再注册独立grant、配置真实模型容量/STT/MCP与Meme包，启用QQ并进行双端记忆/情绪/媒体/重启测试；逐项保留真实证据。不要把这些未验证项回填成离线通过，也不要重新从审计开始。
-
-已有SSH只读权限不等于生产修改授权。没有切换镜像、迁移生产DB、变更角色/模型/音色或调用生产供应商。QQ原生实时电话为NOT SUPPORTED/NOT VERIFIED。
+后续按setup和T01–T30执行：用户手机先登录QQ，再由现有owner正常授权注册独立grant、配置STT/MCP与Meme包，启用QQ并进行双端记忆/情绪/媒体/重启测试。生产授权已具备，不能继续列为阻塞；本次备份已被用户明确取消，不能重新设为部署前置条件。原模型/角色/音色保持不变。QQ原生实时电话为NOT SUPPORTED/NOT VERIFIED。
 
 最终计数、精确提交、日志hash及JAR指纹以[验收](astrbot-acceptance.md)和[机器可读证据](astrbot-test-evidence.json)为准。工作记录中的旧计数/运行中是历史快照，最后追加条目代表当前状态。

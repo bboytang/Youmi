@@ -1,6 +1,6 @@
 # 运行与部署
 
-当前交付没有切换生产、注册线上设备、发 QQ 消息或调用生产模型/TTS。先阅读 [审计](../../docs/integrations/astrbot-audit.md) 与 [契约](../../docs/integrations/astrbot-contract.md)。以下生产动作由获得授权的操作员执行。
+2026-10-25 已获授权并实际切换生产后端、启动两个 sidecar，真实模型调用已通过；QQ 登录及端到端验收进行中。当前实测状态、镜像和例外见[生产部署记录](../../docs/integrations/astrbot-production-deployment.md)。先阅读 [审计](../../docs/integrations/astrbot-audit.md) 与 [契约](../../docs/integrations/astrbot-contract.md)；不要用旧的“未部署”历史结论覆盖最新记录。
 
 本次2026-10-25执行已获用户明确生产授权；用户随后明确取消新增备份。本次不执行下文第2项的新备份动作，保留现有镜像/数据卷并做升级前后完整性校验。该最新用户指令覆盖本次操作的默认备份步骤，不代表已创建备份。
 
@@ -15,6 +15,14 @@ python3 deploy/astrbot-fusion/bootstrap.py
 ```
 
 bootstrap 仅在新 AstrBot data 下准备固定 Meme 源码，已有不同 checkout 会拒绝覆盖。Meme 初始没有图片：从原 Meme WebUI 导入用户选定的包并保存使用规则，不复制 Youmi 数据库或创建第二个选图库。
+
+`.env` 中 `SNOWLUMA_VNC_PASSWORD` 必须替换为本次新生成的随机密码，不能保留占位符或镜像默认值。固定 SnowLuma 镜像真实数据目录是 `/app/snowluma-data`，Compose 已按实物修正；`/app/data` 不是本版本的持久化位置。首次启动前，使用原镜像的 Node 初始化该新卷中的 runtime 文件所有权，避免启动脚本以 root 新建后 daemon 无权写入：
+
+```sh
+docker compose --env-file deploy/astrbot-fusion/.env -f deploy/astrbot-fusion/compose.yaml run --rm --no-deps --entrypoint node snowluma -e 'const fs=require("fs"); const p="/app/snowluma-data/config/runtime.json"; fs.mkdirSync(require("path").dirname(p),{recursive:true}); if(!fs.existsSync(p)){fs.writeFileSync(p,"{}\n",{flag:"wx",mode:0o600}); fs.chownSync(p,1000,1000);}'
+```
+
+该命令只新建不存在的文件，不覆盖已有 runtime/QQ 配置，不启动 QQ。若已有文件报 EACCES，先核对固定镜像 UID/GID=1000 和文件所有者，再只修正该文件并启动 supervisor 的 snowluma 子进程，避免中断用户正在操作的 QQ。
 
 按用户最新要求用本地 act 运行工作流，见 [本地验证脚本](../../scripts/ci/run_astrbot_act.sh)。本机 runner 会执行真实测试，模型/QQ fixture 明确标注；它不是 GitHub 托管 runner 结果。
 

@@ -1,5 +1,7 @@
 # 回滚（未在生产演练）
 
+2026-10-25 已实际升级到 V8，且用户明确取消本次新增备份。当前可用的 V8-aware 镜像为 `mia-xiaozhi-server:astrbot-e87596a6`；回退时保留它并移除 bridge 环境入口，再按原六份 Compose 加最后 override 只重建对应服务。Manager 原镜像 `mia-xiaozhi-web:ota-discovery-c1f03ce` 已保留。不要把旧 V7 语音镜像直接接回现有数据卷。临时手机桌面另按[生产记录](../../docs/integrations/astrbot-production-deployment.md)先清理，不能留下临时公网入口。
+
 1. 停止新增 sidecar：`docker compose --env-file deploy/astrbot-fusion/.env -f deploy/astrbot-fusion/compose.yaml stop astrbot snowluma`。保留 AstrBot data、Meme 资源及 SnowLuma 三个卷，不 down -v，不注销/删除 QQ 登录数据。
 2. 在现有 manager 登录账号撤销新虚拟 device grant；不要撤销 iOS/实体硬件授权。只移除新服务凭据和新配置入口，保留原角色、音色、模型与账户。
 3. 后端移除 `YOUMI_ASTRBOT_CONFIG_FILE` 即关闭 bridge 路由。使用预先构建的 **V8-aware、bridge disabled** 回退镜像，继续保留 V8 schema loader 和新表；原 V7 二进制的 checksum 检查会拒绝 V8 数据库。不能把旧镜像直接指向已迁移的新卷。

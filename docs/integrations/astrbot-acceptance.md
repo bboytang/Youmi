@@ -55,7 +55,13 @@ scripts/ci/run_astrbot_act.sh backend connector manager
 
 工作流本次为手动dispatch定义，开发中没有调用GitHub workflow_dispatch。测试源码SHA由每个job输出的source_sha给出；有未提交改动的旧日志只证明当时工作区。最终日志路径、计数、哈希和提交见下表及机器可读证据。
 
-## 真实阻塞和授权边界
+## 当前生产验收状态（2026-10-25 06:12 UTC）
+
+实际部署已获授权，用户已取消本次新增备份，并允许模型Key在原主机内部复用。Manager与语音后端已切换；SQLite真实V7→V8、quick_check和所核旧表指纹、bridge真实worker健康已通过。两个sidecar运行、原生插件加载、原生provider真实deepseek-flash调用已通过；后者0.67秒，没有发QQ或写记忆。手机临时HTTPS桌面认证401/200、实际WebSocket101和RFB greeting已通过。这些是部署/连接证明，不能替代T01–T30中QQ手机收发与原App双端断言；QQ登录和独立虚拟grant仍待实际完成。完整明细见[生产记录](astrbot-production-deployment.md)。
+
+最新全量本地act代码为 `e87596a630d33f6aec47df429ee717ff67c8c4c8`：452 server、98 scripts、39 CI辅助、21 Connector、Meme1045通过/1跳过/85子测试、当前及旧命名Java各190通过并构建成功。40回合/120complete→40唯一job的1.21秒压力用例只代表本机HTTP/SQLite/JobStore，模型/Manager/worker消费是fixture。日志`/root/tmp/youmi-act-goal-audit`；下文b329表保留历史证据。
+
+## 早期授权边界（历史快照，已被上述状态覆盖）
 
 已可SSH只读核查生产，因此不是“无服务器访问”。当前缺的是生产写入/切换授权、QQ账号扫码及实机操作、AstrBot实际模型容量与STT/MCP配置、用户选择的Meme图片包，以及本地macOS/Xcode。未复制生产密钥、未写数据库、未注册虚拟设备、未更改模型/角色/音色、未发布端口或重建现有服务。上述条件满足后按 [smoke-test](../../deploy/astrbot-fusion/smoke-test.md) 逐项记录，不需要重写本次代码才能开始验收。
 

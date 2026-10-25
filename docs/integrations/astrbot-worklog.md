@@ -66,3 +66,13 @@
 用户明确选择“实际部署到生产服务器”，随后明确要求“不需要备份，我怕磁盘空间不够了”，并要求继续执行。生产部署已授权，**本次不新增生产数据或整包备份**；此前尚未执行生产备份。保留现有镜像和数据卷作为回退基础，SQLite以V8-aware禁桥接方式回退，实际切换前仍验证候选和数据完整性。生产磁盘实测空闲约14.5GiB，物理内存约1.9GiB/可用约0.64GiB，另有4GiB swap；按顺序启动侧车并监测原服务。
 
 旧命名Manager完整190项回归/JAR构建和严格class补丁打包通过；实际生产公开API成员与候选对比无删除：Controller 8→10、Service14→16、Binding6→6。仅导出公开签名/哈希，没有导出配置或密钥。DockerHub直连拉AstrBot镜像遇到网络超时，官方GHCR同digest返回未授权，正在尝试仍严格固定原digest的镜像分发路径；没有更换版本。
+
+## 2026-10-25 06:12 UTC 实际部署与手机先登录QQ
+
+- e87596a6四个本地act job全过：452 server、98 scripts、39 CI辅助、21 Connector、Meme1045/1skip/85subtests、当前/旧命名Java各190与JAR/补丁包。原始日志保留在youmi-act-goal-audit；40/120/40压力用例为明确本机fixture边界。
+- 用户补充允许生产主机内部复用现有Key；已在原主机将现有deepseek-flash凭据写入新root0600 env文件，AstrBot仅配置环境引用，不回传、不入库。核对官方实际模型容量后为桥接设置32K/24K/2048保守预算；没有沿用标着旧GLM的profile，没有修改原角色/音色/模型。
+- 腾讯镜像分发成功拉取两个原固定digest。旧builder停滞后只停止本次构建客户端，改用已有BuildKit，未重启daemon。两候选以原生产镜像为FROM；Manager只替换严格审过的class，非全量干净JAR覆盖。
+- 按原六份Compose顺序加新override，只切换原Manager和语音容器；原MySQL/Redis不重建。实际V8、quick_check、旧记忆/traits/affect等所核表指纹一致、bridge worker health200通过。未新增任何备份，现有镜像/数据卷保留。
+- 两sidecar启动。核对SnowLuma原镜像start.sh发现持久化目录必须是/app/snowluma-data，修正模板；首次runtime.json被root创建导致EACCES，只修该文件所有权并启动daemon子进程，未重启QQ。两个原生插件实际activated=true；AstrBot原生provider test于06:10:44实际调用deepseek-flash返回available，0.67秒；首次错误路由405保留原因，按固定源码纠正。
+- 用户要求先绑定QQ，确认只有手机。已建立现有HTTPS下临时随机路径桌面，Basic+原生VNC验证、无新公网端口、access_log关闭、60分钟timer自动清理。实际未认证401/认证200、WebSocket101/RFB greeting均通过；只向用户提供本次新建桌面凭据，QQ密码由用户在桌面直接输入，不进入聊天/仓库。临时URL和密码不记MD。
+- QQ登录、虚拟grant及T01–T30真机断言仍未完成；不以sidecar健康或真实模型ping代替QQ/共享记忆验收。最新状态以production-deployment和handoff开头为准。

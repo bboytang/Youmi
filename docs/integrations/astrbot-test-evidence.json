@@ -1,12 +1,12 @@
 {
-  "recorded_at_utc": "2026-10-25T05:02:32.957817+00:00",
-  "code_sha": "b329c1e91903eb4ae801444862784ac0c46dc644",
+  "recorded_at_utc": "2026-10-25T06:13:02.200396+00:00",
+  "code_sha": "e87596a630d33f6aec47df429ee717ff67c8c4c8",
   "base_sha": "739c509eb3f4bc231d879367b33a15a8a94c38f5",
   "branch": "feature/astrbot-fusion",
   "runner": "nektos/act local self-hosted Linux runner",
   "github_hosted_actions_executed": false,
   "workflow": ".github/workflows/youmi-astrbot.yml",
-  "command": "scripts/ci/run_astrbot_act.sh backend connector manager",
+  "command": "scripts/ci/run_astrbot_act.sh backend connector manager manager-legacy",
   "versions": {
     "act": "0.2.89",
     "docker": "29.1.3",
@@ -38,11 +38,12 @@
   },
   "checks": {
     "server_unittest": {
-      "passed": 448,
+      "passed": 452,
       "focused_new_tests": {
-        "server/tests/test_astrbot_bridge.py": 35,
+        "server/tests/test_astrbot_bridge.py": 36,
         "server/tests/test_astrbot_install.py": 2,
-        "server/tests/test_astrbot_tts_protocol.py": 3
+        "server/tests/test_astrbot_tts_protocol.py": 3,
+        "server/tests/test_astrbot_manager_install.py": 3
       }
     },
     "scripts_unittest": {
@@ -52,7 +53,7 @@
       "passed": 39
     },
     "connector_fixed_source": {
-      "passed": 16,
+      "passed": 21,
       "llm_and_qq_network": "fixtures"
     },
     "meme_native": {
@@ -70,40 +71,166 @@
       "database": "isolated local MySQL/Redis",
       "package": "BUILD SUCCESS"
     },
-    "compose_config": "passed"
+    "compose_config": "passed",
+    "manager_legacy_java": {
+      "tests": 190,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "database": "isolated local MySQL/Redis",
+      "package": "BUILD SUCCESS",
+      "strict_class_patch_zip": "built"
+    },
+    "local_burst": {
+      "turns": 40,
+      "complete_requests": 120,
+      "unique_jobs": 40,
+      "elapsed_seconds": 1.21,
+      "scope": "real local HTTP/SQLite/JobStore; Manager, model and worker consumption fixtures"
+    }
   },
   "logs": {
     "backend": {
-      "path": "/root/tmp/youmi-act-delivery/backend.log",
-      "sha256": "495c4b609dae86bcccc533a481c7ee3883141c1e9669cba5d40de8fa9a7b4d92",
+      "path": "/root/tmp/youmi-act-goal-audit/backend.log",
+      "sha256": "0306c3e35a1fd57e31a3452f34450d0b1805a2b118fb26a42ffadeed9266c66a",
       "job": "succeeded"
     },
     "connector": {
-      "path": "/root/tmp/youmi-act-delivery/connector.log",
-      "sha256": "88f611d1fa640db25e3e0f34573c36103762bd8ce902911fc6698d30b5308aaa",
+      "path": "/root/tmp/youmi-act-goal-audit/connector.log",
+      "sha256": "8d18ad81cf5548df5ec6635e627317eb754b25eccc4f09142d2f15e4b872bf27",
       "job": "succeeded"
     },
     "manager": {
-      "path": "/root/tmp/youmi-act-delivery/manager.log",
-      "sha256": "21cd71a7f7f280c4bd232c3d4e1c8942c27a0c9ab822e9087dbf25a97396743c",
+      "path": "/root/tmp/youmi-act-goal-audit/manager.log",
+      "sha256": "5efbc18afaa6d69366d6c8e398fc9804d9e2bc9d03158bf8aaf5c25539ced572",
+      "job": "succeeded"
+    },
+    "manager-legacy": {
+      "path": "/root/tmp/youmi-act-goal-audit/manager-legacy.log",
+      "sha256": "b322a6ef782018a233c6292ca83da9271b3ce211dca1b2d229e53df5799fbc95",
       "job": "succeeded"
     }
   },
   "manager_candidate_jar": {
     "path": "/root/tmp/youmi-astrbot-audit/manager-candidate/main/manager-api/target/xiaozhi-esp32-api.jar",
     "bytes": 85325525,
-    "sha256": "1d6a7cf635a727bfb503e20cff1a6f8434e50aa342817d76ee0814e4b20e8a19",
+    "sha256": "04ff12bf2bf01d10de42091287b0026bb8ad965c90c6d9e8d832fddd64cb0192",
     "deployment_status": "local build only; must not replace customized production JAR wholesale"
   },
   "not_verified": [
-    "QQ device messaging/login/reconnect",
-    "live LLM, vision, STT, MCP and TTS providers",
+    "QQ login/device messaging/reconnect",
+    "live vision, STT, MCP, tool-loop and TTS providers",
     "real iOS and original device shared-memory interactions",
     "macOS/Xcode iOS build and UI tests",
-    "sidecar runtime and volume restart",
-    "production migration, deployment and rollback",
-    "production latency and success rates"
+    "sidecar persistent-volume restart",
+    "production rollback rehearsal",
+    "production end-to-end latency and success rates"
   ],
-  "production_mutations": false,
-  "qq_realtime_calls": "NOT SUPPORTED / NOT VERIFIED"
+  "production_mutations": true,
+  "qq_realtime_calls": "NOT SUPPORTED / NOT VERIFIED",
+  "prior_validation": {
+    "recorded_at_utc": "2026-10-25T05:02:32.957817+00:00",
+    "code_sha": "b329c1e91903eb4ae801444862784ac0c46dc644",
+    "checks": {
+      "server_unittest": {
+        "passed": 448,
+        "focused_new_tests": {
+          "server/tests/test_astrbot_bridge.py": 35,
+          "server/tests/test_astrbot_install.py": 2,
+          "server/tests/test_astrbot_tts_protocol.py": 3
+        }
+      },
+      "scripts_unittest": {
+        "passed": 98
+      },
+      "ci_helpers_unittest": {
+        "passed": 39
+      },
+      "connector_fixed_source": {
+        "passed": 16,
+        "llm_and_qq_network": "fixtures"
+      },
+      "meme_native": {
+        "passed": 1045,
+        "skipped": 1,
+        "subtests_passed": 85,
+        "skip_reason": "botpy.message not installed; QQ official SDK test, outside OneBot target"
+      },
+      "manager_java": {
+        "tests": 190,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "private_authorization_tests": 16,
+        "database": "isolated local MySQL/Redis",
+        "package": "BUILD SUCCESS"
+      },
+      "compose_config": "passed"
+    },
+    "logs": {
+      "backend": {
+        "path": "/root/tmp/youmi-act-delivery/backend.log",
+        "sha256": "495c4b609dae86bcccc533a481c7ee3883141c1e9669cba5d40de8fa9a7b4d92",
+        "job": "succeeded"
+      },
+      "connector": {
+        "path": "/root/tmp/youmi-act-delivery/connector.log",
+        "sha256": "88f611d1fa640db25e3e0f34573c36103762bd8ce902911fc6698d30b5308aaa",
+        "job": "succeeded"
+      },
+      "manager": {
+        "path": "/root/tmp/youmi-act-delivery/manager.log",
+        "sha256": "21cd71a7f7f280c4bd232c3d4e1c8942c27a0c9ab822e9087dbf25a97396743c",
+        "job": "succeeded"
+      }
+    },
+    "manager_candidate_jar": {
+      "path": "/root/tmp/youmi-astrbot-audit/manager-candidate/main/manager-api/target/xiaozhi-esp32-api.jar",
+      "bytes": 85325525,
+      "sha256": "1d6a7cf635a727bfb503e20cff1a6f8434e50aa342817d76ee0814e4b20e8a19",
+      "deployment_status": "local build only; must not replace customized production JAR wholesale"
+    }
+  },
+  "legacy_manager_patch": {
+    "path": "/root/tmp/youmi-astrbot-audit/manager-legacy-candidate/astrbot-manager-patch.zip",
+    "bytes": 39754,
+    "sha256": "217c59b88b631d50340563219612bf805c931cb8a18d2c37c2cb338f720c1af2",
+    "deployment": "applied on production host to original customized JAR; all other ZIP entries verified preserved"
+  },
+  "production": {
+    "state": "deployment and mobile QQ login in progress",
+    "new_backups": false,
+    "backup_cancelled_by_user": true,
+    "same_host_key_reuse_authorized": true,
+    "model_keys_exported": false,
+    "sqlite_schema": 8,
+    "quick_check": "ok",
+    "selected_preexisting_table_fingerprints_unchanged": true,
+    "bridge_health": {
+      "http": 200,
+      "schema": 8,
+      "worker_available": true
+    },
+    "native_plugins_activated": [
+      "astrbot_plugin_youmi",
+      "meme_manager"
+    ],
+    "native_model_smoke": {
+      "model": "deepseek-flash",
+      "status": "available",
+      "elapsed_seconds": 0.67,
+      "live_provider_request": true,
+      "tested_at_utc": "2026-10-25T06:10:44.802088+00:00",
+      "qq_or_youmi_memory_write": false
+    },
+    "mobile_login_interface": {
+      "without_auth_http": 401,
+      "authenticated_http": 200,
+      "websocket_upgrade": 101,
+      "rfb_greeting": true,
+      "temporary_auto_expiry": true
+    },
+    "qq_logged_in_verified": false,
+    "virtual_grant_issued": false
+  }
 }

@@ -34,11 +34,12 @@ services:
       SNOWLUMA_WEBUI_HOST: "0.0.0.0"
       SNOWLUMA_WEBUI_PORT: "5099"
       SNOWLUMA_QQ_FLAGS: "--disable-gpu --disable-software-rasterizer --disable-gpu-compositing"
+      VNC_PASSWD: ${SNOWLUMA_VNC_PASSWORD:?Set_a_new_random_desktop_password}
     ports:
       - "127.0.0.1:${SNOWLUMA_DESKTOP_PORT:-6081}:6081"
       - "127.0.0.1:${SNOWLUMA_WEB_PORT:-5099}:5099"
     volumes:
-      - snowluma_data:/app/data
+      - snowluma_data:/app/snowluma-data
       - snowluma_qqconfig:/app/.config
       - snowluma_qqdata:/app/.local/share
     networks: [youmi_fusion]

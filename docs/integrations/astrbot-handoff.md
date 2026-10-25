@@ -1,6 +1,14 @@
 # AstrBot 融合交接记录
 
-更新：2026-10-25 05:04 UTC。离线实现和精确提交本地act验证已完成，代码分支已推送；未上线、未做QQ/iOS真机验收。接手先读本文件和[方案](astrbot-implementation-plan.md)、[工作记录](astrbot-worklog.md)、[契约](astrbot-contract.md)、[兼容性](astrbot-compatibility.md)、[T01–T30](astrbot-acceptance.md)，不要从旧日志的“运行中”重新开始。
+更新：2026-10-25 06:12 UTC。**生产后端已上线，两sidecar已启动；用户只有手机，已提供临时HTTPS桌面，正在先登录QQ。** 先读[生产部署记录](astrbot-production-deployment.md)，其中包含实际镜像、V8迁移、数据指纹、原生插件/真实模型调用证明和临时入口清理办法。目标仍进行中，不能因上线或本机回归通过就标记完成。
+
+最新完整act代码 `e87596a630d33f6aec47df429ee717ff67c8c4c8` 的四job全过：452 server、98 scripts、39 CI辅助、21 Connector、Meme1045/1skip/85subtests、当前/旧命名Java各190及JAR/严格补丁包。日志在 `/root/tmp/youmi-act-goal-audit`。后续只有Dockerfile/Compose/文档变化，须对相关变更完成最终检查；下文b329段是上一轮历史证据，不能充作最新SHA证明。
+
+用户最新授权：实际生产部署；明确不新增备份；允许仅在生产主机内部复用模型Key；先绑定QQ再继续其余验收。不要重新询问这些选择。没有备份文件、密钥导出或角色/模型/音色变更。内部Scope/owner授权不可跳过，QQ未登录/未签发虚拟grant时维持bindings为空、adapter关闭。
+
+接续优先级：观察用户QQ登录结果（不截取输入密码的桌面）→确认bot UIN和用户会话→原owner合法注册/exchange独立虚拟grant→接入QQ→媒体/工具/Meme/主动/双端与重启验收。临时移动入口一小时定时关闭，成功后提前运行生产记录中的close脚本；不得将其URL/密码提交。旧V7镜像不能直接连接已迁移V8卷，回退保持当前V8-aware镜像并关闭bridge。
+
+其余架构上下文见[方案](astrbot-implementation-plan.md)、[工作记录](astrbot-worklog.md)、[契约](astrbot-contract.md)、[兼容性](astrbot-compatibility.md)、[T01–T30](astrbot-acceptance.md)。以下旧段仅保留上一轮交付背景，由以上最新状态覆盖。
 
 ## 已确认范围
 
