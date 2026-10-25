@@ -106,6 +106,8 @@ class YoumiConnector(Star):
                 text = ''.join(part.text for part in event.get_messages() if isinstance(part, Plain)).strip()
                 if kind == 'text':
                     text = original_text(event.message_obj.raw_message)
+                    if not text:
+                        kind = 'media'
                 if kind == 'asr' and (not text or any(isinstance(part, Record) for part in event.get_messages())):
                     raise BridgeError('stt_unavailable', 400)
                 # Do not persist a vision model's caption as a user's self report.

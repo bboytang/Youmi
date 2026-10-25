@@ -1,10 +1,7 @@
 """Fixed upstream classes/hooks/OneBot serializer; all LLM/network delivery are fixtures."""
 
-import asyncio
 import base64
 import copy
-import json
-from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, patch
 
@@ -17,8 +14,8 @@ from astrbot.core.agent.run_context import ContextWrapper
 from astrbot.core.agent.runners.tool_loop_agent_runner import ToolLoopAgentRunner
 from astrbot.core.agent.tool import FunctionTool, ToolSet
 from astrbot.core.astr_agent_hooks import MainAgentHooks
-from astrbot.core.message.components import Image, Plain, Record
-from astrbot.core.message.message_event_result import MessageChain, MessageEventResult, ResultContentType
+from astrbot.core.message.components import Plain, Record
+from astrbot.core.message.message_event_result import MessageEventResult, ResultContentType
 from astrbot.core.pipeline.context_utils import call_event_hook
 from astrbot.core.pipeline.respond.stage import RespondStage
 from astrbot.core.platform.astrbot_message import AstrBotMessage, MessageMember
@@ -39,7 +36,10 @@ from server.companion.persona import PersonaAgent
 
 
 @pytest_asyncio.fixture(autouse=True)
-async def close_native_database_pool():
+async def close_native_database_pool(monkeypatch):
+    # Native sends schedule asynchronous metrics; disable telemetry in isolated
+    # tests instead of leaving database/network tasks beyond the test loop.
+    monkeypatch.setenv('ASTRBOT_DISABLE_METRICS', '1')
     yield
     # Native tool/admin checks initialize this pool on the current test loop.
     from astrbot.core import db_helper
@@ -251,6 +251,19 @@ async def test_failed_stt_stops_generation_without_fabricated_transcription(setu
     await connector.request(event, ProviderRequest(model='ci-model', prompt=''))
     assert event.is_stopped()
     assert not connector.client.calls and not sent
+
+
+@pytest.mark.asyncio
+async def test_missing_original_text_cannot_create_user_evidence(setup):
+    connector, meme, event, bot, sent = setup
+    event.set_extra('youmi_primary_chat', True)
+    event.message_obj.raw_message = {'message': '[CQ:image,file=fixture]'}
+    event.message_obj.message = [Plain('preprocessor description')]
+    with patch('astrbot.core.astr_main_agent._select_provider', new=AsyncMock(return_value=SimpleNamespace())):
+        await connector.request(event, ProviderRequest(model='ci-model', prompt='visual prompt'))
+    body = next(body for action, body in connector.client.calls if action == 'prepare')
+    assert body['source_kind'] == 'media'
+    assert 'preprocessor description' not in body['query_text']
 
 
 class ToolProviderFixture(Provider):

@@ -1,6 +1,5 @@
 """Collect the existing Huoshan provider's PCM into bounded OneBot WAV messages."""
 
-import asyncio
 import io
 import uuid
 import wave

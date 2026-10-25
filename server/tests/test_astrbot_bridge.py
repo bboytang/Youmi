@@ -3,7 +3,6 @@
 import asyncio
 from dataclasses import replace
 from datetime import datetime, timedelta, timezone
-import io
 import json
 from pathlib import Path
 import tempfile

@@ -76,6 +76,7 @@ def backend(cache):
 def connector(cache):
     astrbot, meme = source('astrbot', cache), source('meme', cache)
     env = os.environ | {'ASTRBOT_ROOT': str(cache / 'runtime'),
+        'ASTRBOT_DISABLE_METRICS': '1',
         'PYTHONPATH': os.pathsep.join([str(ROOT), str(astrbot), str(cache)])}
     run(sys.executable, '-m', 'pytest', 'integrations/tests', '-v', env=env)
     run(sys.executable, '-m', 'pytest', str(meme / 'tests'), '-q', '-rs', env=env)
