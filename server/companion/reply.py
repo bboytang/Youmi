@@ -321,6 +321,10 @@ def response(conn, functions, depth):
                 proposal = None
                 try:
                     proposal = parse_appraisal(request_appraisal(conn.llm, inputs['query'], inputs['youmi_affect']), inputs['query'])
+                    if 'changes' in proposal:
+                        proposal['system_version'] = inputs['youmi_affect']['affect_system']['version']
+                    elif inputs['youmi_affect'].get('affect_system'):
+                        raise ValueError('Expected emotional system appraisal')
                 except Exception as error:
                     logging.getLogger(__name__).warning('Youmi affect appraisal retained previous state (%s)', type(error).__name__)
                 wait(conn, validate(conn, active))

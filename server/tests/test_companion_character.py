@@ -165,6 +165,8 @@ class CharacterTests(unittest.IsolatedAsyncioTestCase):
             owner = 'migration-owner'
             features.update(older, owner, {'companion_emotion': True})
             with older.db:
+                for table in ('mia_affect_system_history', 'mia_affect_system_turns', 'mia_affect_system'):
+                    older.db.execute('DROP TABLE ' + table)
                 older.db.execute("INSERT INTO mia_affect_state VALUES (?, -.2, .4, .3, 'hurt', 7, 1800000000)", (owner,))
                 # Restore exactly V6's state table SQL and migration checksums.
                 older.db.execute('DROP TABLE mia_astrbot_turns')

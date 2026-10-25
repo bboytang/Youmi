@@ -312,6 +312,10 @@ class AstrBotHandler:
                                 close()
                 raw = await asyncio.wait_for(asyncio.to_thread(appraise), 7)
                 proposal = parse_appraisal(raw, data['query_text'])
+                if 'changes' in proposal:
+                    proposal['system_version'] = current['affect_system']['version']
+                elif current.get('affect_system'):
+                    raise ValueError('Expected emotional system appraisal')
                 bundle = await self.builder.with_affect(bundle, ledger.authorization, proposal)
                 affect_status = 'projected'
             except (ContextError, PrivateAuthorizationRequired):

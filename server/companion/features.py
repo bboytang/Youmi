@@ -22,6 +22,13 @@ def update(store, owner, values):
         store.db.execute('INSERT OR IGNORE INTO mia_feature_settings(owner) VALUES (?)', (owner,))
         for name, value in values.items():
             store.db.execute('UPDATE mia_feature_settings SET ' + name + '=? WHERE owner=?', (value, owner))
+        if 'companion_emotion' in values:
+            from . import emotional_system
+            system = emotional_system.status(store, owner)
+            if system['version']:
+                emotional_system._write(store, owner, values['companion_emotion'], system['dimensions'],
+                                        system['values'], system['version'])
+                emotional_system._record(store, owner, 'configure', {'enabled': values['companion_emotion']})
         store.db.execute('UPDATE owners SET revision=revision+1 WHERE owner=?', (owner,))
         store._cancel_jobs(owner)
     return settings(store, owner)

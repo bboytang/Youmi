@@ -64,6 +64,7 @@
     "main/manager-web/src/components/YoumiSettingsDialog.vue": null,
     "main/manager-web/src/components/YoumiMemoryDialog.vue": null,
     "main/manager-web/src/components/YoumiCharacterEditor.vue": null,
+    "main/manager-web/src/views/EmotionSystem.vue": null,
     "main/manager-web/src/components/VersionFooter.vue": "6706348ee2e0011970c9c195e3b24a4a0e91401aacd28b2b4648c324727c848f"
   }
 }

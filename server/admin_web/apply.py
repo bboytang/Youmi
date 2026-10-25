@@ -31,6 +31,7 @@ def main():
     private_patch = str(bundle / 'private-authorization.patch')
     settings_patch = str(bundle / 'companion-settings.patch')
     branding_patch = str(bundle / 'branding.patch')
+    from emotional_system import apply as apply_emotional_system
     with tempfile.TemporaryDirectory(prefix='mia-admin-check-') as scratch:
         for relative in manifest['files']:
             source = root / relative
@@ -41,6 +42,7 @@ def main():
         for candidate in (desktop_patch, patch, private_patch, settings_patch, branding_patch):
             subprocess.run(['git', 'apply', '--unidiff-zero', '--check', candidate], cwd=scratch, check=True)
             subprocess.run(['git', 'apply', '--unidiff-zero', candidate], cwd=scratch, check=True)
+        apply_emotional_system(scratch, check=True)
     if args.apply:
         subprocess.run(['git', 'apply', '--unidiff-zero', desktop_patch], cwd=root, check=True)
         subprocess.run(['git', 'apply', '--unidiff-zero', '--check', patch], cwd=root, check=True)
@@ -52,6 +54,7 @@ def main():
         shutil.copy2(bundle / 'YoumiSettingsDialog.vue', root / 'main/manager-web/src/components/YoumiSettingsDialog.vue')
         shutil.copy2(bundle / 'YoumiMemoryDialog.vue', root / 'main/manager-web/src/components/YoumiMemoryDialog.vue')
         shutil.copy2(bundle / 'YoumiCharacterEditor.vue', root / 'main/manager-web/src/components/YoumiCharacterEditor.vue')
+        apply_emotional_system(root)
         print(f'Applied responsive source changes for upstream {manifest["commit"]}')
     else:
         print(f'All source checks passed for upstream {manifest["commit"]}; no files changed')

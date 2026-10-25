@@ -2,6 +2,7 @@
   <el-dialog title="Youmi 功能管理" :visible.sync="visible" width="min(92vw, 560px)" :close-on-click-modal="false">
     <p>角色内容由你设定，不会自动补写。开关只控制功能，关闭不会删除已有数据。</p>
     <el-button size="small" @click="$emit('configure'); visible = false">编辑角色设定</el-button>
+    <el-button size="small" @click="$router.push({ path: '/affect-system', query: { agentId } }); visible = false">情感系统</el-button>
     <p v-if="error" role="alert">{{ error }}</p>
     <div v-if="state" v-loading="busy" class="youmi-settings">
       <div v-for="item in switches" :key="item.key" class="youmi-setting">
@@ -12,11 +13,11 @@
           <span class="youmi-toggle-track" aria-hidden="true"><span class="youmi-toggle-thumb" /></span>
         </button>
       </div>
-      <div v-if="state.mia_emotion" class="youmi-emotion-status">
+      <div v-if="state.mia_emotion && !state.mia_emotion.system_configured" class="youmi-emotion-status">
         <p>{{ state.character && state.character.enabled ? state.character.values.name : 'Youmi' }} 当前情绪：{{ state.mia_emotion.enabled ? state.mia_emotion.label : '已停用' }}<span v-if="state.mia_emotion.updated_at"> · 最近互动 {{ new Date(state.mia_emotion.updated_at * 1000).toLocaleString() }}</span></p>
         <el-button size="small" :disabled="busy" @click="change('reset_mia_emotion', true)">重置 Youmi 情绪</el-button>
       </div>
-      <YoumiCharacterEditor v-if="state.character" :profile="state.character" :disabled="busy" @save="saveCharacter" />
+      <YoumiCharacterEditor v-if="state.character && !(state.mia_emotion && state.mia_emotion.system_configured)" :profile="state.character" :disabled="busy" @save="saveCharacter" />
       <p>已保存记忆 {{ state.counts.memories }} 条 · 成长特点 {{ state.counts.traits }} 个 · 互动事件 {{ state.counts.events }} 个</p>
       <p>保存后立即影响后续处理；使用旧上下文的回复可能中止，可重新发起对话。已发出的声音无法撤回。</p>
     </div>

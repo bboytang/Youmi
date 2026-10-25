@@ -11,8 +11,10 @@
       <label>亲昵称呼<el-input v-model="draft.address" label="亲昵称呼" :disabled="disabled" maxlength="32" /></label>
       <label>关系<el-input v-model="draft.relationship" label="相处关系" :disabled="disabled" maxlength="160" /></label>
       <label>人物背景（不是用户事实）<el-input v-model="draft.background" type="textarea" label="人物背景" :disabled="disabled" :rows="5" maxlength="1200" /></label>
-      <label v-for="field in dispositions" :key="field.key">{{ field.label }}<el-input-number v-model="draft[field.key]" :aria-label="field.label" :disabled="disabled" :min="0" :max="1" :step="0.05" :precision="2" /></label>
-      <label>情绪恢复半衰期（小时）<el-input-number v-model="draft.recovery_hours" aria-label="情绪恢复半衰期" :disabled="disabled" :min="1" :max="24" /></label>
+      <template v-if="!hideDynamics">
+        <label v-for="field in dispositions" :key="field.key">{{ field.label }}<el-input-number v-model="draft[field.key]" :aria-label="field.label" :disabled="disabled" :min="0" :max="1" :step="0.05" :precision="2" /></label>
+        <label>情绪恢复半衰期（小时）<el-input-number v-model="draft.recovery_hours" aria-label="情绪恢复半衰期" :disabled="disabled" :min="1" :max="24" /></label>
+      </template>
       <el-checkbox v-model="draft.swearing" :disabled="disabled">情绪强烈时允许偶尔爆粗</el-checkbox>
       <p>温柔度与亲近度影响正向情绪反应；小脾气影响负向反应和缓和速度。生气会延续，时间恢复按半衰期计算；持续情绪开关关闭时不记录状态。基线停用后不参与回应或情绪计算，保留配置与已有情绪。</p>
       <p>固定表达原则：成年女孩的角色视角；有主见、会表达需要；被真实敷衍或冒犯可生气、顶嘴；粗口针对具体行为，不羞辱隐私、不操纵或威胁；背景与真实互动记忆分开。</p>
@@ -24,7 +26,7 @@
 
 <script>
 export default {
-  props: { profile: { type: Object, required: true }, disabled: Boolean },
+  props: { profile: { type: Object, required: true }, disabled: Boolean, hideDynamics: Boolean },
   data() {
     return { draft: null, enabled: false, dispositions: [
       { key: 'warmth', label: '温柔度' }, { key: 'attachment', label: '亲近度' }, { key: 'temper', label: '小脾气强度' }

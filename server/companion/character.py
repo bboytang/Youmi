@@ -75,6 +75,15 @@ def update(store, owner, command):
             'enabled=excluded.enabled,values_json=excluded.values_json,version=excluded.version,updated_at=excluded.updated_at',
             (owner, enabled, json.dumps(values, ensure_ascii=False), version + 1, int(store.clock())))
         store.db.execute('UPDATE owners SET revision=revision+1 WHERE owner=?', (owner,))
+        from . import emotional_system
+        system = emotional_system.status(store, owner)
+        if system['version']:
+            for target, source in [('warmth', 'warmth'), ('closeness', 'attachment'), ('temper', 'temper')]:
+                system['dimensions'][target]['baseline'] = values[source] * 100
+                system['dimensions'][target]['minimum'] = min(system['dimensions'][target]['minimum'], values[source] * 100)
+                system['dimensions'][target]['maximum'] = max(system['dimensions'][target]['maximum'], values[source] * 100)
+            emotional_system._write(store, owner, system['enabled'], system['dimensions'], system['values'], system['version'])
+            emotional_system._record(store, owner, 'configure', {'configuration_changed': True, 'source': 'character'})
         store._cancel_jobs(owner)
     return status(store, owner)
 

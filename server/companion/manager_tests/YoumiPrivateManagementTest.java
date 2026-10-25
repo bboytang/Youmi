@@ -105,6 +105,18 @@ class YoumiPrivateManagementTest {
         assertEquals(0, calls.get());
     }
 
+    @Test void emotionalSystemUsesAgentOwnerAndDoesNotTrustBrowserIdentity() throws Exception {
+        assertNotEquals(0, post("/agent/" + AGENT + "/affect-system",
+            Map.of("action", "status"), token(OTHER)).path("code").asInt());
+        assertEquals(0, calls.get());
+        assertEquals(0, post("/agent/" + AGENT + "/affect-system",
+            Map.of("action", "status", "owner", "forged"), token(OWNER)).path("code").asInt());
+        assertEquals(OWNER, forwarded.get().path("operator_id").asLong());
+        assertEquals(AGENT, forwarded.get().path("agent_id").asText());
+        assertEquals("affect_system", forwarded.get().path("request").path("action").asText());
+        assertEquals("status", forwarded.get().path("request").path("operation").path("action").asText());
+    }
+
     @Test void onlyServerSecretCanProveTheCurrentAgentOwner() throws Exception {
         var proof = Map.of("operator_id", OWNER, "agent_id", AGENT);
         String secret = params.getValue(Constant.SERVER_SECRET, true);

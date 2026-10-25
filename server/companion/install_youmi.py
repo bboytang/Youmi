@@ -284,7 +284,7 @@ def install(root, changes):
         for name in ["__init__.py", "memory.py", "youmi_adapter.py", "authorization.py", "schema.py", "schema.sql", "schema-v2.sql", "persona.py",
                      "embedding.py", "semantic.py", "retrieval.py", "context.py", "reply.py", "jobs.py", "extraction.py", "proposal.py", "model_requests.py",
                      "events.py", "emotions.py", "schema-v3.sql", "schema-v4.sql", "schema-v5.sql", "schema-v6.sql", "affect.py", "features.py", "management.py", "character.py", "schema-v7.sql",
-                     "request_accounting.py", "requirements-vector.txt", "schema-v8.sql", "astrbot_api.py",
+                     "request_accounting.py", "requirements-vector.txt", "schema-v8.sql", "schema-v9.sql", "emotional_system.py", "astrbot_api.py",
                      "astrbot_identity.py", "astrbot_turns.py", "astrbot_media.py"]:
             shutil.copy2(Path(__file__).parent / name, destination / name)
         for relative, (_, changed) in changes.items():

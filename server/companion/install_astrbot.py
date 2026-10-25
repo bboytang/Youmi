@@ -12,7 +12,8 @@ EXPECTED = {
     'mia_companion/xiaozhi_adapter.py': '6325997fe98f992b64d657d5c3e6689168feb8d90fa36a30624f7605f6694385',
     'mia_companion/schema.py': '3e6ee813382608bfe611ceb4248151dfde006d5a25bf4ef780a40804dfc24a32',
 }
-PAYLOADS = ('astrbot_api.py', 'astrbot_identity.py', 'astrbot_turns.py', 'astrbot_media.py', 'schema-v8.sql')
+PAYLOADS = ('astrbot_api.py', 'astrbot_identity.py', 'astrbot_turns.py', 'astrbot_media.py', 'schema-v8.sql',
+            'schema-v9.sql', 'emotional_system.py')
 
 
 def changes(root):

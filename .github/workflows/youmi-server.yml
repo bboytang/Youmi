@@ -38,10 +38,22 @@ jobs:
           MIA_MUSIC_TEST_SOURCE: ${{ runner.temp }}/play_music.py
           MIA_LEGACY_MEMORY_SOURCE: ${{ github.workspace }}/legacy-memory/server/companion/memory.py
           MIA_V2_MECHANISM_REPORT: ${{ runner.temp }}/mia-v2-mechanisms.json
+          YOUMI_LEGACY_CONTEXT_SOURCE: ${{ runner.temp }}/context-b51be7e.py
+          YOUMI_ASR_TEST_SOURCE: ${{ runner.temp }}/doubao_stream.py
+          YOUMI_TTS_TEST_SOURCE: ${{ runner.temp }}/huoshan_double_stream.py
         run: |
           curl --fail --location --retry 3 \
             https://raw.githubusercontent.com/xinnan-tech/xiaozhi-esp32-server/87c6df77b0220ddbd8fc804f984f83f69f3225e5/main/xiaozhi-server/plugins_func/functions/play_music.py \
             --output "$MIA_MUSIC_TEST_SOURCE"
+          curl --fail --location --retry 3 \
+            https://raw.githubusercontent.com/bboytang/Youmi/b51be7e770161fe759a192a2996031ebba5e54dc/server/companion/context.py \
+            --output "$YOUMI_LEGACY_CONTEXT_SOURCE"
+          curl --fail --location --retry 3 \
+            https://raw.githubusercontent.com/xinnan-tech/xiaozhi-esp32-server/87c6df77b0220ddbd8fc804f984f83f69f3225e5/main/xiaozhi-server/core/providers/asr/doubao_stream.py \
+            --output "$YOUMI_ASR_TEST_SOURCE"
+          curl --fail --location --retry 3 \
+            https://raw.githubusercontent.com/xinnan-tech/xiaozhi-esp32-server/87c6df77b0220ddbd8fc804f984f83f69f3225e5/main/xiaozhi-server/core/providers/tts/huoshan_double_stream.py \
+            --output "$YOUMI_TTS_TEST_SOURCE"
           python -m unittest discover -s server/tests -v
           bash -n server/deploy/install-ubuntu.sh
           python -m py_compile server/deploy/check_wss.py

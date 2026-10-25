@@ -74,6 +74,19 @@ def state(store, owner):
         result['character'] = character
         if feeling == 'repair' and tension >= .08:
             result['label'] = '缓和中'
+    from . import emotional_system
+    system = emotional_system.status(store, owner)
+    if system['version']:
+        result['enabled'] = system['enabled']
+        result['system_configured'] = True
+    if system['enabled']:
+        result['enabled'] = True
+        result['affect_system'] = system
+        if character:
+            result['character'] = dict(character)
+            for source, target in [('warmth', 'warmth'), ('closeness', 'attachment'), ('temper', 'temper')]:
+                if system['dimensions'][source]['enabled']:
+                    result['character'][target] = system['values'][source] / 100
     return result
 
 
@@ -91,6 +104,9 @@ def appraisal(raw, query):
 
 def transition(current, proposal):
     """Ephemeral until normal reply completion; no role or fact mutation."""
+    if 'changes' in proposal:
+        from .emotional_system import transition as project
+        return dict(current, affect_system=project(current['affect_system'], proposal, current['affect_system']['now']))
     feeling = proposal['feeling']
     character = current.get('character')
     if feeling == 'angry' and not character:
@@ -120,6 +136,9 @@ def transition(current, proposal):
 
 def commit(store, owner, session, turn, query, proposal, expected_version):
     """Caller owns the current context transaction and verified Scope."""
+    if 'changes' in proposal:
+        from .emotional_system import commit as commit_system
+        return commit_system(store, owner, session, turn, proposal, proposal['system_version'])
     if not settings(store, owner)['companion_emotion']:
         return False
     _text(session, 128, 'session id'); _text(turn, 128, 'turn id')
@@ -146,6 +165,11 @@ def commit(store, owner, session, turn, query, proposal, expected_version):
 
 
 def reset(store, owner):
+    from . import emotional_system
+    system = emotional_system.status(store, owner)
+    if system['version']:
+        emotional_system.manage(store, owner, {'action': 'reset', 'version': system['version']})
+        return
     with store.lock, store.db:
         store.db.execute('BEGIN IMMEDIATE')
         owner = store._owner(owner)
@@ -157,6 +181,9 @@ def reset(store, owner):
 
 def guidance(current):
     """Only reviewed server state selects instructions; no user text enters here."""
+    if current.get('affect_system'):
+        from .emotional_system import POLICY, expression
+        return POLICY + '\naffect_system=' + json.dumps(expression(current['affect_system']), ensure_ascii=False)
     if current.get('character') and current['feeling'] == 'angry' and current['tension'] >= .08:
         if current.get('stimulus') in {'steady', 'curious'}:
             return ('\n本轮是普通询问，没有新的冒犯。你自己还有生气的余波，先用一句第一人称说还需要缓缓，然后正常回答。'
@@ -206,12 +233,26 @@ def request_appraisal(provider, query, current):
         {'role': 'system', 'content': APPRAISAL_POLICY + (CHARACTER_APPRAISAL_POLICY if character else '')},
         {'role': 'user', 'content': json.dumps({'user_text': query, 'mia_state': stimulus}, ensure_ascii=False)}],
         'stream': False, 'max_tokens': 256, 'temperature': 0}
+    if current.get('affect_system'):
+        from .emotional_system import APPRAISAL_POLICY as SYSTEM_POLICY, CATALOG
+        system = current['affect_system']
+        params['messages'] = [{'role': 'system', 'content': SYSTEM_POLICY}, {'role': 'user', 'content': json.dumps({
+            'user_text': query, 'dimensions': {k: v['label'] for k, v in CATALOG.items()
+                if system['dimensions'][k]['enabled'] and system['dimensions'][k]['mode'] != 'fixed'},
+            'dispositions': {k: system['values'][k] for k, item in CATALOG.items()
+                if item['group'] in {'personality', 'regulation'} and system['dimensions'][k]['enabled']},
+            'character': character}, ensure_ascii=False)}]
+        params['max_tokens'] = 1024
     provider._apply_thinking_disabled(params)
     return client.chat.completions.create(**params).choices[0].message.content
 
 
 def parse_appraisal(raw, query):
-    if not isinstance(raw, str) or len(raw) > 2048:
+    if not isinstance(raw, str) or len(raw) > 8192:
         raise ValueError('Invalid affect appraisal size')
     fenced = re.fullmatch(r'```(?:json)?\s*\n(.*?)\n```', raw.strip(), re.S | re.I)
-    return appraisal(json.loads(fenced.group(1) if fenced else raw), query)
+    data = json.loads(fenced.group(1) if fenced else raw)
+    if isinstance(data, dict) and 'changes' in data:
+        from .emotional_system import parse_appraisal as parse_system
+        return parse_system(data, query)
+    return appraisal(data, query)

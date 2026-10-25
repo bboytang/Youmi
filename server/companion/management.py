@@ -39,7 +39,7 @@ class ManagementHandler:
             if not isinstance(command, dict):
                 raise ValueError()
             action = command.get('action')
-            if action not in {'status', 'pause', 'set_feature_settings', 'emotion_consent', 'reset_mia_emotion', 'memory_list', 'memory_delete', 'set_character'}:
+            if action not in {'status', 'pause', 'set_feature_settings', 'emotion_consent', 'reset_mia_emotion', 'memory_list', 'memory_delete', 'set_character', 'affect_system'}:
                 raise ValueError()
             if self.store is None:
                 from .youmi_adapter import _store
@@ -47,6 +47,12 @@ class ManagementHandler:
             else:
                 store = self.store
             def apply():
+                if action == 'affect_system':
+                    from .emotional_system import manage
+                    operation = command.get('operation')
+                    if not isinstance(operation, dict):
+                        raise ValueError()
+                    return manage(store, owner, operation)
                 if action in {'memory_list', 'memory_delete'}:
                     offset = command.get('offset', 0)
                     if type(offset) is not int or not 0 <= offset <= 2147483647:

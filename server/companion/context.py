@@ -191,9 +191,11 @@ class ContextBuilder:
                 if emotions.RELEVANT.search(query):
                     selected_trend = emotions.trend(store, scope.owner)
             from .affect import state
-            affect = state(store, scope.owner) if flags['companion_emotion'] else None
+            affect = state(store, scope.owner)
+            affect = affect if affect['enabled'] else None
             from .character import active
-            return self._versions(scope), traits, selected_events, selected_trend, affect, active(store, scope.owner)
+            character = affect.get('character') if affect else active(store, scope.owner)
+            return self._versions(scope), traits, selected_events, selected_trend, affect, character
 
     async def validate(self, bundle, authorization):
         if not isinstance(bundle, ContextBundle):
@@ -253,7 +255,10 @@ class ContextBuilder:
         data = {'memory_status': inputs['memory_status'], 'role_data': '', 'facts': [], 'traits': [], 'scene': None}
         affect = inputs.get('youmi_affect')
         if affect:
-            data['youmi_affect'] = {key: value for key, value in affect.items() if key != 'character'}
+            data['youmi_affect'] = {key: value for key, value in affect.items() if key not in {'character', 'affect_system'}}
+            if affect.get('affect_system'):
+                from .emotional_system import expression
+                data['youmi_affect']['affect_system'] = expression(affect['affect_system'])
         retained = []
         omitted = {'role': False, 'fact_ids': [], 'traits': [], 'history_turns': inputs['older_turns_removed'], 'scene': False}
         def request():
@@ -414,7 +419,7 @@ class ContextBuilder:
         from .affect import transition
         inputs = json.loads(bundle.inputs_json)
         inputs['youmi_affect'] = dict(transition(inputs['youmi_affect'], proposal),
-                                   origin='current_turn_projection_not_committed', stimulus=proposal['feeling'])
+                                   origin='current_turn_projection_not_committed', stimulus=proposal.get('feeling', 'interaction'))
         updated = await asyncio.to_thread(self._assemble, bundle.scope, bundle.turn_id, bundle.limits, bundle.snapshot, inputs)
         await self.validate(updated, authorization)
         return updated

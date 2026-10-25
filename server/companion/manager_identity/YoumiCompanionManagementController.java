@@ -75,7 +75,7 @@ public class YoumiCompanionManagementController {
         long operator = SecurityUser.getUserId();
         grant(agentId, operator);
         if (!(command.get("action") instanceof String action)
-                || !Set.of("status", "pause", "set_feature_settings", "emotion_consent", "reset_mia_emotion", "memory_list", "memory_delete", "set_character").contains(action)) {
+                || !Set.of("status", "pause", "set_feature_settings", "emotion_consent", "reset_mia_emotion", "memory_list", "memory_delete", "set_character", "affect_system").contains(action)) {
             throw new RenException(ErrorCode.PARAMS_GET_ERROR);
         }
         var factory = new SimpleClientHttpRequestFactory();
@@ -96,5 +96,12 @@ public class YoumiCompanionManagementController {
         } catch (Exception unavailable) {
             throw new RenException(ErrorCode.INTERNAL_SERVER_ERROR, "Youmi 管理服务暂不可用，操作结果未确认，请刷新重试");
         }
+    }
+
+    @PostMapping("/agent/{agentId}/affect-system")
+    @RequiresPermissions("sys:role:normal")
+    public Result<Object> affectSystem(@PathVariable String agentId, @RequestBody Map<String, Object> operation,
+                                      HttpServletRequest request) {
+        return manage(agentId, Map.of("action", "affect_system", "operation", operation), request);
     }
 }

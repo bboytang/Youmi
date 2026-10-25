@@ -108,6 +108,8 @@ class FeatureSwitchTests(unittest.IsolatedAsyncioTestCase):
         import sqlite3
         self.fact('我喜欢蓝色。')
         with self.store.lock, self.store.db:
+            for table in ('mia_affect_system_history', 'mia_affect_system_turns', 'mia_affect_system'):
+                self.store.db.execute('DROP TABLE ' + table)
             self.store.db.execute('DROP TABLE mia_affect_turns')
             self.store.db.execute('DROP TABLE mia_affect_state')
             self.store.db.execute('DROP TABLE mia_astrbot_turns')
@@ -175,6 +177,21 @@ class ManagementRouteTests(unittest.IsolatedAsyncioTestCase):
         response = await self.post({'action': 'emotion_consent', 'enabled': True})
         self.assertEqual((await response.json())['data']['emotion_tracking']['enabled'], 1)
         self.assertEqual(len(self.calls), 8)
+
+    async def test_emotional_system_management_uses_verified_owner_and_rejects_conflicts(self):
+        response = await self.post({'action': 'affect_system', 'operation': {'action': 'status'}})
+        state = (await response.json())['data']
+        self.assertEqual(len(state['catalog']), 51)
+        response = await self.post({'action': 'affect_system', 'operation': {'action': 'configure',
+            'version': 0, 'enabled': True, 'dimensions': state['dimensions']}})
+        state = (await response.json())['data']
+        self.assertTrue(state['enabled'])
+        response = await self.post({'action': 'affect_system', 'operation': {
+            'action': 'reset', 'version': 0}})
+        self.assertEqual(response.status, 400)
+        self.allowed = False
+        response = await self.post({'action': 'affect_system', 'operation': {'action': 'status'}})
+        self.assertEqual(response.status, 403)
 
     async def test_rejects_browser_token_foreign_owner_invalid_values_and_revocation(self):
         self.assertEqual((await self.post({'action': 'status'}, secret='browser-token')).status, 401)
