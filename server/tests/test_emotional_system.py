@@ -147,6 +147,50 @@ class EmotionalSystemTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'Unreviewed'):
             install_emotional.changes(root, legacy=True)
 
+    def test_native_namespace_migration_preserves_historical_data_literals(self):
+        from server.companion.normalize_runtime import normalize_native
+        source = ('from mia_companion import xiaozhi_adapter as mia\n'
+                  'def configure(conn):\n'
+                  '    conn._mia_scope = getattr(conn, "_mia_scope", None)\n'
+                  '    return mia.MiaMemoryProvider, {"persona_id": "mia", "mia_owner": "legacy"}\n')
+        changed = normalize_native(source)
+        self.assertIn('from youmi_companion import youmi_adapter as youmi', changed)
+        self.assertIn('youmi.YoumiMemoryProvider', changed)
+        self.assertIn('"_youmi_scope"', changed)
+        self.assertIn('"persona_id": "mia"', changed)
+
+    def test_manager_namespace_migration_keeps_custom_entries_and_rejects_unknown_preimages(self):
+        import hashlib
+        import io
+        import struct
+        from unittest.mock import patch
+        import zipfile
+        from server.companion import normalize_manager as manager
+        def bytecode(name):
+            value = name.encode()
+            return b'\xca\xfe\xba\xbe' + struct.pack('>HHH', 0, 65, 2) + b'\x01' + struct.pack('>H', len(value)) + value + b'\0' * 14
+        original = io.BytesIO()
+        preimages = {}
+        classes = Path(self.temp.name) / 'classes'
+        with zipfile.ZipFile(original, 'w') as archive:
+            for name in manager.PREIMAGES:
+                old = bytecode(name)
+                preimages[name] = hashlib.sha256(old).hexdigest()
+                archive.writestr(name, old)
+                target = classes / manager.renamed(name).removeprefix('BOOT-INF/classes/')
+                target.parent.mkdir(parents=True, exist_ok=True)
+                target.write_bytes(bytecode(manager.renamed(name) + '-replacement'))
+            archive.writestr('BOOT-INF/classes/custom/keep.txt', b'original customization')
+        output = Path(self.temp.name) / 'candidate.jar'
+        with patch.object(manager, 'PREIMAGES', preimages):
+            report = manager.prepare(original.getvalue(), classes, output)
+        with zipfile.ZipFile(output) as archive:
+            self.assertEqual(archive.read('BOOT-INF/classes/custom/keep.txt'), b'original customization')
+            self.assertTrue(all('MiaDeviceAuthorization' not in name for name in archive.namelist()))
+        self.assertEqual(len(report['changed_entries']), len(manager.PREIMAGES))
+        with self.assertRaisesRegex(ValueError, 'Unreviewed'):
+            manager.prepare(original.getvalue(), classes, Path(self.temp.name) / 'rejected.jar')
+
 
 class EmotionalContextTests(unittest.IsolatedAsyncioTestCase):
     setUp = fixture.ContextBuilderTests.setUp

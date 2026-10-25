@@ -14,7 +14,7 @@
         <p>正在管理：<strong>{{ agentName }}</strong> · 最近保存 {{ time(state.updated_at) }}</p>
         <el-tabs v-model="tab" @tab-click="loadHistory">
           <el-tab-pane label="总览" name="overview">
-            <el-switch v-model="draft.enabled" active-text="启用情感系统" :disabled="busy" />
+            <el-switch v-model="draft.enabled" aria-label="启用情感系统" active-text="启用情感系统" :disabled="busy" />
             <p>开关与参数保存后生效。关闭保留数据；时间恢复后的当前值可能与最后保存值不同。</p>
             <p v-if="!state.enabled">系统当前已停用。</p>
             <div class="emotion-overview">

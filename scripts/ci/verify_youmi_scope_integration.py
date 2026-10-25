@@ -113,7 +113,8 @@ async def main():
     restored = await auth.restore(scope.snapshot())
     assert restored == scope
     worker_models = await auth.worker_model(scope)
-    assert set(worker_models) == {'mia_scope', 'selected_module', 'LLM'}
+    assert set(worker_models) == {'youmi_scope', 'mia_scope', 'selected_module', 'LLM'}
+    assert worker_models['youmi_scope'] == worker_models['mia_scope']
     assert worker_models['selected_module'] == {'LLM': 'LLM_ChatGLMLLM'}
     assert set(worker_models['LLM']) == {'LLM_ChatGLMLLM'}
     async with httpx.AsyncClient(timeout=3, trust_env=False) as http:

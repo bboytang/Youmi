@@ -34,3 +34,7 @@
 上述单class/旧命名发布是用户追加命名前的历史方案，现已暂停。新发布需要统一youmi_companion包和Youmi Java类型，并迁移原生入口引用，不能直接套用旧Mia候选。
 
 当前命名改动：安装器、验证脚本、前端请求统一youmi；管理和私有授权API增加youmi主入口并保留旧别名；新增状态表通过V10迁移为youmi_affect_system系列，旧SQL迁移保持不可变。身份persona_id及既有授权载荷中的历史字段仍兼容，避免现有设备失效。命名调整后本地474后端和39 CI辅助测试通过。前端新工作流使用匹配Playwright1.51.1的官方容器，避免上轮Azure APT镜像长时间下载。
+
+1b53fd4d的前端结果104通过/8失败，已定位并补总开关aria-label；Java191项中3个旧字段白名单断言失败，已加新旧youmi_scope一致性检查待重跑。不要将这两轮记为全部通过。
+
+统一命名部署工具：normalize_runtime.py（9个原生文件严格preimage，生成新youmi_companion覆盖目录）；normalize_manager.py（生产自有4类型+ShiroConfig严格preimage，保留JAR其他条目及启动前缀）。/tmp/emotional-admin-JN8Pnt/native为只读导出的原生源码，youmi-overlay为首个统一命名候选；后续源码修改需生成新目录。旧Mia单class候选已作废，不部署。生产仍为astrbot-494f0bab语音和astrbot-e87596a6管理镜像。

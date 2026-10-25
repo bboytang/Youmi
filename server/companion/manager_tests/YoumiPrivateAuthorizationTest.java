@@ -128,8 +128,9 @@ class YoumiPrivateAuthorizationTest {
             JsonNode bridge = post("/config/mia-auth/bridge-config", snapshot, server);
             assertEquals(0, bridge.path("code").asInt());
             assertEquals(verified.path("data").path("owner"), bridge.path("data").path("mia_scope").path("owner"));
+            assertEquals(bridge.path("data").path("mia_scope"), bridge.path("data").path("youmi_scope"));
             bridge.path("data").fieldNames().forEachRemaining(key -> assertTrue(
-                    java.util.Set.of("selected_module", "LLM", "TTS", "prompt", "mia_scope").contains(key)));
+                    java.util.Set.of("selected_module", "LLM", "TTS", "prompt", "youmi_scope", "mia_scope").contains(key)));
             snapshot.put("owner", "user:" + USER_A + ":agent:" + AGENT_B);
             assertNotEquals(0, post("/config/mia-auth/bridge-config", snapshot, server).path("code").asInt());
             snapshot.put("owner", verified.path("data").path("owner").asText());
