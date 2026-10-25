@@ -95,7 +95,10 @@ class AstrBotHandler:
             return web.json_response({'error': {'code': error.code}}, status=error.status)
         except PrivateAuthorizationRequired:
             return web.json_response({'error': {'code': 'authorization_required'}}, status=403)
-        except ContextError:
+        except ContextError as error:
+            if str(error) == 'context_persona_over_budget':
+                return web.json_response({'error': {'code': 'context_persona_over_budget',
+                    'message': '人设与本轮内容超过模型上下文容量；人设未被截断，请调整人设或选择更大上下文的模型。'}}, status=422)
             return web.json_response({'error': {'code': 'context_changed'}}, status=409)
         except (ValueError, TypeError, KeyError, MemoryError, RecursionError):
             return web.json_response({'error': {'code': 'invalid_request'}}, status=400)
@@ -246,7 +249,7 @@ class AstrBotHandler:
         profile = self.bridge['models'].get(data['model'])
         if profile is None:
             raise TurnConflict('model_capacity_unverified', 409)
-        limits = ContextLimits(data['model'], profile['context_window'], profile['response_tokens'],
+        limits = ContextLimits(data['model'], profile['context_window'] - data['external_input_bytes'], profile['response_tokens'],
             profile['capacity_source'], min(profile['input_tokens'], profile['context_window'] - profile['response_tokens'])
             - data['external_input_bytes'])
         limits.input_limit()

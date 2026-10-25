@@ -57,6 +57,7 @@ jobs:
             https://raw.githubusercontent.com/xinnan-tech/xiaozhi-esp32-server/87c6df77b0220ddbd8fc804f984f83f69f3225e5/main/xiaozhi-server/core/providers/tts/huoshan_double_stream.py \
             --output "$YOUMI_TTS_TEST_SOURCE"
           python -m unittest discover -s server/tests -v
+          python -m unittest integrations.tests.test_persona_transport -v
           bash -n server/deploy/install-ubuntu.sh
           python -m py_compile server/deploy/check_wss.py
           python -m server.companion.install_music "$MIA_MUSIC_TEST_SOURCE" --apply

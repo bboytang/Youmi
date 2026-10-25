@@ -23,8 +23,6 @@ class ManagementHandler:
         raw = bytearray()
         async for chunk in request.content.iter_chunked(4096):
             raw.extend(chunk)
-            if len(raw) > 16384:
-                raise web.HTTPRequestEntityTooLarge(max_size=16384, actual_size=len(raw))
         authorization = self.authorization or PrivateAuthorization(self.config)
         try:
             data = json.loads(raw)

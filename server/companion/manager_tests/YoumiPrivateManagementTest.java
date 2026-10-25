@@ -105,6 +105,15 @@ class YoumiPrivateManagementTest {
         assertEquals(0, calls.get());
     }
 
+    @Test void ownerPersonaIsForwardedWithoutTheOldCharacterOrBodyLimit() throws Exception {
+        String persona = "人设设定：图书管理员，使用简洁文言。\n".repeat(2000);
+        JsonNode result = post("/agent/" + AGENT + "/youmi-settings", Map.of("action", "set_character",
+            "version", 0, "enabled", true, "values", Map.of("background", persona)), token(OWNER));
+        assertEquals(0, result.path("code").asInt());
+        assertEquals(persona, forwarded.get().path("request").path("values").path("background").asText());
+        assertEquals(OWNER, forwarded.get().path("operator_id").asLong());
+    }
+
     @Test void emotionalSystemUsesAgentOwnerAndDoesNotTrustBrowserIdentity() throws Exception {
         assertNotEquals(0, post("/agent/" + AGENT + "/affect-system",
             Map.of("action", "status"), token(OTHER)).path("code").asInt());

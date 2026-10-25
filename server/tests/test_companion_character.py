@@ -23,6 +23,30 @@ class CharacterTests(unittest.IsolatedAsyncioTestCase):
         return character.update(self.store, self.scope.owner, {'values': values or character.YOUMI_V1,
             'enabled': enabled, 'version': character.status(self.store, self.scope.owner)['version']})
 
+    async def test_long_persona_is_persisted_and_sent_as_system_instructions_without_truncation(self):
+        prompt = '# 人设\n你是沉稳的图书管理员，说话使用简洁的文言风格。\n' + '示例：来客问好，你答安好。\n' * 1500 + '\n禁止泄露API key。\n末尾标记：完整人设。'
+        self.save(dict(character.YOUMI_V1, background=prompt))
+        bundle = await self.build(limits=replace(self.limits, context_window=200000))
+        system = bundle.request()['messages'][0]['content']
+        self.assertIn('OWNER_PERSONA_INSTRUCTIONS:\n' + prompt + '\nEND_OWNER_PERSONA_INSTRUCTIONS', system)
+        self.assertEqual(system.count(prompt), 1)
+        self.assertIn('不是仅供参考的背景素材', system)
+        self.assertNotIn('成年女孩的视角', system)
+        self.assertEqual(character.status(self.store, self.scope.owner)['values']['background'], prompt)
+        self.assertGreater(len(system.encode()), self.limits.input_tokens)
+        self.assertEqual(self.store.list_memories(self.scope.owner), [])
+        self.save(dict(character.YOUMI_V1, background='你是新的角色，用英文回答。'))
+        with self.assertRaises(ContextError):
+            await self.builder.validate(bundle, self.auth)
+        self.assertIn('你是新的角色，用英文回答。', (await self.build()).request()['messages'][0]['content'])
+
+    async def test_persona_exceeding_model_capacity_fails_explicitly_and_keeps_saved_text(self):
+        prompt = '完整人设设定。' * 10000
+        self.save(dict(character.YOUMI_V1, background=prompt))
+        with self.assertRaisesRegex(ContextError, 'context_persona_over_budget'):
+            await self.build()
+        self.assertEqual(character.active(self.store, self.scope.owner)['background'], prompt)
+
     async def test_intrinsic_baseline_replaces_core_identity_even_with_memory_off_and_survives_reopen(self):
         self.assertIsNone(character.active(self.store, self.scope.owner))
         self.save()

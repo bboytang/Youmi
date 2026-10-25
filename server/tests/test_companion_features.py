@@ -193,6 +193,16 @@ class ManagementRouteTests(unittest.IsolatedAsyncioTestCase):
         response = await self.post({'action': 'affect_system', 'operation': {'action': 'status'}})
         self.assertEqual(response.status, 403)
 
+    async def test_persona_larger_than_transport_and_old_character_limits_round_trips(self):
+        from server.companion.character import YOUMI_V1
+        prompt = '## 人设设定\n你是图书管理员，使用简洁文言。\n' * 2000
+        response = await self.post({'action': 'set_character', 'version': 0, 'enabled': True,
+                                    'values': dict(YOUMI_V1, background=prompt)})
+        self.assertEqual(response.status, 200)
+        self.assertEqual((await response.json())['data']['character']['values']['background'], prompt)
+        response = await self.post({'action': 'status'})
+        self.assertEqual((await response.json())['data']['character']['values']['background'], prompt)
+
     async def test_rejects_browser_token_foreign_owner_invalid_values_and_revocation(self):
         self.assertEqual((await self.post({'action': 'status'}, secret='browser-token')).status, 401)
         self.assertFalse(self.calls)

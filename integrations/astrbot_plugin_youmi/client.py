@@ -43,11 +43,11 @@ class BridgeClient:
                 async with self.session.post(self.base + '/internal/astrbot/' + action,
                     json=dict(data, protocol_version=1), headers={'Authorization': 'Bearer ' + token},
                     timeout=aiohttp.ClientTimeout(total=timeout), allow_redirects=False) as response:
-                    limit = 3 * 1024 * 1024 if action == 'tts' else 65536
+                    limit = None if action == 'prepare' else 3 * 1024 * 1024 if action == 'tts' else 65536
                     raw = bytearray()
                     async for chunk in response.content.iter_chunked(8192):
                         raw.extend(chunk)
-                        if len(raw) > limit:
+                        if limit is not None and len(raw) > limit:
                             raise BridgeError('response_too_large', 400)
                     if response.status != 200:
                         try:

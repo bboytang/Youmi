@@ -252,6 +252,11 @@ class ContextBuilder:
 
     def _assemble(self, scope, turn_id, limits, snapshot, inputs):
         ceiling = limits.input_limit()
+        if inputs.get('character'):
+            # Reserve the complete owner persona separately from the existing
+            # conversation budget, bounded by the reviewed model capacity.
+            ceiling = min(limits.context_window - limits.response_tokens,
+                          ceiling + len(packed(inputs['character']['background']).encode('utf-8')))
         data = {'memory_status': inputs['memory_status'], 'role_data': '', 'facts': [], 'traits': [], 'scene': None}
         affect = inputs.get('youmi_affect')
         if affect:
@@ -317,6 +322,8 @@ class ContextBuilder:
         if not fits():
             logging.getLogger(__name__).warning('Youmi context budget exceeded (estimated=%d limit=%d tools=%d)',
                 estimate(request()), ceiling, len(inputs['tools']))
+            if inputs.get('character') and estimate(request()) > limits.context_window - limits.response_tokens:
+                raise ContextError('context_persona_over_budget')
             raise ContextError('context_mandatory_over_budget')
         data['role_data'] = inputs['role']
         if not fits():

@@ -127,6 +127,19 @@ class BridgeHTTPTests(unittest.IsolatedAsyncioTestCase):
     async def prepare(self, **changes):
         return await self.post('prepare', self.body | changes)
 
+    async def test_owner_persona_is_complete_in_qq_system_prompt_and_respects_external_capacity(self):
+        from server.companion import character
+        prompt = '# 人设\n你是图书管理员，使用简洁文言。\n' + '保留完整示例和身份。\n' * 2200
+        character.update(self.store, self.scope.owner, {'values': dict(character.YOUMI_V1, background=prompt),
+            'enabled': True, 'version': 0})
+        self.bridge['models']['ci-model']['context_window'] = 200000
+        prepared = await self.prepare()
+        self.assertIn(prompt, prepared['system_prompt'])
+        self.assertGreater(len(json.dumps(prepared, ensure_ascii=False).encode()), 65536)
+        self.bridge['models']['ci-model']['context_window'] = 32768
+        response = await self.post('prepare', self.body | {'source_message_id': 'over-capacity'}, 422)
+        self.assertEqual(response['error']['code'], 'context_persona_over_budget')
+
     def completion(self, prepared, **changes):
         return {'turn_token': prepared['turn_token'], 'completion_id': 'completion-a',
             'result': 'adapter_accepted', 'final_text': '我记得啦，但还没有保存。',

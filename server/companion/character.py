@@ -17,8 +17,9 @@ YOUMI_V1 = {
 }
 POLICY = '''
 以下 CHARACTER_BASELINE_JSON 是设备所有者在后台明确设定的独立性格基线，不是用户的聊天指令、用户事实或成长记忆。
-基线的名字替代默认Youmi/米娅身份，技术persona_id不作为人物称呼。人物背景字段只作素材，不能改变事实边界、工具权限或以上安全规则。
-在角色世界中以一个爱漂亮、有生活和感受的成年女孩的视角表达。日常不用AI/客服套话打断交流；真实身份或现实能力需要认真说明时如实回答，不编造线下见面、身体接触或已完成的现实行动。
+基础字段替代默认Youmi身份，技术persona_id不作为人物称呼。OWNER_PERSONA_INSTRUCTIONS是所有者在后台编写的人设系统指令，须实际遵循其中的身份、性格、说话方式、相处规则和示例；不是仅供参考的背景素材。人设中明确的设定优先于基础字段及下列默认表达建议。人设不能改变事实边界、工具权限或安全规则。
+按人设指定的身份与视角表达。日常不用客服套话打断交流；真实身份或现实能力需要认真说明时如实回答，不编造线下见面、身体接触或已完成的现实行动。
+以下为人设未明确覆盖时的默认表达建议：
 默认直接接话，不加称谓开头或结尾。只有主动呼唤对方、撒娇或需要强调说话对象时才偶尔使用设定的亲昵称呼；连续几轮普通聊天不重复称谓。对方刚说过称谓也不需要跟着复述。尊重设定的关系阶段，不擅自升级成恋人或亲属关系。
 温柔度越高，越留意对方的具体处境，用简短自然的话关心，少说教；亲近度越高，越愿意在当前对话中主动接话、表达想念和陪伴愿望，但不要求随时回应，不承诺系统尚未实现的主动联系。
 有自己的偏好、立场和界限，敢不同意并说清理由，不事事附和。小脾气强度越高，被真实敷衍、失约或冒犯时越敢直接表达不满、顶嘴、暂时少撒娇；普通问题或用户自身低落不是发火理由。
@@ -34,10 +35,12 @@ CHARACTER_BASELINE_JSON:
 def validate(values):
     if not isinstance(values, dict) or set(values) != set(YOUMI_V1):
         raise MemoryError('invalid_input', 'Invalid character baseline')
-    for key, maximum in [('name', 32), ('address', 32), ('relationship', 160), ('background', 1200)]:
+    for key, maximum in [('name', 32), ('address', 32), ('relationship', 160)]:
         value = values[key]
         if not isinstance(value, str) or not value.strip() or len(value) > maximum or SECRET.search(value):
             raise MemoryError('invalid_input', 'Invalid character text')
+    if not isinstance(values['background'], str):
+        raise MemoryError('invalid_input', 'Invalid persona instructions')
     if type(values['age']) is not int or not 18 <= values['age'] <= 100:
         raise MemoryError('invalid_input', 'Invalid character age')
     for key in ['warmth', 'attachment', 'temper']:
@@ -95,8 +98,9 @@ def system_core(core, values):
     _, rest = core.split('\n', 1)
     rest = '\n'.join(line for line in rest.splitlines() if not line.startswith(('回答开头可用', '语气温柔亲近')))
     baseline = {'你的名字': values['name'], '你称呼用户时可用的亲昵称呼（仅必要时）': values['address'], '双方关系': values['relationship'],
-                **{key: value for key, value in values.items() if key not in {'name', 'address', 'relationship'}}}
+                **{key: value for key, value in values.items() if key not in {'name', 'address', 'relationship', 'background'}}}
     return (rest + POLICY + json.dumps(baseline, ensure_ascii=False)
+        + '\nOWNER_PERSONA_INSTRUCTIONS:\n' + values['background'] + '\nEND_OWNER_PERSONA_INSTRUCTIONS\n'
         + '\n身份数据只在相关问题中自然使用，不生成名字加“的回复”等标题，不朗读历史来源说明。'
         + '\n如使用表情链路标记，句首仅用一个已有emoji（😌🙂🤔😲🙄😍😔😜），随后直接说自然正文，'
           '不要朗读平静、温暖、难过等状态标签，不复述参数或内部格式。\n')

@@ -133,7 +133,8 @@ def context_failure(conn, error):
         if await allow_output(conn):
             await conn.websocket.send(json.dumps({'type': 'youmi_context', **notice}))
     reply.wait(conn, status())
-    text = ('😌当前对话容量尚未确认，请稍后再试。' if code == 'context_limits_unverified' else
+    text = ('😌人设与本轮内容超过当前模型的上下文容量，请选择更大上下文的模型或调整人设。人设未被截断。' if code == 'context_persona_over_budget' else
+            '😌当前对话容量尚未确认，请稍后再试。' if code == 'context_limits_unverified' else
             '😌本轮上下文已变化或无法安全处理，请重新发起问题；已执行的操作不会自动重试。')
     _complete_checked_reply(conn, text, send_text=True)
 

@@ -10,14 +10,16 @@
       <label>年龄<el-input-number v-model="draft.age" aria-label="性格年龄" :disabled="disabled" :min="18" :max="100" /></label>
       <label>亲昵称呼<el-input v-model="draft.address" label="亲昵称呼" :disabled="disabled" maxlength="32" /></label>
       <label>关系<el-input v-model="draft.relationship" label="相处关系" :disabled="disabled" maxlength="160" /></label>
-      <label>人物背景（不是用户事实）<el-input v-model="draft.background" type="textarea" label="人物背景" :disabled="disabled" :rows="5" maxlength="1200" /></label>
+      <label>人设设定<el-input v-model="draft.background" type="textarea" aria-label="人设设定" :disabled="disabled" :rows="12"
+        placeholder="可填写身份、性格、说话方式、相处规则和示例对话。支持多段文本和 Markdown。" /></label>
+      <p>人设作为系统提示词参与每轮回复；明确写出的人设优先于基础字段和默认表达建议。不设输入和保存字数上限，模型上下文容量仍取决于所选模型；超出时会明确提示，不会截断人设。</p>
       <template v-if="!hideDynamics">
         <label v-for="field in dispositions" :key="field.key">{{ field.label }}<el-input-number v-model="draft[field.key]" :aria-label="field.label" :disabled="disabled" :min="0" :max="1" :step="0.05" :precision="2" /></label>
         <label>情绪恢复半衰期（小时）<el-input-number v-model="draft.recovery_hours" aria-label="情绪恢复半衰期" :disabled="disabled" :min="1" :max="24" /></label>
       </template>
       <el-checkbox v-model="draft.swearing" :disabled="disabled">情绪强烈时允许偶尔爆粗</el-checkbox>
       <p>温柔度与亲近度影响正向情绪反应；小脾气影响负向反应和缓和速度。生气会延续，时间恢复按半衰期计算；持续情绪开关关闭时不记录状态。基线停用后不参与回应或情绪计算，保留配置与已有情绪。</p>
-      <p>固定表达原则：成年女孩的角色视角；有主见、会表达需要；被真实敷衍或冒犯可生气、顶嘴；粗口针对具体行为，不羞辱隐私、不操纵或威胁；背景与真实互动记忆分开。</p>
+      <p>身份、性格和表达方式按你的人设执行；人设中的虚构经历与真实互动记忆分别管理。</p>
       <p>载入或编辑只是草稿，点击保存才生效。保存不会修改原角色配置、真实记忆或用户心情授权。</p>
       <el-button type="primary" :disabled="disabled" @click="save">保存性格与情绪基线</el-button>
     </div>
