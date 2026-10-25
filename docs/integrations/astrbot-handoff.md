@@ -4,6 +4,8 @@
 
 最新完整act代码 `e87596a630d33f6aec47df429ee717ff67c8c4c8` 的四job全过：452 server、98 scripts、39 CI辅助、21 Connector、Meme1045/1skip/85subtests、当前/旧命名Java各190及JAR/严格补丁包。日志在 `/root/tmp/youmi-act-goal-audit`。后续只有Dockerfile/Compose/文档变化，须对相关变更完成最终检查；下文b329段是上一轮历史证据，不能充作最新SHA证明。
 
+Compose修订 `14390134daf413002675a673b53dcf3ccc2ba54f` 已再次通过本地act backend（452+98+39/Compose），日志youmi-act-production-config/backend.log与hash另存证据JSON。临时HTTPS入口清理器同时断开原生VNC现有viewer；QQ进程不重启。待用户登录期间不要反复抓取可能含账号/密码输入的桌面。
+
 用户最新授权：实际生产部署；明确不新增备份；允许仅在生产主机内部复用模型Key；先绑定QQ再继续其余验收。不要重新询问这些选择。没有备份文件、密钥导出或角色/模型/音色变更。内部Scope/owner授权不可跳过，QQ未登录/未签发虚拟grant时维持bindings为空、adapter关闭。
 
 接续优先级：观察用户QQ登录结果（不截取输入密码的桌面）→确认bot UIN和用户会话→原owner合法注册/exchange独立虚拟grant→接入QQ→媒体/工具/Meme/主动/双端与重启验收。临时移动入口一小时定时关闭，成功后提前运行生产记录中的close脚本；不得将其URL/密码提交。旧V7镜像不能直接连接已迁移V8卷，回退保持当前V8-aware镜像并关闭bridge。

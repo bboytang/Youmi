@@ -232,5 +232,17 @@
     },
     "qq_logged_in_verified": false,
     "virtual_grant_issued": false
+  },
+  "production_configuration_validation": {
+    "source_sha": "14390134daf413002675a673b53dcf3ccc2ba54f",
+    "runner": "local nektos/act",
+    "job": "backend",
+    "server_passed": 452,
+    "scripts_passed": 98,
+    "ci_helpers_passed": 39,
+    "compose_config": "passed",
+    "log": "/root/tmp/youmi-act-production-config/backend.log",
+    "log_sha256": "8154c7199df40c851f581fab51b2c7378205daa3bd668504bee21d6a1bac7f65",
+    "runtime_application_code_matches": "e87596a630d33f6aec47df429ee717ff67c8c4c8"
   }
 }

@@ -76,3 +76,5 @@
 - 两sidecar启动。核对SnowLuma原镜像start.sh发现持久化目录必须是/app/snowluma-data，修正模板；首次runtime.json被root创建导致EACCES，只修该文件所有权并启动daemon子进程，未重启QQ。两个原生插件实际activated=true；AstrBot原生provider test于06:10:44实际调用deepseek-flash返回available，0.67秒；首次错误路由405保留原因，按固定源码纠正。
 - 用户要求先绑定QQ，确认只有手机。已建立现有HTTPS下临时随机路径桌面，Basic+原生VNC验证、无新公网端口、access_log关闭、60分钟timer自动清理。实际未认证401/认证200、WebSocket101/RFB greeting均通过；只向用户提供本次新建桌面凭据，QQ密码由用户在桌面直接输入，不进入聊天/仓库。临时URL和密码不记MD。
 - QQ登录、虚拟grant及T01–T30真机断言仍未完成；不以sidecar健康或真实模型ping代替QQ/共享记忆验收。最新状态以production-deployment和handoff开头为准。
+
+06:15 UTC：Compose修订提交14390134本地act backend再次通过452+98+39及Compose config，日志youmi-act-production-config/backend.log与hash已入JSON；Connector/两种Java运行代码仍对应e875四job证据。临时入口清理器补充原生x11vnc disconnect:all，关闭已建立的桌面会话，不重启QQ；只读清理预览验证恢复原Nginx哈希。尚未检测到登录后的QQ账号配置，继续等待用户在手机桌面操作。

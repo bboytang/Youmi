@@ -2,6 +2,8 @@
 
 审计日期：2026-10-25。此文件先于实现形成，验收结果另见 acceptance；源码核查不等于 QQ 真机验证。
 
+部署时补充实物核查：固定 SnowLuma digest 的 `/root/start.sh` 与镜像 WorkingDir 均指向 `/app/snowluma-data`，不是任务书示例中的 `/app/data`；Compose 已据此修正。原启动脚本先chown再以root创建runtime.json，实际触发daemon EACCES；只修新runtime文件1000:1000并重启daemon子进程即可，QQ进程不受影响。生产已获授权切换到V8及两个sidecar，实际镜像/数据校验/插件与真实模型证明见[部署记录](astrbot-production-deployment.md)；下文“未部署”和V7为最初只读审计快照。
+
 ## 基线与线上只读核查
 
 - `git fetch https://github.com/bboytang/Youmi.git feature/mia-persona-memory-v1.2`：HEAD `739c509eb3f4bc231d879367b33a15a8a94c38f5`；从该提交建立 `feature/astrbot-fusion`。原分支 `feature/YOUMI_ASTRBOT`，未跟踪任务书保留。原 origin 指向更名前的 Mia，未修改。

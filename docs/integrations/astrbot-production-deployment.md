@@ -13,6 +13,7 @@
 - 模型保持 `deepseek-flash`、原小何音色/角色未改。Key 仅从原主机配置复用到该主机 root0600 env 文件；AstrBot 配置使用原生 `$YOUMI_ASTRBOT_LLM_API_KEY` 引用。旧容量 profile 标着 GLM，未用于新桥接。桥接采用经[官方文档](https://api-docs.deepseek.com/quick_start/pricing/)核对的保守 32K 窗口、24K 输入、2048 输出预算，不修改原 App 配置。
 - DockerHub 直连超时、GHCR 拒绝后，使用腾讯镜像分发相同的 amd64 digest，没有变更第三方版本。原始失败日志保留。
 - AstrBot 原生 provider `check_one` 于 06:10:44 UTC 实际调用 `text_chat("REPLY PONG ONLY")`，deepseek-flash 返回 available，耗时 0.67 秒；不是 fixture，也未发送 QQ 或写入 Youmi 记忆。首次使用错误的原生路由返回 405，核对固定源码后改为真实 GET `/api/config/provider/check_one`；该失败未冒称通过。
+- Compose 修订提交 `14390134daf413002675a673b53dcf3ccc2ba54f` 已再次通过本地act backend：452 server、98 scripts、39 CI辅助及Compose config。运行代码未再改变，Connector/两种Java沿用e875精确提交四job证据；日志与hash已分开记入证据JSON，没有把旧日志改标成新SHA。
 
 | 实际镜像 | ID / digest |
 |---|---|
@@ -38,7 +39,7 @@
 python3 /opt/xiaozhi-server/astrbot-fusion-e87596a6/tools/close-mobile-login.py
 ```
 
-清理器精确移除临时块，并要求移除后的 Nginx 哈希等于修改前哈希，语法通过再 reload；删除临时 htpasswd。QQ 登录数据/进程/持久卷均保留。手机可在桌面底部点“账号登录”，QQ 密码由用户直接填入，不发送到聊天。
+清理器精确移除临时块，并要求移除后的 Nginx 哈希等于修改前哈希，语法通过再 reload；删除临时 htpasswd，并用原生 x11vnc `disconnect:all` 断开已经建立的桌面连接。已只读核验清理后的预期哈希一致、脚本语法通过。QQ 登录数据/进程/持久卷均保留。手机可在桌面底部点“账号登录”，QQ 密码由用户直接填入，不发送到聊天。
 
 ## 尚未完成、不得冒称通过
 
