@@ -1,5 +1,10 @@
 # Youmi × AstrBot × SnowLuma 当前实施方案与计划
 
+**15:00 UTC 最新语音真机验收：** 用户确认“已识别成功，并回复语音，但是同时也回复了文字”。真实新语音回合 `6bf1708816d6a7713606aac1308a0cc382a4e4d4d8818b501bb8ee1ae0cfc505`（14:43:17 UTC）账本 completed；关联记忆job恰好1个、最终empty（本轮未提取长期事实），情绪提交恰好1次，SQLite quick_check=ok。14:30以来无Connector发送失败/TTS失败告警；diagnostics未输出该轮components日志，因此不虚构独立发送回执ID。手机收到语音和文字由用户确认，completed来自正常await发送后完成路径。
+
+当前 `reply_to_voice` 策略是在语音输入时附加同一份回答的语音并保留文字，非两套模型各自回答。已询问用户是否改为语音输入只回复语音、生成失败回退文字；答复前保持现有行为。此轮只更新验收/计划/工作与交接，不改运行代码、不重启服务，沿用精确运行代码的本地act证据。QQ原生ASR error9没有被修复，成功链路使用已上线Youmi ASR降级。图片/GIF/Meme、真实工具/MCP/主动聊天及App界面双端仍待逐项真机验收；项目整体未宣称完成。
+
+
 **14:27 UTC 当前接手点：** QQ文字回复、1个真实记忆job最终committed/1条active事实/1次情绪提交、正常同owner管理读取200已通过。最新SnowLuma v2.1.0固定8fc68c0，Node24.21.0；本地act原生桥接272/1skip、OneBot1576、协议1293、SQLite19通过。原生迁移30/30旧消息ID和原媒体记录保留、quick_check=ok、QQ登录/反向WS恢复。旧v1.10.1发送回执修复是历史，当前已升级。
 
 QQ自带ASR对新语音仍返回error9，不能宣称已修好。已实现降级：原生get_record转WAV→有真实binding/Scope及前后授权检查的Youmi transcribe→复用原doubao_stream auth/framing/parser→临时Plain→唯一AstrBot Agent/标准回合。凭据只在原Youmi后端，不新建ASR服务/改变原App设置。真实已有语音的HTTP transcribe已200，0.947秒/6字，无QQ重放或记忆副作用；手机新语音整链正在等用户反馈。
