@@ -54,6 +54,12 @@ test('baseline is an explicit owner draft, edits save to backend and survive reo
   await page.getByRole('button', { name: 'Youmi 功能管理', exact: true }).first().click();
   await expect(dialog.getByRole('textbox', { name: '亲昵称呼', exact: true })).toHaveValue('哥哥呀');
   await expect(dialog.getByRole('textbox', { name: '人设设定', exact: true })).toHaveValue(persona);
+  await dialog.getByRole('textbox', { name: '人设设定', exact: true }).fill(persona + '\n新增：喜欢画画。');
+  await dialog.getByRole('button', { name: '保存性格与情绪基线' }).click();
+  await expect.poll(() => state.character.values.background).toBe(persona + '\n新增：喜欢画画。');
+  await dialog.getByRole('textbox', { name: '人设设定', exact: true }).fill(persona);
+  await dialog.getByRole('button', { name: '保存性格与情绪基线' }).click();
+  await expect.poll(() => state.character.values.background).toBe(persona);
   await dialog.locator('.el-checkbox').filter({ hasText: '启用性格与情绪基线' }).click();
   await dialog.getByRole('button', { name: '保存性格与情绪基线' }).click();
   await expect(dialog.getByRole('checkbox', { name: '启用性格与情绪基线' })).not.toBeChecked();

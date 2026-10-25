@@ -325,7 +325,9 @@ class ContextBuilder:
             if inputs.get('character') and estimate(request()) > limits.context_window - limits.response_tokens:
                 raise ContextError('context_persona_over_budget')
             raise ContextError('context_mandatory_over_budget')
-        data['role_data'] = inputs['role']
+        has_persona = bool(inputs.get('character') and inputs['character']['background'].strip())
+        data['role_data'] = '' if has_persona else inputs['role']
+        omitted['role'] = bool(has_persona and inputs['role'])
         if not fits():
             data['role_data'], omitted['role'] = '', True
         for fact in inputs['facts']:

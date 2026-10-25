@@ -47,6 +47,21 @@ class CharacterTests(unittest.IsolatedAsyncioTestCase):
             await self.build()
         self.assertEqual(character.active(self.store, self.scope.owner)['background'], prompt)
 
+    async def test_custom_persona_replaces_legacy_role_and_can_be_added_edited_and_deleted(self):
+        prompt = '姓名：苏晓筱\n称呼看心情：宝、姐妹、某人。'
+        self.save(dict(character.YOUMI_V1, name='苏晓筱', background=prompt))
+        bundle = await self.build(role='旧角色姓名：唐晓筱。旧角色背景。')
+        self.assertIn(prompt, bundle.request()['messages'][0]['content'])
+        self.assertNotIn('唐晓筱', bundle.request_json)
+        self.assertEqual(self.data(bundle)['role_data'], '')
+        self.save(dict(character.YOUMI_V1, name='苏晓筱', background=prompt + '\n新增：喜欢徒步。'))
+        self.assertIn('新增：喜欢徒步。', (await self.build()).request_json)
+        self.save(dict(character.YOUMI_V1, name='苏晓筱', background='修改：喜欢画画。'))
+        self.assertNotIn('喜欢徒步', (await self.build()).request_json)
+        self.save(dict(character.YOUMI_V1, name='苏晓筱', background=''))
+        self.assertEqual(character.active(self.store, self.scope.owner)['background'], '')
+        self.assertIn('原角色背景', (await self.build(role='原角色背景')).request_json)
+
     async def test_intrinsic_baseline_replaces_core_identity_even_with_memory_off_and_survives_reopen(self):
         self.assertIsNone(character.active(self.store, self.scope.owner))
         self.save()
@@ -57,7 +72,7 @@ class CharacterTests(unittest.IsolatedAsyncioTestCase):
         self.assertIn('悠米', system)
         self.assertIn('哥哥', system)
         self.assertNotIn('你的名字是 Youmi', system)
-        self.assertIn('原角色配置保留，不自动改写', bundle.request_json)
+        self.assertNotIn('原角色配置保留，不自动改写', bundle.request_json)
         self.assertEqual(self.data(bundle)['facts'], [])
         self.assertEqual(self.store.list_memories(self.scope.owner), [])
 
