@@ -218,9 +218,17 @@ class ContextBuilderTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(bundle.diagnostics()['input_limit'], 24576)
         self.assertLessEqual(estimate(bundle.request()) + 2048, limits.context_window)
         self.assertEqual(ContextLimits('fixture', 9000, 1024, 'fixture', 24576).input_limit(), 7976)
-        for value in (True, None, 0, -1, '24576'):
+        for value in (True, 0, -1, '24576'):
             with self.subTest(value=value), self.assertRaisesRegex(ContextError, 'limits_unverified'):
                 ContextLimits('fixture', 32768, 2048, 'fixture', value).input_limit()
+
+    async def test_native_context_mode_preserves_large_tools_without_a_bridge_budget(self):
+        limits = ContextLimits.without_input_budget('fixture', 16384, 128, 'native model capacity')
+        tools = [{'type': 'function', 'function': {'name': 'weather', 'description': '完整工具说明' * 10000}}]
+        bundle = await self.build(limits=limits, tools=tools, role='完整人设' * 10000)
+        self.assertIsNone(bundle.diagnostics()['input_limit'])
+        self.assertEqual(bundle.request()['tools'], tools)
+        self.assertIn('完整人设' * 10000, bundle.request()['messages'][1]['content'])
 
     async def test_optional_material_is_omitted_with_diagnostics_without_changing_db(self):
         own = self.fact('蓝色' * 240)

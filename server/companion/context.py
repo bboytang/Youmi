@@ -48,7 +48,11 @@ class ContextLimits:
     context_window: int
     response_tokens: int
     capacity_source: str
-    input_tokens: int = 8192
+    input_tokens: int | None = 8192
+
+    @classmethod
+    def without_input_budget(cls, model, context_window, response_tokens, capacity_source):
+        return cls(model, context_window, response_tokens, capacity_source, None)
 
     @classmethod
     def from_provider(cls, provider, context_window, capacity_source, input_tokens=8192):
@@ -61,9 +65,12 @@ class ContextLimits:
         if (not isinstance(self.model, str) or not self.model.strip()
                 or type(self.context_window) is not int or type(self.response_tokens) is not int
                 or not 0 < self.response_tokens < self.context_window
-                or type(self.input_tokens) is not int or self.input_tokens <= 0
+                or (self.input_tokens is not None
+                    and (type(self.input_tokens) is not int or self.input_tokens <= 0))
                 or not isinstance(self.capacity_source, str) or not self.capacity_source.strip()):
             raise ContextError('context_limits_unverified')
+        if self.input_tokens is None:
+            return None
         return min(self.input_tokens, self.context_window - self.response_tokens)
 
 
@@ -252,7 +259,7 @@ class ContextBuilder:
 
     def _assemble(self, scope, turn_id, limits, snapshot, inputs):
         ceiling = limits.input_limit()
-        if inputs.get('character'):
+        if ceiling is not None and inputs.get('character'):
             # Reserve the complete owner persona separately from the existing
             # conversation budget, bounded by the reviewed model capacity.
             ceiling = min(limits.context_window - limits.response_tokens,
@@ -318,7 +325,7 @@ class ContextBuilder:
                 result['tools'] = inputs['tools']
             return result
         def fits():
-            return estimate(request()) <= ceiling
+            return ceiling is None or estimate(request()) <= ceiling
         if not fits():
             logging.getLogger(__name__).warning('Youmi context budget exceeded (estimated=%d limit=%d tools=%d)',
                 estimate(request()), ceiling, len(inputs['tools']))

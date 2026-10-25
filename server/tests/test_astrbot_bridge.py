@@ -127,7 +127,7 @@ class BridgeHTTPTests(unittest.IsolatedAsyncioTestCase):
     async def prepare(self, **changes):
         return await self.post('prepare', self.body | changes)
 
-    async def test_owner_persona_is_complete_in_qq_system_prompt_and_respects_external_capacity(self):
+    async def test_owner_persona_is_complete_without_bridge_budget_truncation(self):
         from server.companion import character
         prompt = '# 人设\n你是图书管理员，使用简洁文言。\n' + '保留完整示例和身份。\n' * 2200
         character.update(self.store, self.scope.owner, {'values': dict(character.YOUMI_V1, background=prompt),
@@ -137,8 +137,8 @@ class BridgeHTTPTests(unittest.IsolatedAsyncioTestCase):
         self.assertIn(prompt, prepared['system_prompt'])
         self.assertGreater(len(json.dumps(prepared, ensure_ascii=False).encode()), 65536)
         self.bridge['models']['ci-model']['context_window'] = 32768
-        response = await self.post('prepare', self.body | {'source_message_id': 'over-capacity'}, 422)
-        self.assertEqual(response['error']['code'], 'context_persona_over_budget')
+        prepared = await self.prepare(source_message_id='native-capacity')
+        self.assertIn(prompt, prepared['system_prompt'])
 
     def completion(self, prepared, **changes):
         return {'turn_token': prepared['turn_token'], 'completion_id': 'completion-a',
@@ -249,10 +249,20 @@ class BridgeHTTPTests(unittest.IsolatedAsyncioTestCase):
         self.auth.scope = replace(self.scope, credential_version=2)
         await self.post('check', {'turn_token': prepared['turn_token'], 'final_text': '你好'}, 403)
 
-    async def test_unreviewed_model_and_excessive_tool_budget_rejected(self):
+    async def test_unreviewed_model_rejected(self):
         await self.post('prepare', self.body | {'model': 'client-made-up'}, 409)
-        await self.post('prepare', self.body | {'external_input_bytes': 24575}, 409)
         self.assertEqual(self.count('mia_astrbot_turns'), 0)
+
+    async def test_large_image_history_metadata_does_not_block_prepare_or_delivery(self):
+        self.bridge['models']['ci-model']['input_tokens'] = 1
+        for index, history_bytes in enumerate((370458, 2000000)):
+            prepared = await self.prepare(source_message_id=f'image-history-{index}',
+                                          external_input_bytes=history_bytes)
+            self.assertEqual(prepared['status'], 'prepared')
+            completion = self.completion(prepared, completion_id=f'image-reply-{index}')
+            await self.claim(completion)
+            result = await self.post('complete', completion)
+            self.assertEqual(result['status'], 'completed')
 
     async def test_reviewed_provider_qualified_model_name(self):
         self.bridge['models']['provider/model-v1'] = self.bridge['models']['ci-model']

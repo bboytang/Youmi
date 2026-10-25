@@ -129,7 +129,7 @@ class AstrBotHandler:
             raise ValueError()
         if not isinstance(data['query_text'], str) or not 0 < len(data['query_text']) <= 4096:
             raise ValueError()
-        if type(data['external_input_bytes']) is not int or not 0 <= data['external_input_bytes'] <= 1000000:
+        if type(data['external_input_bytes']) is not int or data['external_input_bytes'] < 0:
             raise ValueError()
         return digest(['qq', data['bot_uin'], data['conversation_key'], data['origin'], data['source_message_id']])
 
@@ -249,9 +249,17 @@ class AstrBotHandler:
         profile = self.bridge['models'].get(data['model'])
         if profile is None:
             raise TurnConflict('model_capacity_unverified', 409)
-        limits = ContextLimits(data['model'], profile['context_window'] - data['external_input_bytes'], profile['response_tokens'],
-            profile['capacity_source'], min(profile['input_tokens'], profile['context_window'] - profile['response_tokens'])
-            - data['external_input_bytes'])
+        # AstrBot owns history/media handling and the provider's context limit.
+        # Serialized image bytes are not a model token budget.
+        limits_factory = getattr(ContextLimits, 'without_input_budget', None)
+        if limits_factory is not None:
+            limits = limits_factory(data['model'], profile['context_window'], profile['response_tokens'],
+                                    profile['capacity_source'])
+        else:
+            # Older installed ContextBuilder versions only support the native
+            # model window, without a separate bridge input allowance.
+            limits = ContextLimits(data['model'], profile['context_window'], profile['response_tokens'],
+                                   profile['capacity_source'], profile['context_window'] - profile['response_tokens'])
         limits.input_limit()
         session = digest(['qq', data['bot_uin'], data['conversation_key']])
         with self.store.lock:

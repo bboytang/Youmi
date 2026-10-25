@@ -12,7 +12,6 @@
     "REPLACE_EXACT_ASTRBOT_MODEL": {
       "context_window": 32768,
       "response_tokens": 2048,
-      "input_tokens": 24576,
       "capacity_source": "REPLACE_WITH_ACTUAL_PROVIDER_CONFIG_AND_REVIEWED_CAPACITY_SOURCE"
     }
   }
