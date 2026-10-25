@@ -13,7 +13,7 @@ import subprocess
 BASE = 'cb6c1388c128f1476a952fcf451bfc1a1ff208dc'
 UPDATED = ('affect.py', 'character.py', 'context.py', 'reply.py', 'features.py',
            'memory.py', 'management.py', 'schema.py', 'astrbot_api.py')
-ADDED = ('emotional_system.py', 'schema-v9.sql', 'schema-v10.sql')
+ADDED = ('emotional_system.py', 'schema-v9.sql', 'schema-v10.sql', 'memory_runtime.py')
 
 
 def runtime_text(name, source, legacy):

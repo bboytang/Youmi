@@ -4,6 +4,7 @@ on:
     paths:
       - 'server/companion/embedding.py'
       - 'server/companion/semantic.py'
+      - 'server/companion/memory_runtime.py'
       - 'server/companion/retrieval.py'
       - 'server/companion/context.py'
       - 'server/companion/reply.py'
@@ -40,6 +41,7 @@ on:
     paths:
       - 'server/companion/embedding.py'
       - 'server/companion/semantic.py'
+      - 'server/companion/memory_runtime.py'
       - 'server/companion/retrieval.py'
       - 'server/companion/context.py'
       - 'server/companion/reply.py'

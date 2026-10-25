@@ -14,6 +14,7 @@ from .authorization import AuthenticatedScope, PrivateAuthorizationRequired, req
 from .context import ContextBuilder, ContextError, ContextLimits, packed
 from .embedding import DIMENSION, MODEL_KEY, REVISION, EmbeddingUnavailable, SemanticEncoder
 from .semantic import SemanticMemoryIndex
+from .memory_runtime import YoumiMemoryRuntime
 from .model_requests import model_requests
 
 
@@ -153,7 +154,7 @@ def builder_for(store):
         return ContextBuilder(UnavailableIndex())
     with _lock:
         if store not in _builders:
-            _builders[store] = ContextBuilder(SemanticMemoryIndex(store, _encoder))
+            _builders[store] = ContextBuilder(YoumiMemoryRuntime(SemanticMemoryIndex(store, _encoder)))
         return _builders[store]
 
 
