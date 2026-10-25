@@ -27,7 +27,7 @@ class OfflineEncoder:
     def encode(self, text, query=False):
         with self.lock:
             if self.encoder is None:
-                directory = os.environ.get('MIA_EMBEDDING_DIR')
+                directory = os.environ.get('YOUMI_EMBEDDING_DIR') or os.environ.get('MIA_EMBEDDING_DIR')
                 if not directory:
                     raise EmbeddingUnavailable('embedding_assets_unconfigured')
                 self.encoder = SemanticEncoder(directory)
@@ -128,7 +128,8 @@ def _configured_limits(config, model, base_url, response_tokens):
 
 def _reviewed_profile(provider, model, base_url, response_tokens):
     try:
-        profile = json.loads(Path(os.environ['MIA_CONTEXT_PROFILE_FILE']).read_text(encoding='utf-8'))
+        profile_path = os.environ.get('YOUMI_CONTEXT_PROFILE_FILE') or os.environ['MIA_CONTEXT_PROFILE_FILE']
+        profile = json.loads(Path(profile_path).read_text(encoding='utf-8'))
         if (profile['provider_module'] != type(provider).__module__
                 or profile['model'] != model
                 or profile['base_url'].rstrip('/') != base_url):

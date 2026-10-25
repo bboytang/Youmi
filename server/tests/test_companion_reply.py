@@ -98,6 +98,12 @@ class ReplyTests(unittest.IsolatedAsyncioTestCase):
         await self.index.rebuild_batch(self.scope, self.auth)
         return marker
 
+    async def test_youmi_profile_environment_takes_precedence_with_legacy_fallback(self):
+        with patch.dict(os.environ, {'YOUMI_CONTEXT_PROFILE_FILE': str(self.profile),
+                                     'MIA_CONTEXT_PROFILE_FILE': str(self.profile) + '.absent'}):
+            turn = await reply.prepare(self.conn, [], 0)
+            self.assertEqual(turn.bundle.limits.context_window, 16384)
+
     def append_tools(self, count=1, prefix='call', text='晴天'):
         self.conn.dialogue.dialogue.append(dto('assistant', calls=[{'id': f'{prefix}-{i}', 'type': 'function',
             'function': {'name': 'weather', 'arguments': '{}'}} for i in range(count)]))

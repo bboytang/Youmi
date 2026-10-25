@@ -22,7 +22,8 @@ PREIMAGES = {
 }
 RENAMES = {'MiaDeviceAuthorizationController': 'YoumiDeviceAuthorizationController',
            'MiaDeviceAuthorizationService': 'YoumiDeviceAuthorizationService',
-           'MiaCompanionManagementController': 'YoumiCompanionManagementController'}
+           'MiaCompanionManagementController': 'YoumiCompanionManagementController',
+           'MiaChatAuthorizationService': 'YoumiChatAuthorizationService'}
 
 
 def renamed(name):
@@ -32,7 +33,7 @@ def renamed(name):
 
 
 def class_names(raw):
-    """Rewrite only the three own type names in UTF8 constant-pool entries."""
+    """Rewrite only the listed own type names in UTF8 constant-pool entries."""
     if raw[:4] != b'\xca\xfe\xba\xbe':
         raise ValueError('Invalid class file')
     count = struct.unpack_from('>H', raw, 8)[0]

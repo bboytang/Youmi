@@ -160,7 +160,7 @@ class NativeLane:
                 loop.call_soon_threadsafe(deliver, value, error)
             except RuntimeError:
                 pass  # Late completion is reconciled on the next process start.
-        threading.Thread(target=run, daemon=True, name='mia-memory-extractor').start()
+        threading.Thread(target=run, daemon=True, name='youmi-memory-extractor').start()
         return await asyncio.wait_for(future, timeout)
 
 
@@ -181,7 +181,7 @@ class MemoryWorker:
 
     async def start(self):
         await asyncio.to_thread(self.jobs.recover)
-        self.task = asyncio.create_task(self.run(), name='mia-memory-worker')
+        self.task = asyncio.create_task(self.run(), name='youmi-memory-worker')
 
     async def submit(self, event):
         if self.closing:

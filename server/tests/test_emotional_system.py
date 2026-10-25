@@ -184,14 +184,18 @@ class EmotionalSystemTests(unittest.TestCase):
                 target = classes / manager.renamed(name).removeprefix('BOOT-INF/classes/')
                 target.parent.mkdir(parents=True, exist_ok=True)
                 target.write_bytes(bytecode(manager.renamed(name) + '-replacement'))
+            archive.writestr(manager.PREFIX + 'service/impl/MiaChatAuthorizationService.class',
+                             bytecode('MiaChatAuthorizationService'))
             archive.writestr('BOOT-INF/classes/custom/keep.txt', b'original customization')
         output = Path(self.temp.name) / 'candidate.jar'
         with patch.object(manager, 'PREIMAGES', preimages):
             report = manager.prepare(original.getvalue(), classes, output)
         with zipfile.ZipFile(output) as archive:
             self.assertEqual(archive.read('BOOT-INF/classes/custom/keep.txt'), b'original customization')
-            self.assertTrue(all('MiaDeviceAuthorization' not in name for name in archive.namelist()))
-        self.assertEqual(len(report['changed_entries']), len(manager.PREIMAGES))
+            self.assertTrue(all('/Mia' not in name for name in archive.namelist()))
+            self.assertEqual(archive.read(manager.PREFIX + 'service/impl/YoumiChatAuthorizationService.class'),
+                             bytecode('YoumiChatAuthorizationService'))
+        self.assertEqual(len(report['changed_entries']), len(manager.PREIMAGES) + 1)
         with self.assertRaisesRegex(ValueError, 'Unreviewed'):
             manager.prepare(original.getvalue(), classes, Path(self.temp.name) / 'rejected.jar')
 
