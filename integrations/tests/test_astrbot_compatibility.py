@@ -294,6 +294,7 @@ async def test_youmi_asr_fallback_uses_original_record_and_identity_once(setup, 
     event.message_obj.raw_message = {'message': [{'type': 'record', 'data': {'file': 'original-ptt'}}]}
     original = copy.deepcopy(event.message_obj.raw_message)
     event.message_obj.message = [Record(file='original-ptt')]
+    event.message_str = event.message_obj.message_str = ''
     bot.call_action = AsyncMock(side_effect=[RuntimeError('QQ error 9'), {'base64': 'bounded-fixture-wav'}])
     call = connector.client.call
     async def bridge(action, body):
