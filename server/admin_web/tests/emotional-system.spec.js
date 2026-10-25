@@ -57,7 +57,7 @@ test('failed configuration save retains the draft and never reports success', as
   });
   await page.getByRole('switch', { name: '启用情感系统' }).click();
   await page.getByRole('button', { name: '保存配置', exact: true }).click();
-  await expect(page.getByRole('alert')).toContainText('操作结果未确认');
+  await expect(page.getByRole('alert').filter({ hasText: '操作结果未确认' })).toBeVisible();
   await expect(page.getByText('有未保存的配置')).toBeVisible();
   await expect(page.locator('.el-message--success')).toHaveCount(0);
 });
