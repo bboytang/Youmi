@@ -25,3 +25,14 @@
 - 产品提交：`37f5680c1738d03a7e2403e02ec360b8f4c55b43`；[首次兼容工作流](https://github.com/bboytang/Youmi/actions/runs/40241604362)。Python 3.12 的 135 项通过；Python 3.10 的新运行时 9 项通过，但 3 项既有迁移故障注入测试在清理后报 not authorized。
 - 原因及修正：这些测试用 `set_authorizer(None)` 清理注入回调，Python 3.10 下未恢复访问；改为显式返回 SQLITE_OK 的清理回调，保持原故障注入及回滚断言，不修改生产迁移、不跳过测试。
 - 本地完整后端探索跑到 485 项，但因缺少 CI 专用源文件环境变量报 16 个错误（ASR、TTS、历史 context/memory、音乐源）；没有将其记为完整通过。现有服务器工作流会准备这些固定公开源文件，完整结论以对应提交的 GitHub 结果为准。
+
+### 步骤 1 验收完成与交接
+
+- 最终验证提交：`1f781da9a990433a3dbf1b719f14043133523860`。该提交包含运行时代码 `37f5680c` 以及 Python 3.10 测试清理修正。
+- [兼容矩阵](https://github.com/bboytang/Youmi/actions/runs/40241747801)：Python 3.10/3.12 各 135 项通过。
+- [完整后端](https://github.com/bboytang/Youmi/actions/runs/40241726242)：491 项及人设传输检查通过。
+- [实际安装与真实向量链路](https://github.com/bboytang/Youmi/actions/runs/40241782031)：编码器、向量检索、混合召回、上下文预算、回复/工具及结构化提取全部通过。
+- [绑定授权](https://github.com/bboytang/Youmi/actions/runs/40241782024)：Java 192 项及 JAR 构建通过；[Manager 基线](https://github.com/bboytang/Youmi/actions/runs/40241781900)：原有 150 项和基线复现 4 项通过。
+- diff 已检查；本次代码与测试单独提交，用户已有 10 个修改文件和 YOUMI_ASTRBOT/ 保留未提交。
+- 步骤 1 计划内兼容验收完成；不等于上游核心已移植。步骤 2–7 未完成，真实终端与生产切换未执行；没有 schema 变更、数据库备份或真实消息。
+- 下一步：按 handoff.md 的仓储适配入口实施步骤 2，完成后继续更新记录与交接，不需要重复询问是否继续开发。
