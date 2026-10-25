@@ -93,3 +93,9 @@
 - 官方Meme包源固定77f976826f058e566b7a84035774192871b6baac。原生community安装先因加速源403/GitHub超时失败，未创建图片；改从同SHA codeload取得ZIP，经原生预检/确认导入398张/19分类，再通过原生规则API保存默认包。ZIP指纹54744f3a…4443e0dc完整值见生产记录；overwrite=false，只有空builtin-default被原生导入器移除，无用户图库被覆盖，没有第二个图库/Embedding或自制选图器。
 - 原生API确认默认包official-001。真实重启AstrBot容器后，PID/启动时刻变化，两个插件/398图/规则保持，SnowLuma get_status online=true，反向WS自动重连；QQ/SnowLuma进程未重启。第一探针超时，服务就绪后验证通过；不掩盖首个探针失败。SnowLuma/QQ冷重启仍未验。
 - 只读owner会话数量为1；token未读取，等待用户明确选择是否可同机复用。07:02:55好友列表仍为0，已告知用户添加专用QQ。共享人格/记忆、QQ真实收发/语音/图片/工具/主动/原App双端仍未验证，不能把基础连接、fixture或资源安装当整体验收。
+
+## 2026-10-25 12:40 UTC 真实无回复故障
+
+- 用户授权共享并重新登录后，仅在主机内走正常virtual/exchange签发独立grant、绑定日常QQ；同库授权读取200，未映射403、错误Bearer401。
+- 新增独立6186 HTTPS网关，保留原443并隔离两后台localStorage token，用户放行云防火墙后外网200/TLS有效。原生鉴权保留，不重置用户密码。
+- 用户真实QQ两次无回复；容量修正后仍失败。追查发现旧生产ContextBuilder的mia_context/mia_affect与新API不兼容。新增固定b51be7e真实源码/hash回归，修复前两项400，修复后38桥接测试全部通过。正继续本地act及生产候选部署，尚无真实QQ回复成功证明。

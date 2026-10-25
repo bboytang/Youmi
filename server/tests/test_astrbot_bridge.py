@@ -4,7 +4,11 @@ import asyncio
 from dataclasses import replace
 from datetime import datetime, timedelta, timezone
 import json
+import hashlib
+import importlib.util
+import os
 from pathlib import Path
+import sys
 import tempfile
 import time
 from types import SimpleNamespace
@@ -133,6 +137,54 @@ class BridgeHTTPTests(unittest.IsolatedAsyncioTestCase):
 
     def count(self, table):
         return self.store.db.execute('SELECT COUNT(*) FROM ' + table).fetchone()[0]
+
+    def legacy_context(self):
+        path = Path(os.environ['YOUMI_LEGACY_CONTEXT_SOURCE'])
+        self.assertEqual(hashlib.sha256(path.read_bytes()).hexdigest(),
+            'd789354029972261d2ec934d242ee639edd3dd4511e9e7578b03293c865e0214')
+        name = 'server.companion._astrbot_legacy_context_fixture'
+        spec = importlib.util.spec_from_file_location(name, path)
+        module = importlib.util.module_from_spec(spec)
+        sys.modules[name] = module
+        self.addCleanup(sys.modules.pop, name, None)
+        spec.loader.exec_module(module)
+        self.handler.builder = module.ContextBuilder(self.builder.index)
+        return module
+
+    async def test_real_legacy_context_contract_prepares_and_completes(self):
+        legacy = self.legacy_context()
+        with patch('server.companion.astrbot_api.ContextLimits', legacy.ContextLimits), \
+                patch('server.companion.astrbot_api.ContextError', legacy.ContextError):
+            prepared = await self.prepare()
+            self.assertEqual(prepared['dynamic_context']['memory_status'], 'no_match')
+            body = self.completion(prepared)
+            await self.claim(body)
+            result = await self.post('complete', body)
+            self.assertEqual(result['memory_job']['status'], 'accepted')
+            self.assertEqual(result, await self.post('complete', body))
+        self.assertEqual(self.count('mia_jobs'), 1)
+
+    async def test_real_legacy_context_affect_projection_commits_once(self):
+        legacy = self.legacy_context()
+        self.store.snapshot(self.scope.owner)
+        features.update(self.store, self.scope.owner, {'companion_emotion': True})
+        self.auth.models.update(selected_module={'LLM': 'fixture'}, LLM={'fixture': {'type': 'fixture'}})
+        llm = SimpleNamespace(create_instance=lambda *args: SimpleNamespace())
+        with patch('server.companion.astrbot_api.ContextLimits', legacy.ContextLimits), \
+                patch('server.companion.astrbot_api.ContextError', legacy.ContextError), \
+                patch.dict('sys.modules', {'core.utils.llm': llm}), \
+                patch('server.companion.affect.request_appraisal',
+                      return_value='{"feeling":"warm","intensity":1,"quote":"喜欢蓝色"}'):
+            prepared = await self.prepare()
+            self.assertEqual(prepared['affect_status'], 'projected')
+            self.assertIn('mia_affect', prepared['dynamic_context'])
+            self.assertIn('affect_expression_guidance', prepared['dynamic_context'])
+            body = self.completion(prepared)
+            await self.claim(body)
+            await self.post('complete', body)
+            await self.post('complete', body)
+        self.assertEqual(affect.state(self.store, self.scope.owner)['version'], 1)
+        self.assertEqual(self.count('mia_affect_turns'), 1)
 
     async def test_service_credential_and_tls_are_required(self):
         await self.post('prepare', self.body, 401, 'wrong')

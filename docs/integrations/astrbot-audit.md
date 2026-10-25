@@ -1,5 +1,13 @@
 # AstrBot 融合审计
 
+## 2026-10-25 12:40 UTC：真实 QQ 无回复故障补审
+
+生产 context.py 的 SHA256 为 `d789354029972261d2ec934d242ee639edd3dd4511e9e7578b03293c865e0214`，与公开提交 `b51be7e770161fe759a192a2996031ebba5e54dc` 完全一致，实际输出 `mia_context/mia_affect`。桥接仅识别当前仓库 `youmi_context/youmi_affect`，导致 prepare 返回400，且会漏掉旧版情绪投影。此前入口补丁测试未覆盖这一生产者契约，是本次审计遗漏。
+
+修复仅桥接读取：接受唯一的已审计上下文族并配对情绪字段，未知/混合契约拒绝。新增测试加载该提交未修改的真实 ContextBuilder 并核验SHA；修复前两项均400，修复后38项桥接测试通过，含旧版情绪只提交一次。不能将这一回归结果称为真实QQ成功；待本地act及候选镜像部署后继续验证。
+
+原owner重新登录并明确授权后，已在主机内经正常virtual/exchange签发独立grant；同owner读取功能/记忆接口200，未映射身份403、错误服务Bearer401。模型凭据仅同机复用。AstrBot HTTPS管理入口6186已实测外网200且TLS有效，原生JWT鉴权保留；没有覆盖用户修改后的密码。
+
 审计日期：2026-10-25。此文件先于实现形成，验收结果另见 acceptance；源码核查不等于 QQ 真机验证。
 
 部署时补充实物核查：固定 SnowLuma digest 的 `/root/start.sh` 与镜像 WorkingDir 均指向 `/app/snowluma-data`，不是任务书示例中的 `/app/data`；Compose 已据此修正。原启动脚本先chown再以root创建runtime.json，实际触发daemon EACCES；只修新runtime文件1000:1000并重启daemon子进程即可，QQ进程不受影响。生产已获授权切换到V8及两个sidecar，实际镜像/数据校验/插件与真实模型证明见[部署记录](astrbot-production-deployment.md)；下文“未部署”和V7为最初只读审计快照。

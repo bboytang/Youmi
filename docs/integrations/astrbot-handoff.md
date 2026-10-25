@@ -1,5 +1,11 @@
 # AstrBot 融合交接记录
 
+**12:40 UTC 当前接手点（覆盖以下历史状态）：** 用户已明确授权记忆共享并重新登录，独立QQ grant已走正常virtual/exchange签发、绑定已配置；原owner接口读取200及越权403/错误服务token401已实测。无需再次询问授权或登录。AstrBot后台 https://43.143.230.174:6186/ 已外网TLS200；用户已放行6186，不要重置其后台密码。
+
+两次真实QQ消息仍无回复。桥接容量先调整为已核实的deepseek-flash 1M上下文、262144保守UTF8字节输入上限；随后查明生产ContextBuilder仍输出mia_context/mia_affect，新API硬读youmi字段导致400。兼容修复及两项真实旧源码回归已完成，38桥接测试通过；接下来提交并本地act backend，候选构建仅更新API、切换voice容器，再验证实际prepare和QQ。不能宣称QQ已成功。
+
+生产release仍为 /opt/xiaozhi-server/astrbot-fusion-e87596a6；实际镜像/插件SHA以部署记录为准。原App角色/模型/音色及数据卷保持，用户明确不要新增备份。以下待授权/空bindings等段落均是历史，已由以上状态覆盖。
+
 **07:03 UTC 当前接手点：** 代码55e9428e本地act connector成功（29集成+Meme1045/1skip/85subtests），已上线并原生reload。官方Meme素材固定77f9768，经原生导入398图/19分类，默认规则已保存；首次网络下载失败后用同提交codeload原档导入，未重造图片管理。真实AstrBot容器重启证明插件、图库/规则保留、QQ仍online且反向WS自动重连；SnowLuma/QQ冷重启未验。
 
 **待用户动作：** 只查到1个有效原owner后台会话，已询问可否仅同机复用它走正常virtual/exchange；尚无答复，token未读取、grant未签发，bindings为空，QQ不能使用原App私有上下文。好友列表仍为0，已通知用户加专用QQ。已有生产/模型Key同机复用授权不必重问；此处owner会话的明确问题保持待答，不绕过当前Scope。收到答复后继续原生授权和T01–T30真机联调，不能把任务标完成。临时HTTPS桌面已关闭并恢复原Nginx哈希。

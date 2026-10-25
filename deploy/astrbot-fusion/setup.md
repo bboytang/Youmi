@@ -77,3 +77,7 @@ AstrBot 添加 OneBot v11 adapter，监听 `0.0.0.0:6199`，Token 两端一致�
 主动聊天沿用 AstrBot cron 的静默/限频/工具权限设置；Connector 不自建调度器。原生 cron 在 `on_agent_begin` 注入 scheduled 上下文，禁止把唤醒提示提交为用户事实。Meme 的候选/辅助模型/独立插件输出范围按其原配置逐项验收，不能说所有第三方插件自动兼容。
 
 健康路由需 service token，只证明 bridge/worker 摘要；不等于 QQ 在线、供应商可用或手机收到。固定 AstrBot 的 STT 会在 INFO 输出转写，生产将其 `log_level` 设为 `WARNING`，关闭包含正文的调试/trace导出。后端桥接可独立保留 action/turn_key/耗时日志，避免开启完整请求正文。STT失败由Connector发一次有claim保护的文字提示，不保存假转写；后端或授权不可用时停止私有生成。
+
+## 当前主机的 HTTPS 管理入口
+
+AstrBot 为 https://43.143.230.174:6186/ ，保持原生登录/JWT。`astrbot-gateway.conf` 在现有Manager Nginx的http块中include，复用主机已有TLS只读挂载，新增6186端口映射；原443/8002 server保留。不要将两个后台放在同一origin，否则它们的localStorage token会冲突。当前生产override同时只读挂载追加include的nginx.conf与本文件；Nginx -t和Compose config通过后仅重建web容器。证书路径是当前主机实际路径，其他主机需提供自己的证书。后台初始密码不进入仓库，也不覆盖用户修改后的密码。

@@ -62,8 +62,14 @@ def backend(cache):
     if not legacy.exists():
         url = 'https://raw.githubusercontent.com/bboytang/Youmi/a30a5081bfa3c08e7387b9f5d9be77bd957e8175/server/companion/memory.py'
         legacy.write_bytes(urllib.request.urlopen(url, timeout=30).read())
+    legacy_context = fixtures / 'context-b51be7e.py'
+    if not legacy_context.exists():
+        url = ('https://raw.githubusercontent.com/bboytang/Youmi/'
+               'b51be7e770161fe759a192a2996031ebba5e54dc/server/companion/context.py')
+        legacy_context.write_bytes(urllib.request.urlopen(url, timeout=30).read())
     upstream = source('xiaozhi', cache)
-    env = os.environ | {'MIA_LEGACY_MEMORY_SOURCE': str(legacy), 'MIA_MUSIC_TEST_SOURCE': str(
+    env = os.environ | {'MIA_LEGACY_MEMORY_SOURCE': str(legacy),
+        'YOUMI_LEGACY_CONTEXT_SOURCE': str(legacy_context), 'MIA_MUSIC_TEST_SOURCE': str(
         upstream / 'main/xiaozhi-server/plugins_func/functions/play_music.py'), 'YOUMI_TTS_TEST_SOURCE': str(
         upstream / 'main/xiaozhi-server/core/providers/tts/huoshan_double_stream.py')}
     run(sys.executable, '-m', 'unittest', 'discover', '-s', 'server/tests', '-v', env=env)

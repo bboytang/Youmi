@@ -272,9 +272,15 @@ class AstrBotHandler:
                          and not suppressed and not skip_memory)
         bundle = await self.builder.build(scope, ledger.authorization, key, data['query_text'],
             limits=limits, role=models.get('prompt', ''), session_id=session if user_evidence else None)
+        envelope = json.loads(bundle.request()['messages'][1]['content'])
+        context_keys = set(envelope) & {'youmi_context', 'mia_context'}
+        if len(context_keys) != 1:
+            raise ValueError('unreviewed_context_contract')
+        context_key = context_keys.pop()
+        affect_key = context_key.replace('_context', '_affect')
         proposal, affect_status = None, 'not_applicable'
         inputs = json.loads(bundle.inputs_json)
-        current = inputs.get('youmi_affect')
+        current = inputs.get(affect_key)
         if current and user_evidence:
             from .affect import parse_appraisal, request_appraisal
             try:
@@ -305,7 +311,7 @@ class AstrBotHandler:
         if bundle.snapshot is None:
             raise TurnConflict('context_snapshot_unavailable', 503)
         messages = bundle.request()['messages']
-        dynamic = json.loads(messages[1]['content'])['youmi_context']
+        dynamic = json.loads(messages[1]['content'])[context_key]
         dynamic.update(input_origin=data['origin'], source_kind=data['source_kind'], user_evidence=user_evidence)
         if notice:
             dynamic['memory_action_notice'] = notice
@@ -315,7 +321,7 @@ class AstrBotHandler:
         dynamic['memory_status'] = ('disabled' if disabled else 'unavailable' if dynamic['memory_status'] == 'unavailable'
                                     else 'matched' if dynamic['facts'] else 'no_match')
         system = messages[0]['content']
-        projected_affect = json.loads(bundle.inputs_json).get('youmi_affect')
+        projected_affect = json.loads(bundle.inputs_json).get(affect_key)
         if projected_affect:
             from .affect import guidance
             expression = guidance(projected_affect)
