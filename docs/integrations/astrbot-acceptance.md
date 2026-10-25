@@ -1,5 +1,12 @@
 # T01–T30 执行与验收记录
 
+**14:27 UTC 当前接手点：** QQ文字回复、1个真实记忆job最终committed/1条active事实/1次情绪提交、正常同owner管理读取200已通过。最新SnowLuma v2.1.0固定8fc68c0，Node24.21.0；本地act原生桥接272/1skip、OneBot1576、协议1293、SQLite19通过。原生迁移30/30旧消息ID和原媒体记录保留、quick_check=ok、QQ登录/反向WS恢复。旧v1.10.1发送回执修复是历史，当前已升级。
+
+QQ自带ASR对新语音仍返回error9，不能宣称已修好。已实现降级：原生get_record转WAV→有真实binding/Scope及前后授权检查的Youmi transcribe→复用原doubao_stream auth/framing/parser→临时Plain→唯一AstrBot Agent/标准回合。凭据只在原Youmi后端，不新建ASR服务/改变原App设置。真实已有语音的HTTP transcribe已200，0.947秒/6字，无QQ重放或记忆副作用；手机新语音整链正在等用户反馈。
+
+语音后端镜像已换 `mia-xiaozhi-server:astrbot-494f0bab`（ID9c1ce637…68cb）；Connector main/client核对原55e哈希后原子替换并重启AstrBot，健康通过。494f0bab本地act backend461+98+39/Compose通过；77d1a744本地act Connector31、Meme1045/1skip/85subtests通过。中途19项Meme因本机磁盘不足失败；仅清本任务公开下载重复件/可下载Action缓存后复跑通过，没有改Meme或原图库。生产没新增备份，旧App角色/音色及数据卷保留。
+
+
 **13:32 UTC 最新验收：** 用户确认新消息收到回复。固定已完成回合（创建于13:26:35 UTC）实查为completed，唯一记忆job=1且worker最终committed，唯一情绪提交=1，来源关联长期事实=1（confirmed=true、state=active）；正常授权manage/list返回200且包含同一条事实。SQLite quick_check=ok。没有将接口最初的accepted/pending误当已保存，也没有导出私聊或事实正文。生产原主机证据为qq-real-memory-proof.json，integration-current.json已同步。
 
 这证明真实QQ文字→AstrBot发送→Youmi同owner保存/管理读取链路通过；尚不等于原App/iOS界面召回、连续10轮或手机媒体全项通过。当前已请用户发简短语音，继续验原生转写及当前音色的实际QQ收发/播放。原API/Connector/镜像无新代码变化，沿用既有本地act证据。
@@ -67,14 +74,14 @@ v1.14.11只作只读候选核查，含消息缓存迁移，未部署；选择最
 
 ## 本地复现
 
-需要 Python3.12隔离venv、Docker、act0.2.89、JDK21、Maven、git、openssl/keytool；首次拉依赖需要可达网络。固定外部源码按 versions.json 拉取，仅测试缓存，不修改第三方仓库。
+需要 Python3.12隔离venv、Docker、act0.2.89、JDK21、Maven、git、openssl/keytool；新增SnowLuma job还需Node24.21.0及上游固定pnpm11.25.0；首次拉依赖需要可达网络。固定外部源码按 versions.json 拉取，仅测试缓存，不修改第三方仓库。
 
 ```sh
 python3 -m venv /tmp/youmi-fusion-tests
 export PATH=/tmp/youmi-fusion-tests/bin:$PATH
 export YOUMI_TEST_SOURCE_DIR=/tmp/youmi-fusion-sources
 export YOUMI_ACT_RESULTS=/tmp/youmi-fusion-results
-scripts/ci/run_astrbot_act.sh backend connector manager
+scripts/ci/run_astrbot_act.sh backend connector manager manager-legacy snowluma
 ```
 
 脚本用 `-P ubuntu-latest=-self-hosted`，是act本地执行工作流，不是容器化ubuntu runner的等价性声明，也不是GitHub run。manager启动任务专用MySQL/Redis（tmpfs、回环端口），退出仅down这两个测试服务且不带-v；3306/6379必须空闲。Maven可选 `YOUMI_MAVEN_REPO` 与受控 `YOUMI_MAVEN_SETTINGS`，不得提交含代理凭据的settings。原iOS工作流依赖macOS/Xcode，Linux act无法执行，需要有Xcode的本地Mac，未伪造运行链接。

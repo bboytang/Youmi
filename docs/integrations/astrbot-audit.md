@@ -42,7 +42,7 @@ QQ登录后补充音频核查：固定SnowLuma的`actions/extended.ts`真实注�
 |---|---|---|
 | AstrBot | v4.29.3 | f61a7f42696da6df25dc7a249ec9b8d54ed9da18 |
 | Meme Manager | metadata v5.2.5 | cf18e81c84fb3a713320addd57e56014d499f65c |
-| SnowLuma | v1.10.0 | 7f391e065edb0a138b25c0456ed4151afc247ceb |
+| SnowLuma（当前运行） | v2.1.0 | 8fc68c0ec3580ac6012f770f948c0f91fdb74fff |
 | XiaoZhi 干净安装/CI preimage | v0.9.7 | 87c6df77b0220ddbd8fc804f984f83f69f3225e5 |
 
 源码通过独立 checkout 检查，不放入项目 vendor 目录，不修改第三方源码。固定 tag 的容器是否存在、digest 及本地运行结果在部署材料/验收中独立记录。

@@ -1,6 +1,6 @@
 {
-  "recorded_at_utc": "2026-10-25T13:33:40.018679+00:00",
-  "code_sha": "dbea27bfcc217759ca6dadf9ffa0ab5b16898ca5",
+  "recorded_at_utc": "2026-10-25T14:28:37.420584+00:00",
+  "code_sha": "77d1a7440b3acf3be954f718158f97a1248288f5",
   "base_sha": "739c509eb3f4bc231d879367b33a15a8a94c38f5",
   "branch": "feature/astrbot-fusion",
   "runner": "nektos/act local self-hosted Linux runner",
@@ -27,8 +27,8 @@
     },
     "snowluma": {
       "repo": "https://github.com/SnowLuma/SnowLuma",
-      "ref": "v1.10.1",
-      "sha": "f470b7a10cc9da2d13534ea115287a0afc781d31"
+      "ref": "v2.1.0",
+      "sha": "8fc68c0ec3580ac6012f770f948c0f91fdb74fff"
     },
     "xiaozhi": {
       "repo": "https://github.com/xinnan-tech/xiaozhi-esp32-server",
@@ -38,12 +38,13 @@
   },
   "checks": {
     "server_unittest": {
-      "passed": 454,
+      "passed": 461,
       "focused_new_tests": {
-        "server/tests/test_astrbot_bridge.py": 38,
+        "server/tests/test_astrbot_bridge.py": 41,
         "server/tests/test_astrbot_install.py": 2,
         "server/tests/test_astrbot_tts_protocol.py": 3,
-        "server/tests/test_astrbot_manager_install.py": 3
+        "server/tests/test_astrbot_manager_install.py": 3,
+        "server/tests/test_astrbot_asr_protocol.py": 4
       }
     },
     "scripts_unittest": {
@@ -53,7 +54,7 @@
       "passed": 39
     },
     "connector_fixed_source": {
-      "passed": 29,
+      "passed": 31,
       "llm_and_qq_network": "fixtures",
       "native_voice_tests": 8,
       "phone_transcription_verified": false
@@ -91,23 +92,27 @@
       "scope": "real local HTTP/SQLite/JobStore; Manager, model and worker consumption fixtures"
     },
     "snowluma_fixed_source": {
-      "bridge_passed": 46,
-      "onebot_passed": 414,
-      "native_qq_pipes": "fixtures in automated tests; production startup network receipt checked separately"
+      "bridge_passed": 272,
+      "bridge_skipped": 1,
+      "onebot_passed": 1576,
+      "protocol_passed": 1293,
+      "sqlite_passed": 19,
+      "total_passed": 3160,
+      "native_qq_network": "fixtures; live migration and ASR supplier checks recorded separately"
     }
   },
   "logs": {
     "backend": {
-      "path": "/root/tmp/youmi-act-snowluma-receipt-clean/backend.log",
-      "sha256": "c3b91895b6d54de81183caf66d73fe461d06fc5d4b5043ac760696c71b6ef63c",
-      "source_sha": "dbea27bfcc217759ca6dadf9ffa0ab5b16898ca5",
+      "path": "/root/tmp/youmi-act-youmi-asr-fallback/backend.log",
+      "sha256": "5b01079c7e9a7237638de1d3246f49076feed9f5e51402c0d4dd12a13548f80a",
+      "source_sha": "494f0babaeadc1f247311c479dd97597e9921906",
       "job": "succeeded"
     },
     "connector": {
-      "path": "/root/tmp/youmi-act-native-voice/connector.log",
-      "sha256": "3afc07146bbb5062722b76f02c7970e607cba04b52a59aed5a485090420501ac",
-      "job": "succeeded",
-      "source_sha": "55e9428e2da9b40bacc72ab36ad09122de4a7efc"
+      "path": "/root/tmp/youmi-act-youmi-asr-fallback-verified/connector.log",
+      "sha256": "d428b6efc2851d9a539085fd619d44cff96815331fe8ec8dac6c65254ddac9bf",
+      "source_sha": "77d1a7440b3acf3be954f718158f97a1248288f5",
+      "job": "succeeded"
     },
     "manager": {
       "path": "/root/tmp/youmi-act-goal-audit/manager.log",
@@ -122,9 +127,9 @@
       "source_sha": "e87596a630d33f6aec47df429ee717ff67c8c4c8"
     },
     "snowluma": {
-      "path": "/root/tmp/youmi-act-snowluma-receipt-clean/snowluma.log",
-      "sha256": "fbde491147219cda1f73f406b5c93f878d77ec5e8251d32c7113059905dd105d",
-      "source_sha": "dbea27bfcc217759ca6dadf9ffa0ab5b16898ca5",
+      "path": "/root/tmp/youmi-act-snowluma-signed-voice-final/snowluma.log",
+      "sha256": "b47bd0a28a6860aca8311a26b4f9056cc2d9f333ce80605465876bf6df76f921",
+      "source_sha": "deeccadec0a9ebba90c0c1e40b1ff56d85c3eaae",
       "job": "succeeded"
     }
   },
@@ -320,6 +325,31 @@
       "private_text_exported": false,
       "phone_app_ui_retrieval_verified": false,
       "host_proof": "qq-real-memory-proof.json"
+    },
+    "voice_fallback": {
+      "uses_existing_provider": "doubao_stream",
+      "http_status": 200,
+      "real_audio_transcription_nonempty": true,
+      "text_characters": 6,
+      "duration_seconds": 0.947,
+      "credentials_exported": false,
+      "qq_reply_replayed": false,
+      "phone_asr_to_reply_and_playback": "pending fresh user voice",
+      "voice_image": "mia-xiaozhi-server:astrbot-494f0bab",
+      "voice_image_id": "sha256:9c1ce637eb0d8a03e34786d6ef1c7a2e0aa428901b7e139470a21d54db4688cb",
+      "native_qq_asr": "real error=9; preserved failure, added existing ASR fallback"
+    },
+    "snowluma_v2": {
+      "source_sha": "8fc68c0ec3580ac6012f770f948c0f91fdb74fff",
+      "archive_sha256": "7d9a29a9f52b30987e0dcdf46993757dd4eafe993e175c8ca40435a56e0b8fbc",
+      "image_id": "sha256:8aa6624861b1ddb50fcf59fe0e00034168f92cb4be0b5712de6b28724f9ec574",
+      "node": "24.21.0",
+      "prior_message_ids_preserved": "30/30",
+      "legacy_media_records_preserved": true,
+      "database_quick_checks": "ok",
+      "qq_login_and_reverse_ws_recovered": true,
+      "native_migration_complete": true,
+      "new_agreements_recorded_via_native_api": true
     }
   },
   "production_configuration_validation": {
@@ -335,11 +365,11 @@
     "runtime_application_code_matches": "e87596a630d33f6aec47df429ee717ff67c8c4c8"
   },
   "component_verification": {
-    "connector": "55e9428e2da9b40bacc72ab36ad09122de4a7efc",
-    "backend_and_both_java": "backend dbea27bfcc217759ca6dadf9ffa0ab5b16898ca5; both Java unchanged from e87596a630d33f6aec47df429ee717ff67c8c4c8",
+    "connector": "77d1a7440b3acf3be954f718158f97a1248288f5",
+    "backend_and_both_java": "backend 494f0bab; Java unchanged from e87596a6",
     "backend_and_java_files_changed_since_verified_sha": false,
     "compose": "dbea27bfcc217759ca6dadf9ffa0ab5b16898ca5",
-    "snowluma": "dbea27bfcc217759ca6dadf9ffa0ab5b16898ca5"
+    "snowluma": "deeccade (native source v2.1.0)"
   },
   "previous_full_command": {
     "source_sha": "e87596a630d33f6aec47df429ee717ff67c8c4c8",
@@ -402,5 +432,10 @@
       "proton tsup config search hit preexisting empty /root/package.json",
       "no-config avoided tsup search but esbuild still read ancestor JSON; moved public source test cache to /tmp and passed; unrelated files preserved"
     ]
-  }
+  },
+  "asr_regression_attempts": [
+    "Focused new route trace initially treated identity key as turn token; corrected and 45 focused tests passed",
+    "First Connector fallback fixture retained unrelated initial text; voice-only fixture corrected",
+    "31 Connector passed but Meme had 19 failures due real free space <0.5GB; only task-owned re-downloadable artifacts/action cache pruned; final 1045 passed/1skip/85subtests"
+  ]
 }

@@ -139,3 +139,11 @@ v1.14.11只作只读候选核查，含消息缓存迁移，未部署；选择最
 14:10 UTC：v2.1.0/Node24已上线，消息ID30/30保留、两SQLite quick_check=ok、旧媒体2条/5索引保留，原生迁移完成/QQ自动登录/WS重连。新语音仍QQ ASR error9；get_record实测可返回24kHz mono PCM16 WAV。原生产doubao_stream配置/凭据同机复用的真实供应商探针成功识别6字。新增transcribe身份验证、有界WAV、复用真实ASR协议helpers及Connector降级，45项后端专项通过；首次新route trace误当turn_token被测试捕获并已修复。准备精确提交act backend/connector；手机ASR/TTS整链仍未通过，不用供应商探针替代。
 
 14:17 UTC：494f0bab本地act backend 461+98+39/Compose通过；Connector首次30过/1失败，新测试沿用了默认文字夹具而未清空，转写保留原文字导致断言失败。按仅语音fixture清空初始message_str，运行代码未变，重跑connector/Meme。
+
+## 2026-10-25 14:27 UTC 现有ASR降级上线
+
+**14:27 UTC 当前接手点：** QQ文字回复、1个真实记忆job最终committed/1条active事实/1次情绪提交、正常同owner管理读取200已通过。最新SnowLuma v2.1.0固定8fc68c0，Node24.21.0；本地act原生桥接272/1skip、OneBot1576、协议1293、SQLite19通过。原生迁移30/30旧消息ID和原媒体记录保留、quick_check=ok、QQ登录/反向WS恢复。旧v1.10.1发送回执修复是历史，当前已升级。
+
+QQ自带ASR对新语音仍返回error9，不能宣称已修好。已实现降级：原生get_record转WAV→有真实binding/Scope及前后授权检查的Youmi transcribe→复用原doubao_stream auth/framing/parser→临时Plain→唯一AstrBot Agent/标准回合。凭据只在原Youmi后端，不新建ASR服务/改变原App设置。真实已有语音的HTTP transcribe已200，0.947秒/6字，无QQ重放或记忆副作用；手机新语音整链正在等用户反馈。
+
+语音后端镜像已换 `mia-xiaozhi-server:astrbot-494f0bab`（ID9c1ce637…68cb）；Connector main/client核对原55e哈希后原子替换并重启AstrBot，健康通过。494f0bab本地act backend461+98+39/Compose通过；77d1a744本地act Connector31、Meme1045/1skip/85subtests通过。中途19项Meme因本机磁盘不足失败；仅清本任务公开下载重复件/可下载Action缓存后复跑通过，没有改Meme或原图库。生产没新增备份，旧App角色/音色及数据卷保留。
