@@ -109,7 +109,8 @@ class YoumiConnector(Star):
                     if not text:
                         kind = 'media'
                 if kind == 'asr' and (not text or any(isinstance(part, Record) for part in event.get_messages())):
-                    raise BridgeError('stt_unavailable', 400)
+                    event.set_extra('youmi_stt_failed', True)
+                    kind, text = 'media', ''
                 # Do not persist a vision model's caption as a user's self report.
                 query = text or '收到用户媒体，请依据本轮媒体内容回应；媒体推断不是用户自述。'
                 from astrbot.core.astr_main_agent import _select_provider
@@ -124,6 +125,11 @@ class YoumiConnector(Star):
                 prepared = await self.prepare(event, model, query, budget, kind)
                 state = TurnState(prepared, kind)
                 event.set_extra('youmi_turn', state)
+            if event.get_extra('youmi_stt_failed'):
+                await self.notice(event, state, '这段语音没能识别成功，请改发文字或稍后重试。')
+                event.stop_event()
+                event.clear_result()
+                return
             req.system_prompt = merge_system(req.system_prompt, state.prepared['system_prompt'])
             req.extra_user_content_parts[:] = [part for part in req.extra_user_content_parts
                 if not (isinstance(part, TextPart) and part.text.startswith(CONTEXT_MARKER))]
@@ -135,6 +141,23 @@ class YoumiConnector(Star):
             event.stop_event()
             event.clear_result()
             logger.warning('Youmi prepare stopped (%s)', error.code if isinstance(error, BridgeError) else 'dependency_unavailable')
+
+    async def notice(self, event, state, text):
+        """A failed transcription is a media notice, never a fabricated user turn."""
+        if state.sent:
+            return
+        checked = await self.client.call('check', {'turn_token': state.prepared['turn_token'], 'final_text': text})
+        state.final_text, state.components = checked['checked_text'], ['plain']
+        await self.client.call('claim', {'turn_token': state.prepared['turn_token'],
+            'completion_id': state.completion_id, 'final_text': state.final_text})
+        try:
+            await event.send(MessageChain([Plain(state.final_text)]))
+        except Exception:
+            await self.complete(state, 'failed')
+            raise
+        state.sent = True
+        await call_event_hook(event, EventType.OnAfterMessageSentEvent)
+        await self.complete(state)
 
     @filter.on_agent_begin(priority=100000)
     async def scheduled(self, event: AstrMessageEvent, run_context):

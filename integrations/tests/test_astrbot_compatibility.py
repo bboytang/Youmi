@@ -243,14 +243,19 @@ async def test_image_caption_never_becomes_original_user_evidence(setup):
 
 
 @pytest.mark.asyncio
-async def test_failed_stt_stops_generation_without_fabricated_transcription(setup):
+async def test_failed_stt_sends_one_notice_without_fabricated_transcription(setup, hooks):
     connector, meme, event, bot, sent = setup
     event.set_extra('youmi_primary_chat', True)
     event.message_obj.raw_message = {'message': [{'type': 'record', 'data': {}}]}
     event.message_obj.message = [Record(file='fixture.wav')]
-    await connector.request(event, ProviderRequest(model='ci-model', prompt=''))
+    with patch('astrbot.core.astr_main_agent._select_provider', new=AsyncMock(return_value=SimpleNamespace())):
+        await connector.request(event, ProviderRequest(model='ci-model', prompt=''))
+        await connector.request(event, ProviderRequest(model='ci-model', prompt=''))
     assert event.is_stopped()
-    assert not connector.client.calls and not sent
+    prepared = [body for action, body in connector.client.calls if action == 'prepare']
+    assert len(prepared) == 1 and prepared[0]['source_kind'] == 'media'
+    assert len(sent) == 1 and '改发文字' in str(sent)
+    assert len([body for action, body in connector.client.calls if action == 'complete']) == 1
 
 
 @pytest.mark.asyncio
