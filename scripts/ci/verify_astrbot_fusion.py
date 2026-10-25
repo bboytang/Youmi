@@ -92,11 +92,14 @@ def snowluma(cache):
     upstream = source('snowluma', cache)
     # Fixed upstream suites use fake QQ pipes; real receipt proof is separate.
     run('pnpm', 'install', '--frozen-lockfile', '--ignore-scripts', cwd=upstream)
-    run('pnpm', '--filter', '@snowluma/proton', 'build', '--no-config', cwd=upstream)
-    run('pnpm', '--filter', '@snowluma/bridge', 'test', cwd=upstream)
-    run('pnpm', '--filter', '@snowluma/onebot', 'test', cwd=upstream)
-    run('pnpm', '--filter', '@snowluma/protocol', 'test', cwd=upstream)
-    run('pnpm', '--filter', '@snowluma/sqlite', 'test', cwd=upstream)
+    # Use the published CLIs directly, independent of install-created bin shims.
+    proton = upstream / 'packages/proton'
+    run('node', proton / 'node_modules/tsup/dist/cli-default.js', 'src/index.ts',
+        '--format', 'esm', '--out-dir', 'dist', '--target', 'node24',
+        '--external', 'typescript', '--external', 'vite', '--no-config', cwd=proton)
+    for package in ('bridge', 'onebot', 'protocol', 'sqlite'):
+        folder = upstream / 'packages' / package
+        run('node', folder / 'node_modules/vitest/vitest.mjs', 'run', cwd=folder)
 
 
 def manager(cache, *, legacy=False):
