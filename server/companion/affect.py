@@ -82,6 +82,15 @@ def state(store, owner):
     if system['enabled']:
         result['enabled'] = True
         result['affect_system'] = system
+        basic = {key: value for key, value in system['values'].items()
+                 if emotional_system.CATALOG[key]['group'] == 'basic' and system['dimensions'][key]['enabled']}
+        dominant = max(basic, key=basic.get) if basic else 'calm'
+        feeling = {'joy': 'pleased', 'sadness': 'hurt', 'anger': 'angry', 'fear': 'guarded',
+                   'anxiety': 'guarded', 'surprise': 'curious', 'disgust': 'guarded', 'calm': 'steady'}[dominant]
+        result.update(feeling=feeling, label=LABELS[feeling],
+            valence=round((basic.get('joy', 0) - max(basic.get('sadness', 0), basic.get('anger', 0))) / 100, 4),
+            tension=max(basic.get('anger', 0), basic.get('fear', 0), basic.get('anxiety', 0)) / 100,
+            arousal=max(basic.get('joy', 0), basic.get('surprise', 0), basic.get('anxiety', 0)) / 100)
         if character:
             result['character'] = dict(character)
             for source, target in [('warmth', 'warmth'), ('closeness', 'attachment'), ('temper', 'temper')]:

@@ -23,3 +23,13 @@
 - /root/projects/Youmi/:memory:为本轮检查产生的空测试文件，删除命令被自动审批拒绝后已移至/tmp/emotional-admin-JN8Pnt/unintended-check.sqlite3；用户数据未删除。
 - GitHub服务端工作流补充既有真实ASR/TTS及旧Context夹具下载，避免全量测试因缺环境变量失败。
 - 生产未变更。完整浏览器构建、Java权限测试、精确提交工作流与生产候选审计尚待完成。
+
+## 独立分支和GitHub工作流
+
+- 本次实现独立分支feature/emotional-system，首个实现提交f918d703；前序AstrBot四个未提交文件与用户附件未提交、未覆盖。
+- 首轮后端工作流因浅克隆无法读取冻结V7 schema失败；880e2838修正fetch-depth后，https://github.com/bboytang/Youmi/actions/runs/40216809937 全量471项通过。
+- f918d703管理基线 https://github.com/bboytang/Youmi/actions/runs/40216627862 与绑定授权 https://github.com/bboytang/Youmi/actions/runs/40216627840 通过；语义向量 https://github.com/bboytang/Youmi/actions/runs/40216627842 通过。
+- 前端工作流 https://github.com/bboytang/Youmi/actions/runs/40216627844 已完成源码应用、原有前端回归及构建，浏览器依赖安装仍在进行；不记为浏览器通过。
+- 新增V8→V9失败回滚测试、旧摘要与新状态一致性测试、严格源码preimage的离线更新器。专项目前12项通过。
+- 只读核对现网Python9模块：与冻结cb6c1388源码经已审计Mia名称转换后匹配（角色常量YOUMI_V1保留）。导出仅源代码到临时候选目录，未导出密钥、配置或生产数据库。
+- 旧命名候选已在合成SQLite通过V9迁移、51维度及跨智能体隔离，尚未替换现网。

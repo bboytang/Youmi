@@ -259,6 +259,8 @@ class ContextBuilder:
             if affect.get('affect_system'):
                 from .emotional_system import expression
                 data['youmi_affect']['affect_system'] = expression(affect['affect_system'])
+                for key in ('feeling', 'label', 'valence', 'arousal', 'tension'):
+                    data['youmi_affect'].pop(key, None)
         retained = []
         omitted = {'role': False, 'fact_ids': [], 'traits': [], 'history_turns': inputs['older_turns_removed'], 'scene': False}
         def request():

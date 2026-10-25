@@ -22,3 +22,9 @@
 ## 验证约束
 
 使用/root/tmp/youmi-astrbot-venv执行实际测试。自动工作流按用户项目规则验证并给出精确提交证据，真机QQ/App另验。部署前核对当前镜像、旧命名运行源码与增量迁移；旧二进制不能直接接升级后的SQLite。
+
+## 分支与线上验证
+
+实现已在feature/emotional-system提交f918d703，CI修订880e2838。GitHub后端、管理基线、绑定授权、语义向量已通过，链接见worklog；前端仍在浏览器依赖安装步骤。最新运行代码的精确提交验证需在后续修订后补齐。
+
+离线更新器install_emotional.py只对冻结基线匹配的源码候选操作；支持legacy名称。/tmp/emotional-admin-JN8Pnt/runtime/mia_companion为已导出的生产源码候选，已应用第一轮更新并用合成库验证；后续源码修改须重建候选，不对已安装候选重复应用。生产Manager实际类型MiaCompanionManagementController，JAR路径/app/xiaozhi-esp32-api.jar，发布只能替换已核对的该class并保留其他条目。

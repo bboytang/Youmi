@@ -109,6 +109,44 @@ class EmotionalSystemTests(unittest.TestCase):
         self.now += 91 * 86400
         self.assertEqual(emotions.manage(self.store, self.owner, {'action': 'history'})['records'], [])
 
+    def test_v8_to_v9_ddl_failure_rolls_back_and_retries(self):
+        import sqlite3
+        from server.companion.schema import migrate, _schema_checksum
+        with self.store.db:
+            for table in ('mia_affect_system_history', 'mia_affect_system_turns', 'mia_affect_system'):
+                self.store.db.execute('DROP TABLE ' + table)
+            self.store.db.execute('DELETE FROM mia_schema_migrations WHERE version=9')
+        before = _schema_checksum(self.store.db)
+        self.store.db.set_authorizer(lambda action, name, *rest: sqlite3.SQLITE_DENY
+            if action == sqlite3.SQLITE_CREATE_TABLE and name == 'mia_affect_system_history' else sqlite3.SQLITE_OK)
+        with self.assertRaises(sqlite3.DatabaseError):
+            migrate(self.store.db)
+        self.store.db.set_authorizer(None)
+        self.assertEqual(_schema_checksum(self.store.db), before)
+        migrate(self.store.db)
+        self.assertEqual(self.store.db.execute('PRAGMA foreign_key_check').fetchall(), [])
+
+    def test_legacy_summary_reflects_new_current_state(self):
+        state = self.enable()
+        emotions.manage(self.store, self.owner, dict(action='adjust', version=state['version'], values={'anger': 90}))
+        self.assertEqual(affect.state(self.store, self.owner)['label'], '生气')
+
+    def test_offline_installer_preserves_audited_legacy_namespace_and_rejects_customizations(self):
+        import subprocess
+        from server.companion import install_emotional
+        root = Path(self.temp.name) / 'candidate'
+        root.mkdir()
+        for name in install_emotional.UPDATED:
+            baseline = subprocess.check_output(['git', 'show', install_emotional.BASE + ':server/companion/' + name], text=True)
+            (root / name).write_text(install_emotional.runtime_text(name, baseline, True))
+        changed = install_emotional.changes(root, legacy=True)
+        self.assertIn("inputs['mia_affect']", changed['context.py'])
+        self.assertIn('YOUMI_V1', changed['character.py'])
+        self.assertIn('from .xiaozhi_adapter import _store', changed['management.py'])
+        (root / 'context.py').write_text('custom source')
+        with self.assertRaisesRegex(ValueError, 'Unreviewed'):
+            install_emotional.changes(root, legacy=True)
+
 
 class EmotionalContextTests(unittest.IsolatedAsyncioTestCase):
     setUp = fixture.ContextBuilderTests.setUp
