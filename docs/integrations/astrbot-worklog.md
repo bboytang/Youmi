@@ -117,3 +117,5 @@
 v1.14.11只作只读候选核查，含消息缓存迁移，未部署；选择最小补丁v1.10.1，其bridge/OneBot接口源码不变、EULA/PRIVACY哈希不变。官方SnowLuma桥接/OneBot测试接入新本地act job，待精确提交验证。已请用户发真实偏好继续验发送回执/唯一记忆job，尚未将下一轮QQ记忆写入标通过。
 
 13:09 UTC：新增SnowLuma本地act首次桥接46项通过，OneBot启动因忽略install脚本后缺proton编译产物失败；补显式pnpm --filter @snowluma/proton build，再对精确提交重跑。不是OneBot测试通过，不改第三方源码。
+
+13:10 UTC：proton首次显式build被宿主既存空/root/package.json的全局配置搜索阻断；保留该无关文件，使用tsup公开--no-config参数限制构建配置范围，再跑本地act。

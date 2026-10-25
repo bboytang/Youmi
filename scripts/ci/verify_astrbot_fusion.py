@@ -92,7 +92,7 @@ def snowluma(cache):
     upstream = source('snowluma', cache)
     # Fixed upstream suites use fake QQ pipes; real receipt proof is separate.
     run('pnpm', 'install', '--frozen-lockfile', '--ignore-scripts', cwd=upstream)
-    run('pnpm', '--filter', '@snowluma/proton', 'build', cwd=upstream)
+    run('pnpm', '--filter', '@snowluma/proton', 'build', '--no-config', cwd=upstream)
     run('pnpm', '--filter', '@snowluma/bridge', 'test', cwd=upstream)
     run('pnpm', '--filter', '@snowluma/onebot', 'test', cwd=upstream)
 
