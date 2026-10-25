@@ -1,5 +1,10 @@
 # T01–T30 执行与验收记录
 
+**13:32 UTC 最新验收：** 用户确认新消息收到回复。固定已完成回合（创建于13:26:35 UTC）实查为completed，唯一记忆job=1且worker最终committed，唯一情绪提交=1，来源关联长期事实=1（confirmed=true、state=active）；正常授权manage/list返回200且包含同一条事实。SQLite quick_check=ok。没有将接口最初的accepted/pending误当已保存，也没有导出私聊或事实正文。生产原主机证据为qq-real-memory-proof.json，integration-current.json已同步。
+
+这证明真实QQ文字→AstrBot发送→Youmi同owner保存/管理读取链路通过；尚不等于原App/iOS界面召回、连续10轮或手机媒体全项通过。当前已请用户发简短语音，继续验原生转写及当前音色的实际QQ收发/播放。原API/Connector/镜像无新代码变化，沿用既有本地act证据。
+
+
 **最新验证（13:18 UTC）：** 精确代码 `dbea27bfcc217759ca6dadf9ffa0ab5b16898ca5` 的本地act backend与新增snowluma job均成功：454 server、98 scripts、39 CI辅助/Compose；原生桥接46、OneBot414。日志/hash见test-evidence。测试先因缺proton产物、宿主空package.json失败，补显式构建/限制配置搜索、将公开源码缓存移到/tmp后成功，未改宿主无关文件或第三方源码。
 
 真实TTS API复用原音色返回200、56248字节有效WAV/24kHz单声道，0.91秒；scheduled探针无QQ发送、无用户记忆/情绪。Youmi实际prepare系统上下文包含用户反馈的角色名字，角色资料未导出或更改。
@@ -29,7 +34,7 @@ v1.14.11只作只读候选核查，含消息缓存迁移，未部署；选择最
 
 | ID | 执行方式及现有结果 | 真机/生产结论与剩余验证 |
 |---|---|---|
-| T01 | B单次/并发prepare、C原始OneBot序列化/无二次send通过 | 用户确认收到过真实人格回复；旧native发送回执超时，已升级恢复；下一轮成功回执与连续10轮未验 |
+| T01 | B单次/并发prepare、C原始OneBot序列化/无二次send通过 | 用户确认新回复；实际回合completed且1个job/1次情绪提交。连续10轮尚未验 |
 | T02 | C真实ToolLoopAgentRunner两次续答，保留工具ID/参数/结果通过 | 真实web search/模型调用未验 |
 | T03 | C使用MCP CallToolResult格式、工具钩子保留；J内部权限通过 | 外部MCP成功/异常/拒权服务未连接，不宣称全项通过 |
 | T04 | C实际Meme parser/response/decorate/after，无控制标签出站通过 | 真实表情包选择与手机显示未验 |
@@ -40,7 +45,7 @@ v1.14.11只作只读候选核查，含消息缓存迁移，未部署；选择最
 | T09 | A当前配置voice/private_voice及参数保留、真实协议helpers→WAV通过 | 真实TTS API 200/WAV 24kHz单声道/56248字节，原音色不变；QQ手机播放未验 |
 | T10 | C实际Record+Plain序列化，仅一次complete通过 | 手机两种组件实际接收未验 |
 | T11 | B后台角色变化使旧快照失效；R character多Scope共用通过 | 真实后台修改后QQ下一轮未验，生产角色未改 |
-| T12 | B向原JobStore admission与status真实pending；R抽取worker回归通过 | 未从QQ保存真实偏好再用iOS检索，不能将accepted当已存事实 |
+| T12 | B向原JobStore admission与status真实pending；R抽取worker回归通过 | 真实QQ偏好job最终committed，1条active/confirmed事实，正常授权manage/list可见；iOS界面检索尚未验 |
 | T13 | B同owner既有App来源事实召回/删除通过 | fixture中的App来源不等于真实iOS交互 |
 | T14 | B原MemoryStore管理和删除使旧快照失效；R纠错/派生证据失效通过 | 双端真实纠正/删除未验 |
 | T15 | B disabled/unavailable/no_match区分通过 | DB/授权完全不可用时拒绝私有生成；无可信角色缓存，不承诺此时继续个性化回复 |

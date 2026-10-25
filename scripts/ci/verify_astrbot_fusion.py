@@ -95,6 +95,8 @@ def snowluma(cache):
     run('pnpm', '--filter', '@snowluma/proton', 'build', '--no-config', cwd=upstream)
     run('pnpm', '--filter', '@snowluma/bridge', 'test', cwd=upstream)
     run('pnpm', '--filter', '@snowluma/onebot', 'test', cwd=upstream)
+    run('pnpm', '--filter', '@snowluma/protocol', 'test', cwd=upstream)
+    run('pnpm', '--filter', '@snowluma/sqlite', 'test', cwd=upstream)
 
 
 def manager(cache, *, legacy=False):

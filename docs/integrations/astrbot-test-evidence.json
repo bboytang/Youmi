@@ -1,5 +1,5 @@
 {
-  "recorded_at_utc": "2026-10-25T13:22:32.927178+00:00",
+  "recorded_at_utc": "2026-10-25T13:33:40.018679+00:00",
   "code_sha": "dbea27bfcc217759ca6dadf9ffa0ab5b16898ca5",
   "base_sha": "739c509eb3f4bc231d879367b33a15a8a94c38f5",
   "branch": "feature/astrbot-fusion",
@@ -135,7 +135,6 @@
     "deployment_status": "local build only; must not replace customized production JAR wholesale"
   },
   "not_verified": [
-    "post-native-fix QQ send acknowledgement and single real memory job pending user message",
     "QQ phone vision/GIF/meme selection, STT, voice playback, tool loop, external MCP and proactive sends",
     "real iOS and original device shared-memory interactions",
     "macOS/Xcode iOS build and UI tests: no Mac environment available",
@@ -214,7 +213,7 @@
     "deployment": "applied on production host to original customized JAR; all other ZIP entries verified preserved"
   },
   "production": {
-    "state": "real QQ reply received; native receipt fixed; final shared-memory message acceptance pending",
+    "state": "real QQ text delivery and single active fact commit verified; phone media and App UI acceptance ongoing",
     "new_backups": false,
     "backup_cancelled_by_user": true,
     "same_host_key_reuse_authorized": true,
@@ -305,6 +304,22 @@
       "reason": "actual config had enable_id_white_list=true with bare QQ ID; native check expects unified session origin; disabled as already instructed",
       "backend_identity_checks_removed": false,
       "native_astrbot_restart_to_apply": true
+    },
+    "real_qq_memory": {
+      "verified_turn_created_at_utc": "2026-10-25T13:26:35Z",
+      "user_confirmed_received": true,
+      "turn_status": "completed",
+      "job_count": 1,
+      "worker_final_state": "committed",
+      "affect_commit_count": 1,
+      "distinct_facts": 1,
+      "fact_confirmed": true,
+      "fact_state": "active",
+      "authorized_manage_list_http": 200,
+      "same_fact_visible": true,
+      "private_text_exported": false,
+      "phone_app_ui_retrieval_verified": false,
+      "host_proof": "qq-real-memory-proof.json"
     }
   },
   "production_configuration_validation": {
@@ -347,13 +362,13 @@
   },
   "latest_production_reply": {
     "user_confirmed_received": true,
-    "snowluma_send_receipt": "timeout after 15 seconds despite actual receipt",
-    "ledger_status": "failed",
-    "associated_jobs": 0,
-    "effects_committed": false,
-    "memory_write_verified": false,
-    "native_qq_restart_in_progress": false,
-    "next_user_message_after_native_fix_pending": true
+    "ledger_status": "completed",
+    "associated_jobs": 1,
+    "job_final_state": "committed",
+    "affect_commit_count": 1,
+    "memory_write_verified": true,
+    "memory_visible_via_authorized_api": true,
+    "earlier_receipt_timeout_turn_relabelled": false
   },
   "production_legacy_context_image": {
     "tag": "mia-xiaozhi-server:astrbot-ad302096",
