@@ -5,7 +5,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
 const { createRequire } = require('node:module');
-const dependency = createRequire(path.resolve(process.env.MIA_ANALYSIS_PACKAGE || '/app/package.json'));
+const dependency = createRequire(path.resolve(process.env.YOUMI_ANALYSIS_PACKAGE || process.env.MIA_ANALYSIS_PACKAGE || '/app/package.json'));
 const parser = dependency('@babel/parser');
 const traverse = dependency('@babel/traverse').default;
 const postcss = dependency('postcss');
@@ -84,7 +84,7 @@ function moduleFingerprint(node) {
   traverse(ast, { ObjectProperty(p) {
     if ((p.node.key.name === 'name' || p.node.key.value === 'name') && p.node.value.type === 'StringLiteral') names.add(p.node.value.value);
   }});
-  return { hash: hash(clean(copy)), imports, names: [...names], ...(process.env.MIA_DEBUG_AST ? { ast: clean(copy) } : {}) };
+  return { hash: hash(clean(copy)), imports, names: [...names], ...((process.env.YOUMI_DEBUG_AST || process.env.MIA_DEBUG_AST) ? { ast: clean(copy) } : {}) };
 }
 
 function snapshot(root) {

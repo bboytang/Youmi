@@ -5,7 +5,7 @@ async function setup(page) {
   await mockBackend(page);
   const states = {};
   const commands = [];
-  await page.route('https://mia-fixture.invalid/**', async route => {
+  await page.route('https://youmi-fixture.invalid/**', async route => {
     const url = new URL(route.request().url());
     const response = await route.fetch({ url: 'http://127.0.0.1:4173' + url.pathname + url.search });
     await route.fulfill({ response });
@@ -31,7 +31,7 @@ async function setup(page) {
     }
     await route.fulfill({ json: { code: 0, data: command.action === 'history' ? { records: [] } : state } });
   });
-  await page.goto('https://mia-fixture.invalid/#/affect-system?agentId=first');
+  await page.goto('https://youmi-fixture.invalid/#/affect-system?agentId=first');
   await expect(page.getByRole('heading', { name: '情感系统', exact: true })).toBeVisible();
   await expect(page.getByText('正在管理：')).toContainText('智能体一');
   return { states, commands };

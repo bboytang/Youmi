@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 import { mockBackend } from './fixtures.js';
 
 async function setup(page) {
-  await page.route('https://mia-fixture.invalid/**', async route => {
+  await page.route('https://youmi-fixture.invalid/**', async route => {
     const url = new URL(route.request().url());
     const response = await route.fetch({ url: 'http://127.0.0.1:4173' + url.pathname + url.search });
     await route.fulfill({ response });
@@ -20,7 +20,7 @@ async function setup(page) {
     if (command.action === 'memory_delete') backend.memories = backend.memories.filter(m => m.id !== command.id);
     await route.fulfill({ json: { code: 0, data: { memories: backend.memories, total: backend.memories.length, offset: 0, page_size: 50 } } });
   });
-  await page.goto('https://mia-fixture.invalid/#/home');
+  await page.goto('https://youmi-fixture.invalid/#/home');
   await page.getByRole('button', { name: '记忆管理', exact: true }).first().click();
   const dialog = page.locator('.el-dialog').filter({ hasText: '共 2 条记忆' });
   await expect(dialog).toContainText('我喜欢蓝色 <script>unsafe</script>');

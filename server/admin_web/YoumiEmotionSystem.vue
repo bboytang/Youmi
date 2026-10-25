@@ -16,7 +16,8 @@
           <el-tab-pane label="总览" name="overview">
             <el-switch v-model="draft.enabled" aria-label="启用情感系统" active-text="启用情感系统" :disabled="busy" />
             <p>开关与参数保存后生效。关闭保留数据；时间恢复后的当前值可能与最后保存值不同。</p>
-            <p v-if="!state.enabled">系统当前已停用。</p>
+            <p v-if="state.legacy_enabled">当前沿用原有持续情绪；保存此页配置后切换到新的情感系统。</p>
+            <p v-else-if="!state.enabled">系统当前已停用。</p>
             <div class="emotion-overview">
               <article v-for="key in topDimensions" :key="key">
                 <strong>{{ state.catalog[key].label }}</strong>

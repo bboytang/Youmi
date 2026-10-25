@@ -8,7 +8,7 @@
 
 ## 仓库与接入位置
 
-- /root/projects/Youmi，分支feature/astrbot-fusion；保留前序AstrBot改动和YOUMI_ASTRBOT附件。
+- /root/projects/Youmi，实施分支feature/emotional-system（从feature/astrbot-fusion分出）；保留前序AstrBot改动和YOUMI_ASTRBOT附件。
 - server/companion现有affect/character/context/reply及AstrBot账本负责状态和提交；management.py与Manager控制器负责所有者授权。
 - server/admin_web为前端源码补丁与组件，使用已校验上游重建，不能覆盖原有生产定制。
 - 文档plan.md为当前确认方案；worklog.md记录实际验证，不推断通过。
@@ -38,3 +38,5 @@
 1b53fd4d的前端结果104通过/8失败，已定位并补总开关aria-label；Java191项中3个旧字段白名单断言失败，已加新旧youmi_scope一致性检查待重跑。不要将这两轮记为全部通过。
 
 统一命名部署工具：normalize_runtime.py（9个原生文件严格preimage，生成新youmi_companion覆盖目录）；normalize_manager.py（生产自有4类型+ShiroConfig严格preimage，保留JAR其他条目及启动前缀）。/tmp/emotional-admin-JN8Pnt/native为只读导出的原生源码，youmi-overlay为首个统一命名候选；后续源码修改需生成新目录。旧Mia单class候选已作废，不部署。生产仍为astrbot-494f0bab语音和astrbot-e87596a6管理镜像。
+
+3d922939后端40219250974、绑定授权40219251038、管理基线40219250968通过。前端40219250969进行中。最新UI补充legacy_enabled提示，测试域名/构建辅助变量亦统一youmi，后续提交仍需精确工作流验证。

@@ -52,3 +52,9 @@
 - 新normalize_manager.py校验现网4个自有类型与ShiroConfig的preimage；只替换这些已测试class，并更新其余自有class的类型引用，校验其他JAR条目内容不变。保留既有JAR启动前缀，不复制整套上游JAR覆盖定制。
 - 原ShiroConfig编译制品与本地已审计旧命名源码哈希一致（b0b58ad…d713a）。新代码仅增加youmi授权别名，旧路由继续走相同鉴权。
 - 新增命名转换、历史身份字面量保留、定制JAR条目保留和未知preimage拒绝测试；情感专项14项通过。生产尚未变更。
+
+## 统一命名复验
+
+- 3d922939后端 https://github.com/bboytang/Youmi/actions/runs/40219250974 、绑定授权 https://github.com/bboytang/Youmi/actions/runs/40219251038 、管理基线 https://github.com/bboytang/Youmi/actions/runs/40219250968 均通过；前端40219250969仍在执行，不提前记为成功。
+- 测试域名、源码检查临时目录、构建变量和制品提交标识改为youmi；旧环境变量只保留兼容读取。
+- 首次保存前明确提示旧持续情绪仍在使用，避免新系统默认关闭时误报原有情绪已停用。新增旧状态切换断言，专项14项通过。

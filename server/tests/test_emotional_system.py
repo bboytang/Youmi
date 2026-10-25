@@ -91,8 +91,12 @@ class EmotionalSystemTests(unittest.TestCase):
             emotions.parse_appraisal({'changes': [{'dimension': 'joy', 'delta': 10, 'quote': '编造内容'}]}, '谢谢你')
 
     def test_legacy_character_inherits_and_system_disable_does_not_resume_legacy(self):
+        from server.companion import features
+        features.update(self.store, self.owner, {'companion_emotion': True})
+        self.assertTrue(emotions.status(self.store, self.owner)['legacy_enabled'])
         character.update(self.store, self.owner, dict(values=dict(character.YOUMI_V1, warmth=.6), enabled=True, version=0))
         state = self.enable()
+        self.assertFalse(state['legacy_enabled'])
         self.assertEqual(state['values']['warmth'], 60)
         self.assertIn('affect_system', affect.state(self.store, self.owner))
         emotions.manage(self.store, self.owner, dict(action='configure', version=state['version'],

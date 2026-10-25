@@ -125,7 +125,10 @@ def status(store, owner):
                     value = item['baseline'] + (value - item['baseline']) * 2 ** (
                         -max(0, now - start) / (item['half_life_hours'] * 3600))
             current[key] = round(max(item['minimum'], min(item['maximum'], value)), 4)
-        return {'enabled': bool(row['enabled']) if row else False, 'version': row['version'] if row else 0,
+        from .features import settings
+        return {'enabled': bool(row['enabled']) if row else False,
+                'legacy_enabled': row is None and settings(store, owner)['companion_emotion'],
+                'version': row['version'] if row else 0,
                 'updated_at': row['updated_at'] if row else None, 'dimensions': config,
                 'values': current, 'saved_values': saved, 'catalog': CATALOG, 'groups': GROUPS, 'now': now}
 

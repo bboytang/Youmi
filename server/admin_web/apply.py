@@ -32,7 +32,7 @@ def main():
     settings_patch = str(bundle / 'companion-settings.patch')
     branding_patch = str(bundle / 'branding.patch')
     from emotional_system import apply as apply_emotional_system
-    with tempfile.TemporaryDirectory(prefix='mia-admin-check-') as scratch:
+    with tempfile.TemporaryDirectory(prefix='youmi-admin-check-') as scratch:
         for relative in manifest['files']:
             source = root / relative
             if source.is_file():

@@ -17,7 +17,7 @@ test('console code and revoke reuse login, preserve binding and clear ephemeral 
   await page.setViewportSize({ width: 390, height: 844 });
   // Browser routing supplies static assets for a synthetic HTTPS-origin UI.
   // This verifies UI/request policy; it is not actual TLS/certificate acceptance.
-  await page.route('https://mia-fixture.invalid/**', async route => {
+  await page.route('https://youmi-fixture.invalid/**', async route => {
     const url = new URL(route.request().url());
     const response = await route.fetch({ url: 'http://127.0.0.1:4173' + url.pathname + url.search });
     await route.fulfill({ response });
@@ -30,7 +30,7 @@ test('console code and revoke reuse login, preserve binding and clear ephemeral 
       authorization: request.headers()['authorization'], method: request.method()
     });
   });
-  await page.goto('https://mia-fixture.invalid/#/device-management?agentId=test-agent');
+  await page.goto('https://youmi-fixture.invalid/#/device-management?agentId=test-agent');
   await page.getByRole('button', { name: '私有授权码', exact: true }).first().click();
   const dialog = page.locator('.el-dialog').filter({ hasText: 'Youmi 私有授权码' });
   await expect(dialog).toBeVisible();
@@ -51,7 +51,7 @@ test('console code and revoke reuse login, preserve binding and clear ephemeral 
 });
 
 test('hardware approval sends the physical code through the existing owner endpoint', async ({ page }) => {
-  await page.route('https://mia-fixture.invalid/**', async route => {
+  await page.route('https://youmi-fixture.invalid/**', async route => {
     const url = new URL(route.request().url());
     const response = await route.fetch({ url: 'http://127.0.0.1:4173' + url.pathname + url.search });
     await route.fulfill({ response });
@@ -66,7 +66,7 @@ test('hardware approval sends the physical code through the existing owner endpo
       device_id: device.id, authorization_code: code, expires_in: 600
     } } });
   });
-  await page.goto('https://mia-fixture.invalid/#/device-management?agentId=test-agent');
+  await page.goto('https://youmi-fixture.invalid/#/device-management?agentId=test-agent');
   await page.getByRole('button', { name: '硬件授权', exact: true }).first().click();
   const prompt = page.locator('.el-message-box');
   await prompt.locator('input').fill(code);

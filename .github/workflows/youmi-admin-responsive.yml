@@ -69,7 +69,7 @@ jobs:
       - name: Inspect reconstructed desktop build
         run: |
           npm ci --no-audit --no-fund --prefix server/admin_web/tests
-          MIA_ANALYSIS_PACKAGE="$GITHUB_WORKSPACE/server/admin_web/tests/package.json" node server/admin_web/compare_builds.cjs --compare server/admin_web/production-build.json admin-artifacts/baseline > admin-artifacts/baseline/semantic-comparison.json
+          YOUMI_ANALYSIS_PACKAGE="$GITHUB_WORKSPACE/server/admin_web/tests/package.json" node server/admin_web/compare_builds.cjs --compare server/admin_web/production-build.json admin-artifacts/baseline > admin-artifacts/baseline/semantic-comparison.json
       - name: Run existing frontend regressions
         working-directory: /app
         run: |
@@ -86,7 +86,7 @@ jobs:
           cp -a /app/dist/. admin-artifacts/responsive/
           tar --exclude=node_modules --exclude=dist --exclude=.webpack_cache -czf admin-artifacts/manager-web-source.tar.gz -C upstream main/manager-web
           cp server/admin_web/README.md admin-artifacts/
-          printf '%s\n' "$GITHUB_SHA" > admin-artifacts/MIA_COMMIT
+          printf '%s\n' "$GITHUB_SHA" > admin-artifacts/YOUMI_COMMIT
           (cd admin-artifacts/responsive && find . -type f -exec sha256sum {} \;) > admin-artifacts/responsive.sha256
       - name: Install browser test dependencies
         working-directory: server/admin_web/tests
