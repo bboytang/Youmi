@@ -124,7 +124,7 @@ class FeatureSwitchTests(unittest.IsolatedAsyncioTestCase):
         from server.companion.schema import migrate
         with self.assertRaises(sqlite3.DatabaseError):
             migrate(self.store.db)
-        self.store.db.set_authorizer(None)
+        self.store.db.set_authorizer(lambda *args: sqlite3.SQLITE_OK)
         self.assertEqual(self.store.db.execute('SELECT MAX(version) FROM mia_schema_migrations').fetchone()[0], 4)
         upgraded = MemoryStore(path)
         try:

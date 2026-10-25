@@ -121,7 +121,7 @@ class AffectStateTests(unittest.IsolatedAsyncioTestCase):
         self.store.db.set_authorizer(lambda action, name, *rest: sqlite3.SQLITE_DENY
             if action == sqlite3.SQLITE_CREATE_TABLE and name == 'mia_affect_state' else sqlite3.SQLITE_OK)
         with self.assertRaises(sqlite3.DatabaseError):migrate(self.store.db)
-        self.store.db.set_authorizer(None)
+        self.store.db.set_authorizer(lambda *args: sqlite3.SQLITE_OK)
         self.assertNotIn('companion_emotion', [r[1] for r in self.store.db.execute('PRAGMA table_info(mia_feature_settings)')])
         migrate(self.store.db)
         self.assertFalse(features.settings(self.store, self.scope.owner)['companion_emotion'])

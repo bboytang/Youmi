@@ -125,7 +125,7 @@ class EmotionalSystemTests(unittest.TestCase):
             if action == sqlite3.SQLITE_CREATE_TABLE and name == 'mia_affect_system_history' else sqlite3.SQLITE_OK)
         with self.assertRaises(sqlite3.DatabaseError):
             migrate(self.store.db)
-        self.store.db.set_authorizer(None)
+        self.store.db.set_authorizer(lambda *args: sqlite3.SQLITE_OK)
         self.assertEqual(_schema_checksum(self.store.db), before)
         migrate(self.store.db)
         self.assertEqual(self.store.db.execute('PRAGMA foreign_key_check').fetchall(), [])
