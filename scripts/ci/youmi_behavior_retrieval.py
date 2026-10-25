@@ -5,8 +5,8 @@ import traceback
 
 
 async def drive_retrieval(sample, ask):
-    from mia_companion.persona import CORE
-    from mia_companion.retrieval import WEIGHTS, THRESHOLD, SEMANTIC_FLOOR, RESULTS
+    from youmi_companion.persona import CORE
+    from youmi_companion.retrieval import WEIGHTS, THRESHOLD, SEMANTIC_FLOOR, RESULTS
 
     source_ids = []
     for source in sample['sources']:

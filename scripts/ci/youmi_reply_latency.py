@@ -65,7 +65,7 @@ def observe_provider(configuration, purpose, report, lock, persist, factory):
             persist(report)
 
     def counted(*args, **kwargs):
-        from mia_companion.model_requests import model_requests
+        from youmi_companion.model_requests import model_requests
         sample = provider._p23_sample
         capture = None
         started = time.perf_counter()
@@ -151,9 +151,9 @@ async def open_driver(server, scopes, config, root, report, persist, *, lock=Non
     from core.connection import ConnectionHandler
     from core.utils.dialogue import Dialogue
     from core.providers.tts.dto.dto import TTSMessageDTO, SentenceType, ContentType
-    from mia_companion.authorization import load_private_config
-    from mia_companion.context import ContextBuilder
-    from mia_companion import reply, youmi_adapter as adapter
+    from youmi_companion.authorization import load_private_config
+    from youmi_companion.context import ContextBuilder
+    from youmi_companion import reply, youmi_adapter as adapter
     from verify_youmi_performance import populate
     from websockets.asyncio.server import serve
     from youmi_tts_timing import TIMING_REVISION, make_probe, verify_original_text_stage
@@ -286,7 +286,7 @@ async def open_driver(server, scopes, config, root, report, persist, *, lock=Non
                 def generate():
                     queue = conn.tts.tts_text_queue
                     queue.put(TTSMessageDTO(conn.sentence_id, SentenceType.FIRST, ContentType.ACTION))
-                    from mia_companion.model_requests import model_requests
+                    from youmi_companion.model_requests import model_requests
                     with model_requests.acquire(foreground=True, timeout=10):
                         stream = provider.response(conn.session_id, baseline['messages'], max_tokens=baseline['max_tokens'])
                         try:

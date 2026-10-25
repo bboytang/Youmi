@@ -8,8 +8,8 @@ def context_data(answer):
 
 
 async def drive_growth(sample, ask, manage, start, stop, first_pid):
-    from mia_companion.extraction import normalize
-    from mia_companion.persona import CORE
+    from youmi_companion.extraction import normalize
+    from youmi_companion.persona import CORE
 
     sessions, source_ids = [], []
     for index, source in enumerate(sample['sources']):

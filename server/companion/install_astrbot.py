@@ -13,7 +13,7 @@ EXPECTED = {
     'mia_companion/schema.py': '3e6ee813382608bfe611ceb4248151dfde006d5a25bf4ef780a40804dfc24a32',
 }
 PAYLOADS = ('astrbot_api.py', 'astrbot_identity.py', 'astrbot_turns.py', 'astrbot_media.py', 'schema-v8.sql',
-            'schema-v9.sql', 'emotional_system.py')
+            'schema-v9.sql', 'schema-v10.sql', 'emotional_system.py')
 
 
 def changes(root):

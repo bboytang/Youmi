@@ -92,7 +92,7 @@ def attach_tools(conn, fixture, parameters, case, *, record_call, before_result=
 
 async def drive_tools(fixture, parameters, ask, manage):
     """Execute all ten frozen cases once; raw semantics still need review."""
-    from mia_companion.persona import CORE
+    from youmi_companion.persona import CORE
 
     assert len(fixture['cases']) == len({row['id'] for row in fixture['cases']}) == 10
     _, saved = await ask(fixture['memory_source'])

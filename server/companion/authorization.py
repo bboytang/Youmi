@@ -19,8 +19,8 @@ class PrivateAuthorizationRequired(Exception):
 
 
 def server_tls_context():
-    certificate = os.environ.get("MIA_TLS_CERT_FILE")
-    key = os.environ.get("MIA_TLS_KEY_FILE")
+    certificate = os.environ.get("YOUMI_TLS_CERT_FILE") or os.environ.get("MIA_TLS_CERT_FILE")
+    key = os.environ.get("YOUMI_TLS_KEY_FILE") or os.environ.get("MIA_TLS_KEY_FILE")
     if not certificate and not key:
         return None
     if not certificate or not key:
@@ -142,7 +142,7 @@ class PrivateAuthorization:
     async def verify(self, device_id, client_id, credential):
         if not isinstance(credential, str) or not re.fullmatch(r"[A-Za-z0-9_-]{43}", credential):
             raise PrivateAuthorizationRequired()
-        scope = _manager_scope(await self._request("/config/mia-auth/verify", {
+        scope = _manager_scope(await self._request("/config/youmi-auth/verify", {
             "device_id": device_id, "client_id": client_id, "private_credential": credential}))
         if scope.device_id != device_id or scope.client_id != client_id:
             raise PrivateAuthorizationRequired()
@@ -150,7 +150,7 @@ class PrivateAuthorization:
 
     async def restore(self, snapshot):
         # Persisted server-owned snapshots still require current manager proof.
-        actual = _manager_scope(await self._request("/config/mia-auth/check-scope", snapshot))
+        actual = _manager_scope(await self._request("/config/youmi-auth/check-scope", snapshot))
         if actual.snapshot() != snapshot:
             raise PrivateAuthorizationRequired()
         return actual
@@ -166,8 +166,8 @@ class PrivateAuthorization:
 
     async def worker_model(self, scope):
         await self.require(scope, 'memory:write')
-        models = await self._request('/config/mia-auth/worker-model', scope.snapshot())
-        if not isinstance(models, dict) or _manager_scope(models.get('mia_scope')) != scope:
+        models = await self._request('/config/youmi-auth/worker-model', scope.snapshot())
+        if not isinstance(models, dict) or _manager_scope(models.get('youmi_scope', models.get('mia_scope'))) != scope:
             raise PrivateAuthorizationRequired()
         return models
 
@@ -176,9 +176,9 @@ class PrivateAuthorization:
         models = await self._request("/config/agent-models", {
             "macAddress": device_id, "clientId": client_id, "privateCredential": credential,
             "selectedModule": selected_module})
-        if not isinstance(models, dict) or models.get("mia_owner") != scope.owner:
+        if not isinstance(models, dict) or models.get("youmi_owner", models.get("mia_owner")) != scope.owner:
             raise PrivateAuthorizationRequired()
-        if _manager_scope(models.get("mia_scope")) != scope:
+        if _manager_scope(models.get("youmi_scope", models.get("mia_scope"))) != scope:
             raise PrivateAuthorizationRequired()
         # Correct words cannot be loaded independently of private authorization.
         words = await self._request("/config/correct-words", {
@@ -195,7 +195,11 @@ async def load_private_config(conn):
     conn._youmi_owner = None
     conn._youmi_authorization = PrivateAuthorization(conn.config, connection_loop=asyncio.get_running_loop())
     headers = conn.headers or {}
-    credential = headers.pop("mia-private-credential", None)
+    credential = headers.pop("youmi-private-credential", None)
+    legacy_credential = headers.pop("mia-private-credential", None)
+    if credential and legacy_credential and credential != legacy_credential:
+        raise PrivateAuthorizationRequired()
+    credential = credential or legacy_credential
     # A private header must arrive over TLS. A future TLS proxy requires an
     # independently verified trusted ingress, never X-Forwarded-Proto alone.
     transport = getattr(getattr(conn, "websocket", None), "transport", None)

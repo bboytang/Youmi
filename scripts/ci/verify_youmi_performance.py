@@ -16,10 +16,10 @@ import traceback
 import numpy as np
 from youmi_performance_budgets import LIMITS, OPTIMIZATION_TARGETS, REVISION as ACCEPTANCE_REVISION, within_budgets
 
-from mia_companion.authorization import AuthenticatedScope, PrivateAuthorizationRequired
-from mia_companion.embedding import SemanticEncoder, MODEL_KEY, REVISION, DIMENSION
-from mia_companion.memory import MemoryStore
-from mia_companion.semantic import SemanticMemoryIndex
+from youmi_companion.authorization import AuthenticatedScope, PrivateAuthorizationRequired
+from youmi_companion.embedding import SemanticEncoder, MODEL_KEY, REVISION, DIMENSION
+from youmi_companion.memory import MemoryStore
+from youmi_companion.semantic import SemanticMemoryIndex
 
 
 class FixtureAuthorization:

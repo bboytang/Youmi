@@ -37,7 +37,7 @@ export default {
   methods: {
     call(command) {
       return new Promise((resolve, reject) => {
-        const url = new URL(`${getServiceUrl()}/agent/${encodeURIComponent(this.agentId)}/mia-settings`, window.location.href);
+        const url = new URL(`${getServiceUrl()}/agent/${encodeURIComponent(this.agentId)}/youmi-settings`, window.location.href);
         if (location.protocol !== 'https:' || url.protocol !== 'https:' || url.origin !== location.origin) {
           reject(new Error('请通过 HTTPS 打开智控台，再管理记忆。')); return;
         }

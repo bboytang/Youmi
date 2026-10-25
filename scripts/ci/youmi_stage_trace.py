@@ -59,7 +59,7 @@ class StageTrace:
         self.restorations.append((owner, attribute, original))
 
     def install(self, store):
-        from mia_companion import authorization, context, embedding, persona, reply, semantic
+        from youmi_companion import authorization, context, embedding, persona, reply, semantic
         targets = [
             (authorization.PrivateAuthorization, 'require', 'authorization.require'),
             (authorization.PrivateAuthorization, 'restore', 'authorization.restore'),

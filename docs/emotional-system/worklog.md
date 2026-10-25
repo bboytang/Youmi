@@ -33,3 +33,13 @@
 - 新增V8→V9失败回滚测试、旧摘要与新状态一致性测试、严格源码preimage的离线更新器。专项目前12项通过。
 - 只读核对现网Python9模块：与冻结cb6c1388源码经已审计Mia名称转换后匹配（角色常量YOUMI_V1保留）。导出仅源代码到临时候选目录，未导出密钥、配置或生产数据库。
 - 旧命名候选已在合成SQLite通过V9迁移、51维度及跨智能体隔离，尚未替换现网。
+
+## 用户追加统一命名
+
+- 用户要求前后端统一youmi/Youmi，已更新方案。暂停发布旧Mia命名候选及MiaCompanionManagementController编译产物。
+- 新API、配置和新增存储改用youmi；旧接口、历史存储和凭据按兼容契约处理。部署需要同时核对原运行包入口及旧身份语义，不能只改界面文案。
+- 新增V10迁移将新情感表改为youmi_affect_system系列，保留V9及更早迁移不变；校验同时覆盖youmi和历史mia对象。
+- 安装器和运行验证脚本统一使用youmi_companion。新前端YoumiEmotionSystem.vue、youmi-settings、youmi-auth及youmi_emotion响应；历史响应仅在兼容适配层转换。
+- 新Manager管理/授权路由使用youmi主入口，保留旧别名；服务端优先读取YOUMI_TLS、YOUMI_MEMORY_DB和youmi凭据头，继续兼容已签发设备凭据。
+- 命名调整后本地474后端测试及39 CI辅助测试通过；不是旧提交的工作流结果。
+- f918d703前端旧流程因源已被命名调整替代而取消；确认延迟来自Azure APT镜像，已准备使用同版本官方Playwright容器，保留旧构建制品和取消记录，不声称浏览器通过。

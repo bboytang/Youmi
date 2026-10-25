@@ -7,7 +7,7 @@ import time
 
 
 def observe_worker(worker, control, root, report, lock, save):
-    from mia_companion.extraction import normalize, validate_output
+    from youmi_companion.extraction import normalize, validate_output
 
     ready, release, finished = [root / ('inflight-' + name + '.json')
         for name in ('ready', 'release', 'finished')]

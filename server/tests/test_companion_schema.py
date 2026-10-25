@@ -142,7 +142,7 @@ class SchemaCompatibilityTests(unittest.TestCase):
         old.edit_memory('user:1:agent:a', memory_id, '现在偏爱历史小说')
         self.assertIsNone(old.db.execute('SELECT keywords FROM mia_memory_meta WHERE memory_id=?', (memory_id,)).fetchone()[0])
         migrate(old.db)
-        self.assertEqual(old.db.execute('SELECT COUNT(*) FROM mia_schema_migrations').fetchone()[0], 9)
+        self.assertEqual(old.db.execute('SELECT COUNT(*) FROM mia_schema_migrations').fetchone()[0], 10)
         old.close()
 
     def test_p18_v2_to_v3_failure_rolls_back_then_reopens_without_fabricated_provenance(self):

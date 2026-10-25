@@ -42,7 +42,7 @@ def bootstrap():
 
 
 async def launch(config, root, report, lock, save):
-    from mia_companion import youmi_adapter as adapter
+    from youmi_companion import youmi_adapter as adapter
     app = importlib.import_module('app')
     from core.utils.gc_manager import get_gc_manager
     loop = asyncio.get_running_loop()
@@ -118,7 +118,7 @@ async def launch(config, root, report, lock, save):
 
 
 def observe_hold(worker, control, root, report, lock, save):
-    from mia_companion.extraction import normalize, validate_output, MemoryError
+    from youmi_companion.extraction import normalize, validate_output, MemoryError
     original = worker.resolve
 
     async def resolve(scope):

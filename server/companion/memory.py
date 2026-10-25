@@ -521,8 +521,8 @@ class MemoryStore:
             if system['version']:
                 emotional_system._write(self, owner, system['enabled'], system['dimensions'],
                     {key: item['baseline'] for key, item in system['dimensions'].items()}, system['version'])
-            self.db.execute('DELETE FROM mia_affect_system_turns WHERE owner=?', (owner,))
-            self.db.execute('DELETE FROM mia_affect_system_history WHERE owner=?', (owner,))
+            self.db.execute('DELETE FROM youmi_affect_system_turns WHERE owner=?', (owner,))
+            self.db.execute('DELETE FROM youmi_affect_system_history WHERE owner=?', (owner,))
             self.db.execute('UPDATE mia_scope_versions SET observation_epoch=observation_epoch+1,event_epoch=event_epoch+1 WHERE owner=?', (owner,))
             self.db.execute("UPDATE owners SET revision=revision+1,version=version+1 WHERE owner=?", (owner,))
             self._cancel_jobs(owner)

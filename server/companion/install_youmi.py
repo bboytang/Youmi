@@ -35,8 +35,8 @@ def patch_connection(text):
     cleanup = '            # 确保停止事件被设置\n            if self.stop_event:\n                self.stop_event.set()\n'
     text = replace_once(text, cleanup, cleanup + '            await youmi_auth.close_connection(self)\n')
     text = replace_once(text, "from core.utils.dialogue import Message, Dialogue\n",
-                        "from core.utils.dialogue import Message, Dialogue\nfrom mia_companion import youmi_adapter as youmi\n"
-                        "from mia_companion import authorization as youmi_auth\n")
+                        "from core.utils.dialogue import Message, Dialogue\nfrom youmi_companion import youmi_adapter as youmi\n"
+                        "from youmi_companion import authorization as youmi_auth\n")
     text = replace_once(text, 'f"{self.client_ip} conn - Headers: {self.headers}"',
                         'f"{self.client_ip} conn - Header names: {sorted(self.headers)}"')
     text = replace_once(text, 'from config.config_loader import get_private_config_from_api\n', '')
@@ -145,8 +145,8 @@ def patch_connection(text):
 
 def patch_tts(text):
     text = replace_once(text, "from core.utils import textUtils\n",
-                        "from core.utils import textUtils\nfrom mia_companion import youmi_adapter as youmi\n"
-                        "from mia_companion import authorization as youmi_auth\n")
+                        "from core.utils import textUtils\nfrom youmi_companion import youmi_adapter as youmi\n"
+                        "from youmi_companion import authorization as youmi_auth\n")
     text = replace_once(text, '    packet_index = flow_control.get("packet_count", 0)\n',
                         '    if not await youmi_auth.allow_output(conn):\n        return\n'
                         '    packet_index = flow_control.get("packet_count", 0)\n')
@@ -160,7 +160,7 @@ def patch_tts(text):
 
 def patch_dialogue(text):
     text = replace_once(text, "from datetime import datetime\n",
-                        "from datetime import datetime\nfrom mia_companion.youmi_adapter import bounded_history, guard_history\n")
+                        "from datetime import datetime\nfrom youmi_companion.youmi_adapter import bounded_history, guard_history\n")
     text = replace_once(text, '    def put(self, message: Message):\n        self.dialogue.append(message)\n',
                         '    def put(self, message: Message):\n        guard_history(self, message)\n        self.dialogue.append(message)\n')
     text = replace_once(text, '                    f"<memory>\\n{memory_str}\\n</memory>",\n',
@@ -178,28 +178,28 @@ def patch_manager(text):
 
 
 def patch_websocket(text):
-    text = replace_once(text, 'import websockets\n', 'import websockets\nfrom mia_companion import authorization as youmi_auth\n')
+    text = replace_once(text, 'import websockets\n', 'import websockets\nfrom youmi_companion import authorization as youmi_auth\n')
     return replace_once(text, '            ping_interval=None,\n',
                         '            ping_interval=None,\n            ssl=youmi_auth.server_tls_context(),\n')
 
 
 def patch_tools(text):
     text = replace_once(text, 'from typing import Dict, List, Optional, Any\n',
-                        'from typing import Dict, List, Optional, Any\nfrom mia_companion import authorization as youmi_auth\n')
+                        'from typing import Dict, List, Optional, Any\nfrom youmi_companion import authorization as youmi_auth\n')
     return replace_once(text, '        """执行工具调用"""\n',
                         '        """执行工具调用"""\n        await youmi_auth.require_connection(self.conn)\n')
 
 
 def patch_report(text):
     text = replace_once(text, 'from config.manage_api_client import report as manage_report',
-                        'from mia_companion import authorization as youmi_auth')
+                        'from youmi_companion import authorization as youmi_auth')
     text = replace_once(text, '        if audio_data:\n',
                         '        await youmi_auth.require_connection(conn, "memory:write")\n        if audio_data:\n')
     return replace_once(text, '        await manage_report(\n', '        await youmi_auth.report_chat(\n            conn,\n')
 
 
 def patch_intent(text):
-    text = replace_once(text, 'import asyncio\n', 'import asyncio\nfrom mia_companion import authorization as youmi_auth\n')
+    text = replace_once(text, 'import asyncio\n', 'import asyncio\nfrom youmi_companion import authorization as youmi_auth\n')
     text = replace_once(text, '    """使用LLM分析用户意图"""\n',
                         '    """使用LLM分析用户意图"""\n    await youmi_auth.require_connection(conn)\n')
     text = replace_once(text, '    if conn.intent_type == "function_call":\n',
@@ -214,7 +214,7 @@ def patch_intent(text):
 
 def patch_app(text):
     text = replace_once(text, 'from core.websocket_server import WebSocketServer\n',
-                        'from core.websocket_server import WebSocketServer\nfrom mia_companion import youmi_adapter as youmi\n')
+                        'from core.websocket_server import WebSocketServer\nfrom youmi_companion import youmi_adapter as youmi\n')
     text = replace_once(text, '    ws_server = WebSocketServer(config)\n',
                         '    ws_server = WebSocketServer(config)\n    await youmi.start_worker(ws_server)\n')
     cleanup = '''        # 停止全局GC管理器
@@ -239,11 +239,12 @@ def patch_app(text):
 
 def patch_http(text):
     text = replace_once(text, 'from aiohttp import web\n',
-                        'from aiohttp import web\nfrom mia_companion.management import ManagementHandler\n'
-                        'from mia_companion.astrbot_api import register_routes as register_astrbot_routes\n')
+                        'from aiohttp import web\nfrom youmi_companion.management import ManagementHandler\n'
+                        'from youmi_companion.astrbot_api import register_routes as register_astrbot_routes\n')
     return replace_once(text, '                app = web.Application()\n',
                         '                app = web.Application()\n'
                         '                register_astrbot_routes(app, self.config)\n'
+                        '                app.router.add_post("/youmi/management", ManagementHandler(self.config).handle)\n'
                         '                app.router.add_post("/mia/management", ManagementHandler(self.config).handle)\n')
 
 
@@ -271,9 +272,9 @@ def build_changes(root):
 
 
 def install(root, changes):
-    destination = root / PYTHON / "mia_companion"
+    destination = root / PYTHON / "youmi_companion"
     if destination.exists():
-        raise ValueError("mia_companion already exists; review and restore the previous installation first")
+        raise ValueError("youmi_companion already exists; review and restore the previous installation first")
     backups = [root / (relative + ".mia-original") for relative in changes]
     if any(path.exists() for path in backups):
         raise ValueError("Original backups already exist; refusing to overwrite them")
@@ -284,7 +285,7 @@ def install(root, changes):
         for name in ["__init__.py", "memory.py", "youmi_adapter.py", "authorization.py", "schema.py", "schema.sql", "schema-v2.sql", "persona.py",
                      "embedding.py", "semantic.py", "retrieval.py", "context.py", "reply.py", "jobs.py", "extraction.py", "proposal.py", "model_requests.py",
                      "events.py", "emotions.py", "schema-v3.sql", "schema-v4.sql", "schema-v5.sql", "schema-v6.sql", "affect.py", "features.py", "management.py", "character.py", "schema-v7.sql",
-                     "request_accounting.py", "requirements-vector.txt", "schema-v8.sql", "schema-v9.sql", "emotional_system.py", "astrbot_api.py",
+                     "request_accounting.py", "requirements-vector.txt", "schema-v8.sql", "schema-v9.sql", "schema-v10.sql", "emotional_system.py", "astrbot_api.py",
                      "astrbot_identity.py", "astrbot_turns.py", "astrbot_media.py"]:
             shutil.copy2(Path(__file__).parent / name, destination / name)
         for relative, (_, changed) in changes.items():

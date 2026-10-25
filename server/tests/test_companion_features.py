@@ -108,7 +108,7 @@ class FeatureSwitchTests(unittest.IsolatedAsyncioTestCase):
         import sqlite3
         self.fact('我喜欢蓝色。')
         with self.store.lock, self.store.db:
-            for table in ('mia_affect_system_history', 'mia_affect_system_turns', 'mia_affect_system'):
+            for table in ('youmi_affect_system_history', 'youmi_affect_system_turns', 'youmi_affect_system'):
                 self.store.db.execute('DROP TABLE ' + table)
             self.store.db.execute('DROP TABLE mia_affect_turns')
             self.store.db.execute('DROP TABLE mia_affect_state')

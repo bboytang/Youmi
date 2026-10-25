@@ -35,9 +35,9 @@ public class YoumiCompanionManagementController {
     private final SysParamsService params;
     private final ObjectMapper mapper;
     private final JdbcTemplate db;
-    @Value("${mia.companion.management-url:http://xiaozhi-esp32-server:8003/mia/management}")
+    @Value("${youmi.companion.management-url:${mia.companion.management-url:http://xiaozhi-esp32-server:8003/youmi/management}}")
     private String managementUrl;
-    @Value("${mia.private-auth.allow-insecure-test-http:false}")
+    @Value("${youmi.private-auth.allow-insecure-test-http:${mia.private-auth.allow-insecure-test-http:false}}")
     private boolean allowInsecureTestHttp;
 
     private Map<String, String> grant(String agentId, long operator) {
@@ -55,7 +55,7 @@ public class YoumiCompanionManagementController {
         return Map.of("owner", "user:" + agent.getUserId() + ":agent:" + agentId);
     }
 
-    @PostMapping("/config/mia-management/verify")
+    @PostMapping({"/config/youmi-management/verify", "/config/mia-management/verify"})
     public Result<Map<String, String>> verify(@RequestBody Map<String, Object> body) {
         try {
             String agentId = (String) body.get("agent_id");
@@ -67,7 +67,7 @@ public class YoumiCompanionManagementController {
         }
     }
 
-    @PostMapping("/agent/{agentId}/mia-settings")
+    @PostMapping({"/agent/{agentId}/youmi-settings", "/agent/{agentId}/mia-settings"})
     @RequiresPermissions("sys:role:normal")
     public Result<Object> manage(@PathVariable String agentId, @RequestBody Map<String, Object> command,
                                  HttpServletRequest request) {
@@ -75,7 +75,7 @@ public class YoumiCompanionManagementController {
         long operator = SecurityUser.getUserId();
         grant(agentId, operator);
         if (!(command.get("action") instanceof String action)
-                || !Set.of("status", "pause", "set_feature_settings", "emotion_consent", "reset_mia_emotion", "memory_list", "memory_delete", "set_character", "affect_system").contains(action)) {
+                || !Set.of("status", "pause", "set_feature_settings", "emotion_consent", "reset_youmi_emotion", "reset_mia_emotion", "memory_list", "memory_delete", "set_character", "affect_system").contains(action)) {
             throw new RenException(ErrorCode.PARAMS_GET_ERROR);
         }
         var factory = new SimpleClientHttpRequestFactory();

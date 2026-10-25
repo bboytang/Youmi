@@ -13,11 +13,11 @@
           <span class="youmi-toggle-track" aria-hidden="true"><span class="youmi-toggle-thumb" /></span>
         </button>
       </div>
-      <div v-if="state.mia_emotion && !state.mia_emotion.system_configured" class="youmi-emotion-status">
-        <p>{{ state.character && state.character.enabled ? state.character.values.name : 'Youmi' }} 当前情绪：{{ state.mia_emotion.enabled ? state.mia_emotion.label : '已停用' }}<span v-if="state.mia_emotion.updated_at"> · 最近互动 {{ new Date(state.mia_emotion.updated_at * 1000).toLocaleString() }}</span></p>
-        <el-button size="small" :disabled="busy" @click="change('reset_mia_emotion', true)">重置 Youmi 情绪</el-button>
+      <div v-if="state.youmi_emotion && !state.youmi_emotion.system_configured" class="youmi-emotion-status">
+        <p>{{ state.character && state.character.enabled ? state.character.values.name : 'Youmi' }} 当前情绪：{{ state.youmi_emotion.enabled ? state.youmi_emotion.label : '已停用' }}<span v-if="state.youmi_emotion.updated_at"> · 最近互动 {{ new Date(state.youmi_emotion.updated_at * 1000).toLocaleString() }}</span></p>
+        <el-button size="small" :disabled="busy" @click="change('reset_youmi_emotion', true)">重置 Youmi 情绪</el-button>
       </div>
-      <YoumiCharacterEditor v-if="state.character && !(state.mia_emotion && state.mia_emotion.system_configured)" :profile="state.character" :disabled="busy" @save="saveCharacter" />
+      <YoumiCharacterEditor v-if="state.character && !(state.youmi_emotion && state.youmi_emotion.system_configured)" :profile="state.character" :disabled="busy" @save="saveCharacter" />
       <p>已保存记忆 {{ state.counts.memories }} 条 · 成长特点 {{ state.counts.traits }} 个 · 互动事件 {{ state.counts.events }} 个</p>
       <p>保存后立即影响后续处理；使用旧上下文的回复可能中止，可重新发起对话。已发出的声音无法撤回。</p>
     </div>
@@ -30,6 +30,7 @@
 import { getServiceUrl } from '@/apis/api';
 import RequestService from '@/apis/httpRequest';
 import YoumiCharacterEditor from './YoumiCharacterEditor.vue';
+import { normalizeYoumiSettings } from './youmi_contract';
 
 export default {
   name: 'YoumiSettingsDialog',
@@ -63,7 +64,7 @@ export default {
     },
     call(command) {
       return new Promise((resolve, reject) => {
-        const url = new URL(`${getServiceUrl()}/agent/${encodeURIComponent(this.agentId)}/mia-settings`, window.location.href);
+        const url = new URL(`${getServiceUrl()}/agent/${encodeURIComponent(this.agentId)}/youmi-settings`, window.location.href);
         if (window.location.protocol !== 'https:' || url.protocol !== 'https:' || url.origin !== location.origin) {
           reject(new Error('请通过 HTTPS 打开智控台，再管理 Youmi 功能。')); return;
         }
@@ -72,7 +73,7 @@ export default {
           .success(res => {
             const body = res.data;
             if (!body || body.code !== 0 || !body.data || !body.data.features || !body.data.counts) { failed(); return; }
-            resolve(body.data);
+            resolve(normalizeYoumiSettings(body.data));
           }).fail(failed).networkFail(failed).send();
       });
     },
@@ -103,14 +104,14 @@ export default {
         try { await this.$confirm('开启后会根据你的真实对话持续记录心情观察，用于长期趋势。是否同意开启？', '长期心情追踪', { type: 'warning' }); }
         catch (_) { return; }
       }
-      if (key === 'reset_mia_emotion') {
+      if (key === 'reset_youmi_emotion') {
         try { await this.$confirm('将 Youmi 当前情绪恢复为平静，不修改角色、记忆或你的心情记录。是否重置？', '重置 Youmi 情绪', { type: 'warning' }); }
         catch (_) { return; }
       }
       if (!this.value || this.agentId !== agentId || this.generation !== openedGeneration) return;
       const generation = ++this.generation;
       this.busy = true; this.error = '';
-      const command = key === 'reset_mia_emotion' ? { action: 'reset_mia_emotion' }
+      const command = key === 'reset_youmi_emotion' ? { action: 'reset_youmi_emotion' }
         : key === 'automatic_memory' ? { action: 'pause', paused: !next }
         : key === 'emotion_tracking' ? { action: 'emotion_consent', enabled: next }
           : { action: 'set_feature_settings', features: { [key]: next } };

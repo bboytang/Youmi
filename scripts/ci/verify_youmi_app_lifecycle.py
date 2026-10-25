@@ -92,7 +92,7 @@ async def serve():
         started = time.perf_counter()
         vector = await worker.index._encode('这是P23应用生命周期的独立机械检查。', query=True)
         report['cold_query_encode_ms'] = (time.perf_counter() - started) * 1000
-        from mia_companion import reply
+        from youmi_companion import reply
         encoder = reply._encoder.encoder
         options = encoder._session.get_session_options()
         report['embedding'] = {'model_id': encoder.model_id, 'revision': encoder.revision,

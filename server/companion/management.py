@@ -31,7 +31,7 @@ class ManagementHandler:
             if not isinstance(data, dict) or set(data) != {'operator_id', 'agent_id', 'request'}:
                 raise ValueError()
             proof = {'operator_id': data['operator_id'], 'agent_id': data['agent_id']}
-            grant = await authorization._request('/config/mia-management/verify', proof)
+            grant = await authorization._request('/config/youmi-management/verify', proof)
             if not isinstance(grant, dict) or not isinstance(grant.get('owner'), str):
                 raise PrivateAuthorizationRequired()
             owner = grant['owner']
@@ -39,7 +39,9 @@ class ManagementHandler:
             if not isinstance(command, dict):
                 raise ValueError()
             action = command.get('action')
-            if action not in {'status', 'pause', 'set_feature_settings', 'emotion_consent', 'reset_mia_emotion', 'memory_list', 'memory_delete', 'set_character', 'affect_system'}:
+            if action == 'reset_mia_emotion':
+                action = 'reset_youmi_emotion'  # Historical clients retain their reset operation.
+            if action not in {'status', 'pause', 'set_feature_settings', 'emotion_consent', 'reset_youmi_emotion', 'memory_list', 'memory_delete', 'set_character', 'affect_system'}:
                 raise ValueError()
             if self.store is None:
                 from .youmi_adapter import _store
@@ -68,7 +70,7 @@ class ManagementHandler:
                 if action == 'set_character':
                     from .character import update as update_character
                     update_character(store, owner, command)
-                elif action == 'reset_mia_emotion':
+                elif action == 'reset_youmi_emotion':
                     from .affect import reset
                     reset(store, owner)
                 elif action == 'set_feature_settings':
@@ -77,8 +79,10 @@ class ManagementHandler:
                     store.handle(owner, command)
                 return status(store, owner)
             result = await asyncio.to_thread(apply)
-            if await authorization._request('/config/mia-management/verify', proof) != grant:
+            if await authorization._request('/config/youmi-management/verify', proof) != grant:
                 raise PrivateAuthorizationRequired()
+            if request.path.startswith('/youmi/') and isinstance(result, dict):
+                result.pop('mia_emotion', None)
             return web.json_response({'code': 0, 'data': result})
         except (PrivateAuthorizationRequired,):
             raise web.HTTPForbidden() from None

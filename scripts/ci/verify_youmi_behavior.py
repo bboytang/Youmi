@@ -49,12 +49,12 @@ from core.utils.dialogue import Dialogue, Message
 from core.utils.llm import create_instance
 from core.providers.tts.dto.dto import TTSMessageDTO, SentenceType, ContentType
 from plugins_func.register import Action, ActionResponse
-from mia_companion.authorization import PrivateAuthorizationRequired, load_private_config
-from mia_companion.context import ContextBuilder
-from mia_companion.extraction import normalize
-from mia_companion.persona import PersonaGuardrail
-from mia_companion.semantic import SemanticMemoryIndex
-from mia_companion import authorization, reply, youmi_adapter as adapter
+from youmi_companion.authorization import PrivateAuthorizationRequired, load_private_config
+from youmi_companion.context import ContextBuilder
+from youmi_companion.extraction import normalize
+from youmi_companion.persona import PersonaGuardrail
+from youmi_companion.semantic import SemanticMemoryIndex
+from youmi_companion import authorization, reply, youmi_adapter as adapter
 
 
 ROOT = Path(os.environ['MIA_BEHAVIOR_DIR']) / ('round-' + os.environ['MIA_BEHAVIOR_ROUND'])
@@ -508,7 +508,7 @@ async def serve():
                 if specification and specification['outcome'] == 'context_changed' and fault:
                     # P15 rebuilds from current evidence without old tool data;
                     # it does not require an immediate limited-context reply.
-                    from mia_companion.persona import CORE
+                    from youmi_companion.persona import CORE
                     initial, rebuilt = llm._youmi_requests[0], last_request
                     original_data = json.loads(initial['messages'][1]['content'])['youmi_context']
                     removed = original_data['facts']

@@ -41,7 +41,8 @@ def status(store, owner):
     with store.lock, store.db:
         store._owner(owner)
         return {'character': character_status(store, owner), 'features': settings(store, owner), 'paused': store.snapshot(owner)['paused'],
-                'emotion_tracking': consent(store, owner), 'mia_emotion': state(store, owner),
+                'emotion_tracking': consent(store, owner), 'youmi_emotion': state(store, owner),
+                'mia_emotion': state(store, owner),  # Legacy management clients.
                 'counts': {name: store.db.execute('SELECT COUNT(*) FROM ' + table + ' WHERE owner=?',
                     (owner,)).fetchone()[0] for name, table in
                     [('memories', 'memories'), ('traits', 'traits'), ('events', 'mia_events')]}}

@@ -22,7 +22,7 @@ import xiaozhi.modules.device.service.impl.YoumiDeviceAuthorizationService;
 public class YoumiDeviceAuthorizationController {
     private final YoumiDeviceAuthorizationService grants;
     private final ConfigService configService;
-    @Value("${mia.private-auth.allow-insecure-test-http:false}")
+    @Value("${youmi.private-auth.allow-insecure-test-http:${mia.private-auth.allow-insecure-test-http:false}}")
     private boolean allowInsecureTestHttp;
 
     private void secure(HttpServletRequest request) {
@@ -52,7 +52,7 @@ public class YoumiDeviceAuthorizationController {
         }
     }
 
-    @PostMapping("/device/mia-auth/code")
+    @PostMapping({"/device/youmi-auth/code", "/device/mia-auth/code"})
     @RequiresPermissions("sys:role:normal")
     public Result<Map<String, Object>> code(@RequestBody Map<String, Object> body, HttpServletRequest request) {
         secure(request);
@@ -62,7 +62,7 @@ public class YoumiDeviceAuthorizationController {
         return result(grants.createCode(field(body, "device_id", 32)));
     }
 
-    @PostMapping("/device/mia-auth/exchange")
+    @PostMapping({"/device/youmi-auth/exchange", "/device/mia-auth/exchange"})
     public Result<Map<String, Object>> exchange(@RequestBody Map<String, Object> body, HttpServletRequest request) {
         secure(request);
         if (Boolean.TRUE.equals(body.get("hardware_pairing"))) {
@@ -73,7 +73,7 @@ public class YoumiDeviceAuthorizationController {
                 field(body, "authorization_code", 64), request.getRemoteAddr()));
     }
 
-    @PostMapping("/device/mia-auth/virtual")
+    @PostMapping({"/device/youmi-auth/virtual", "/device/mia-auth/virtual"})
     @RequiresPermissions("sys:role:normal")
     public Result<Map<String, Object>> virtual(@RequestBody Map<String, Object> body, HttpServletRequest request) {
         secure(request);
@@ -81,7 +81,7 @@ public class YoumiDeviceAuthorizationController {
         return result(grants.createVirtual(field(body, "agent_id", 32), field(body, "bot_uin", 20)));
     }
 
-    @PostMapping("/config/mia-auth/bridge-config")
+    @PostMapping({"/config/youmi-auth/bridge-config", "/config/mia-auth/bridge-config"})
     @Transactional(rollbackFor = Exception.class)
     public Result<Map<String, Object>> bridgeConfig(@RequestBody Map<String, Object> snapshot) {
         Map<String, Object> scope = grants.requireSnapshot(snapshot, true);
@@ -93,17 +93,18 @@ public class YoumiDeviceAuthorizationController {
             if (models.containsKey(key)) allowed.put(key, models.get(key));
         }
         allowed.put("mia_scope", scope);
+        allowed.put("youmi_scope", scope);
         return result(allowed);
     }
 
-    @PostMapping("/device/mia-auth/renew")
+    @PostMapping({"/device/youmi-auth/renew", "/device/mia-auth/renew"})
     public Result<Map<String, Object>> renew(@RequestBody Map<String, Object> body, HttpServletRequest request) {
         secure(request);
         return result(grants.renew(field(body, "device_id", 32), field(body, "client_id", 128),
                 field(body, "private_credential", 64), request.getRemoteAddr()));
     }
 
-    @PostMapping("/device/mia-auth/revoke")
+    @PostMapping({"/device/youmi-auth/revoke", "/device/mia-auth/revoke"})
     @RequiresPermissions("sys:role:normal")
     public Result<Void> revoke(@RequestBody Map<String, Object> body, HttpServletRequest request) {
         secure(request);
@@ -111,20 +112,20 @@ public class YoumiDeviceAuthorizationController {
         return new Result<>();
     }
 
-    @PostMapping("/config/mia-auth/verify")
+    @PostMapping({"/config/youmi-auth/verify", "/config/mia-auth/verify"})
     public Result<Map<String, Object>> verify(@RequestBody Map<String, Object> body) {
         return result(grants.verify(field(body, "device_id", 32), field(body, "client_id", 128),
                 field(body, "private_credential", 64)));
     }
 
-    @PostMapping("/config/mia-auth/check-scope")
+    @PostMapping({"/config/youmi-auth/check-scope", "/config/mia-auth/check-scope"})
     public Result<Map<String, Object>> checkScope(@RequestBody Map<String, Object> body) {
         return result(grants.checkScope(field(body, "device_id", 32), field(body, "client_id", 128),
                 field(body, "owner", 256), version(body, "operator_id"),
                 version(body, "binding_version"), version(body, "credential_version")));
     }
 
-    @PostMapping("/config/mia-auth/worker-model")
+    @PostMapping({"/config/youmi-auth/worker-model", "/config/mia-auth/worker-model"})
     @Transactional(rollbackFor = Exception.class)
     public Result<Map<String, Object>> workerModel(@RequestBody Map<String, Object> snapshot) {
         Map<String, Object> scope = grants.requireSnapshot(snapshot, true);
@@ -136,7 +137,7 @@ public class YoumiDeviceAuthorizationController {
             throw new RenException(ErrorCode.NO_PERMISSION);
         }
         // Only the currently authorized agent's existing LLM, never a client-selected model.
-        return result(Map.of("mia_scope", scope, "selected_module", Map.of("LLM", module),
+        return result(Map.of("youmi_scope", scope, "mia_scope", scope, "selected_module", Map.of("LLM", module),
                 "LLM", Map.of(module, llms.get(module))));
     }
 }

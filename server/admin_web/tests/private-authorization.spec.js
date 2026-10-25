@@ -5,7 +5,7 @@ test('HTTP console cannot mint a private authorization code', async ({ page }) =
   await mockBackend(page, false);
   const requests = [];
   page.on('request', request => {
-    if (request.url().includes('/device/mia-auth/')) requests.push(request.url());
+    if (request.url().includes('/device/youmi-auth/')) requests.push(request.url());
   });
   await page.goto('/#/device-management?agentId=test-agent');
   await page.getByRole('button', { name: '私有授权码', exact: true }).first().click();
@@ -25,7 +25,7 @@ test('console code and revoke reuse login, preserve binding and clear ephemeral 
   await mockBackend(page, false);
   const requests = [];
   page.on('request', request => {
-    if (request.url().includes('/device/mia-auth/')) requests.push({
+    if (request.url().includes('/device/youmi-auth/')) requests.push({
       path: new URL(request.url()).pathname, body: request.postDataJSON(),
       authorization: request.headers()['authorization'], method: request.method()
     });
@@ -43,8 +43,8 @@ test('console code and revoke reuse login, preserve binding and clear ephemeral 
   await page.locator('.el-message-box').getByRole('button', { name: /确定/ }).click();
   await expect(page.getByText('私有授权已撤销，原设备绑定保留。', { exact: true })).toBeVisible();
   expect(requests).toEqual([
-    { path: '/xiaozhi/device/mia-auth/code', body: { device_id: device.id }, authorization: 'Bearer synthetic-test-token', method: 'POST' },
-    { path: '/xiaozhi/device/mia-auth/revoke', body: { device_id: device.id }, authorization: 'Bearer synthetic-test-token', method: 'POST' }
+    { path: '/xiaozhi/device/youmi-auth/code', body: { device_id: device.id }, authorization: 'Bearer synthetic-test-token', method: 'POST' },
+    { path: '/xiaozhi/device/youmi-auth/revoke', body: { device_id: device.id }, authorization: 'Bearer synthetic-test-token', method: 'POST' }
   ]);
   const width = await page.evaluate(() => ({ actual: document.documentElement.scrollWidth, available: innerWidth }));
   expect(width.actual).toBeLessThanOrEqual(width.available + 1);
@@ -59,7 +59,7 @@ test('hardware approval sends the physical code through the existing owner endpo
   await mockBackend(page, false);
   const code = '042617';
   const requests = [];
-  await page.route('**/device/mia-auth/code', async route => {
+  await page.route('**/device/youmi-auth/code', async route => {
     const request = route.request();
     requests.push({ body: request.postDataJSON(), authorization: request.headers()['authorization'] });
     await route.fulfill({ json: { code: 0, data: {

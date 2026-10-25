@@ -13,7 +13,7 @@ async function setup(page) {
     { id: 'memory-2', content: '正在准备毕业项目', confirmed: false, updated_at: 1700000001 }
   ] };
   const requests = [];
-  await page.route('**/agent/test-agent/mia-settings', async route => {
+  await page.route('**/agent/test-agent/youmi-settings', async route => {
     const command = route.request().postDataJSON();
     requests.push({ command, authorization: route.request().headers()['authorization'] });
     if (backend.fail) { await route.fulfill({ json: { code: 500 } }); return; }

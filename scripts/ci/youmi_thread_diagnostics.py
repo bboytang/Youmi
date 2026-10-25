@@ -46,7 +46,7 @@ async def run_pairs(report, save, group_state, members):
     scheduling = report['mode'] == 'scheduling'
     if scheduling:
         import inspect
-        from mia_companion.semantic import SemanticMemoryIndex
+        from youmi_companion.semantic import SemanticMemoryIndex
         report['scheduling_runtime_retrieve_sha256'] = hashlib.sha256(
             inspect.getsource(SemanticMemoryIndex.retrieve).encode()).hexdigest()
         # This ABBA compares the frozen unconditional-pair implementation. A

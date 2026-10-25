@@ -332,8 +332,8 @@ class CompanionAdapterTests(unittest.IsolatedAsyncioTestCase):
         install(root, changes)
         self.assertEqual(source.read_text(), "changed\n")
         self.assertEqual(Path(str(source) + ".mia-original").read_text(), "original\n")
-        self.assertTrue((root / "main/xiaozhi-server/mia_companion/memory.py").exists())
-        self.assertTrue((root / "main/xiaozhi-server/mia_companion/proposal.py").exists())
+        self.assertTrue((root / "main/xiaozhi-server/youmi_companion/memory.py").exists())
+        self.assertTrue((root / "main/xiaozhi-server/youmi_companion/proposal.py").exists())
         with self.assertRaises(ValueError):
             install(root, changes)
 
@@ -354,7 +354,7 @@ class CompanionAdapterTests(unittest.IsolatedAsyncioTestCase):
                 install(root, {relative: ("original\n", "changed\n")})
         self.assertEqual(source.read_text(), "original\n")
         self.assertTrue(Path(str(source) + ".mia-original").exists())
-        self.assertFalse((root / "main/xiaozhi-server/mia_companion").exists())
+        self.assertFalse((root / "main/xiaozhi-server/youmi_companion").exists())
 
 
 if __name__ == "__main__":

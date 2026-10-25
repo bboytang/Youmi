@@ -54,6 +54,7 @@ def main():
         shutil.copy2(bundle / 'YoumiSettingsDialog.vue', root / 'main/manager-web/src/components/YoumiSettingsDialog.vue')
         shutil.copy2(bundle / 'YoumiMemoryDialog.vue', root / 'main/manager-web/src/components/YoumiMemoryDialog.vue')
         shutil.copy2(bundle / 'YoumiCharacterEditor.vue', root / 'main/manager-web/src/components/YoumiCharacterEditor.vue')
+        shutil.copy2(bundle / 'youmi_contract.js', root / 'main/manager-web/src/components/youmi_contract.js')
         apply_emotional_system(root)
         print(f'Applied responsive source changes for upstream {manifest["commit"]}')
     else:

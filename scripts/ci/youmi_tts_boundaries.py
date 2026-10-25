@@ -22,7 +22,7 @@ def boundary_cases():
 
 async def diagnose(logger):
     from core.providers.tts.dto.dto import TTSMessageDTO, SentenceType, ContentType
-    from mia_companion.persona import GuardedTTSQueue, PersonaAgent, SAFE_REPLY
+    from youmi_companion.persona import GuardedTTSQueue, PersonaAgent, SAFE_REPLY
     from youmi_tts_timing import make_probe, case_elapsed_ms
     report = {'scope': 'Controlled text deltas through unchanged installed guard and original TTS consumer; no SDK, waveform or playback',
         'waveform_generated': False, 'audio_played': False, 'cases': []}

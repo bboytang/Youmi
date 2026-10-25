@@ -29,8 +29,8 @@ def allow_sqlite_operation(*unused):
 async def open_driver(server, scopes, config, root, report, persist):
     import core.utils.llm as existing_llm
     from core.auth import AuthManager
-    from mia_companion.jobs import TurnCompleted
-    from mia_companion.extraction import validate_output
+    from youmi_companion.jobs import TurnCompleted
+    from youmi_companion.extraction import validate_output
     from youmi_reply_latency import open_driver as open_replies
     from websockets.asyncio.server import serve
 

@@ -14,7 +14,7 @@ async function setup(page) {
     paused: false, emotion_tracking: { enabled: 0, version: 0 }, counts: { memories: 47, traits: 0, events: 0 },
     character: { enabled: false, version: 0, values: null, preset } };
   const backend = { fail: false }, requests = [];
-  await page.route('**/agent/test-agent/mia-settings', async route => {
+  await page.route('**/agent/test-agent/youmi-settings', async route => {
     const command = route.request().postDataJSON(); requests.push(command);
     if (command.action === 'set_feature_settings') Object.assign(state.features, command.features);
     if (command.action === 'set_character') {

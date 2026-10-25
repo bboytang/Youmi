@@ -67,7 +67,7 @@ class EmptyMemoryBaselineTests(unittest.TestCase):
             'base_url': 'https://synthetic.invalid', 'type': 'openai'}
         modules = {'httpx': SimpleNamespace(Client=Mock()), 'youmi_tts_timing': timing,
             'youmi_model_comparison': SimpleNamespace(safe_provider_error=Mock()),
-            'mia_companion.model_requests': SimpleNamespace(model_requests=SimpleNamespace(snapshot=lambda: {}))}
+            'youmi_companion.model_requests': SimpleNamespace(model_requests=SimpleNamespace(snapshot=lambda: {}))}
         environment = {'MIA_TEST_LLM_API_KEY': 'synthetic', 'MIA_TEST_LLM_BASE_URL': configuration['base_url']}
         with patch.dict(sys.modules, modules), patch.dict(os.environ, environment):
             latency.observe_provider(configuration, 'reply', {'provider_requests': 0, 'provider_request_cap': 1},

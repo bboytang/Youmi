@@ -16,10 +16,10 @@ import time
 
 import numpy as np
 
-from mia_companion.authorization import AuthenticatedScope, PrivateAuthorizationRequired
-from mia_companion.embedding import SemanticEncoder, MODEL_KEY, REVISION, DIMENSION, EmbeddingUnavailable
-from mia_companion.memory import MemoryStore
-from mia_companion.semantic import SemanticMemoryIndex
+from youmi_companion.authorization import AuthenticatedScope, PrivateAuthorizationRequired
+from youmi_companion.embedding import SemanticEncoder, MODEL_KEY, REVISION, DIMENSION, EmbeddingUnavailable
+from youmi_companion.memory import MemoryStore
+from youmi_companion.semantic import SemanticMemoryIndex
 
 
 class SyntheticAuthorization:

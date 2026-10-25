@@ -37,7 +37,7 @@ class AffectStateTests(unittest.IsolatedAsyncioTestCase):
     async def test_default_off_and_no_mood_source_confusion(self):
         state = features.status(self.store, self.scope.owner)
         self.assertFalse(state['features']['companion_emotion'])
-        self.assertEqual(state['mia_emotion']['subject'], 'mia')
+        self.assertEqual(state['mia_emotion']['subject'], 'youmi')
         self.assertEqual(state['emotion_tracking']['enabled'], 0)
         self.assertNotIn('youmi_affect', self.data(await self.build()))
         self.assertFalse(self.commit())
@@ -109,7 +109,7 @@ class AffectStateTests(unittest.IsolatedAsyncioTestCase):
 
     async def test_v5_migration_failure_is_atomic_and_reopen_preserves_defaults(self):
         with self.store.lock, self.store.db:
-            for table in ('mia_affect_system_history', 'mia_affect_system_turns', 'mia_affect_system'):
+            for table in ('youmi_affect_system_history', 'youmi_affect_system_turns', 'youmi_affect_system'):
                 self.store.db.execute('DROP TABLE ' + table)
             self.store.db.execute('DROP TABLE mia_affect_turns')
             self.store.db.execute('DROP TABLE mia_affect_state')

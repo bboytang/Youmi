@@ -58,7 +58,7 @@ class ManagerFixture:
 
     async def _request(self, endpoint, snapshot):
         await self.restore(snapshot)
-        if endpoint != '/config/mia-auth/bridge-config':
+        if endpoint != '/config/youmi-auth/bridge-config':
             raise PrivateAuthorizationRequired()
         return self.models
 

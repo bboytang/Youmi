@@ -66,7 +66,8 @@ class AstrBotHandler:
             ledger = self._ledger(authorization)
             if action == 'health' and request.method == 'GET':
                 ledger.prune()
-                return web.json_response({'protocol_version': 1, 'schema': 8,
+                schema_version = self.store.db.execute('SELECT MAX(version) FROM mia_schema_migrations').fetchone()[0]
+                return web.json_response({'protocol_version': 1, 'schema': schema_version,
                     'worker_available': bool(self.worker and not self.worker.closing)})
             if request.method != 'POST' or action not in {'prepare', 'check', 'claim', 'complete', 'tts', 'manage', 'status', 'transcribe'}:
                 raise TurnConflict('invalid_request', 400)

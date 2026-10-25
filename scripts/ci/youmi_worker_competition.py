@@ -27,8 +27,8 @@ def active_job(worker, owner, sources):
 
 
 def observe_validation_failures(worker, report, lock, persist):
-    import mia_companion.jobs as jobs
-    from mia_companion.memory import MemoryError as ProposalError
+    import youmi_companion.jobs as jobs
+    from youmi_companion.memory import MemoryError as ProposalError
     original = jobs.validate_output
 
     def validate(value, sources, context):
@@ -60,8 +60,8 @@ def observe_validation_failures(worker, report, lock, persist):
 async def open_driver(server, scopes, config, root, report, persist):
     import core.utils.llm as existing_llm
     from core.auth import AuthManager
-    from mia_companion.jobs import TurnCompleted
-    from mia_companion.memory import MemoryError as ProposalError
+    from youmi_companion.jobs import TurnCompleted
+    from youmi_companion.memory import MemoryError as ProposalError
     from websockets.asyncio.server import serve
     from youmi_reply_latency import open_driver as open_replies
 
@@ -142,7 +142,7 @@ async def open_driver(server, scopes, config, root, report, persist):
                         if len(encoded) <= 131072:
                             evidence['original_output'] = result
                 if diagnostic:
-                    from mia_companion.extraction import validate_output
+                    from youmi_companion.extraction import validate_output
                     try:
                         validate_output(json.loads(json.dumps(result)), sources, context)
                         validation = {'passed': True}
@@ -172,7 +172,7 @@ async def open_driver(server, scopes, config, root, report, persist):
     existing_llm.create_instance, worker.resolve = factory, resolve
 
     async def watch():
-        from mia_companion.model_requests import model_requests
+        from youmi_companion.model_requests import model_requests
         previous = None
         previous_gate = None
         while True:

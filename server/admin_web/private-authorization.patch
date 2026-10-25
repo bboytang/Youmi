@@ -3,7 +3,7 @@ diff --git a/main/manager-web/src/apis/module/device.js b/main/manager-web/src/a
 +++ b/main/manager-web/src/apis/module/device.js
 @@ -4,0 +5,14 @@
 +    privateAuthorization(deviceId, action, callback, hardwareCode) {
-+        const url = new URL(`${getServiceUrl()}/device/mia-auth/${action}`, window.location.href);
++        const url = new URL(`${getServiceUrl()}/device/youmi-auth/${action}`, window.location.href);
 +        if (window.location.protocol !== 'https:' || url.protocol !== 'https:' || url.origin !== window.location.origin
 +            || !['code', 'revoke'].includes(action)) {
 +            callback({ code: -1, msg: '请先通过 HTTPS 打开智控台，再办理私有授权。' });

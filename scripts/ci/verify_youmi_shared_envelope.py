@@ -15,11 +15,11 @@ import traceback
 
 sys.path.insert(0, str(Path(os.environ['MIA_SCOPE_UPSTREAM']) / 'main/xiaozhi-server'))
 from config.manage_api_client import ManageApiClient
-from mia_companion.authorization import PrivateAuthorization
-from mia_companion.embedding import SemanticEncoder
-from mia_companion.memory import MemoryStore
-from mia_companion.retrieval import FEATURE_CACHE_BYTES
-from mia_companion.semantic import SemanticMemoryIndex
+from youmi_companion.authorization import PrivateAuthorization
+from youmi_companion.embedding import SemanticEncoder
+from youmi_companion.memory import MemoryStore
+from youmi_companion.retrieval import FEATURE_CACHE_BYTES
+from youmi_companion.semantic import SemanticMemoryIndex
 from verify_youmi_performance import populate, measure, summary
 from youmi_performance_budgets import LIMITS, OPTIMIZATION_TARGETS, REVISION as ACCEPTANCE_REVISION, within_budgets
 

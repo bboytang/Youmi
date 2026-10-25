@@ -48,12 +48,12 @@ from core.handle.textMessageHandler import TextMessageHandler
 from core.handle.textMessageType import TextMessageType
 from core.utils.dialogue import Dialogue, Message
 from plugins_func.register import Action, ActionResponse
-from mia_companion import youmi_adapter as youmi, authorization as youmi_auth, reply
-from mia_companion.context import ContextBuilder, turns
-from mia_companion.embedding import SemanticEncoder
-from mia_companion.memory import MemoryStore
-from mia_companion.jobs import JobStore, MemoryWorker
-from mia_companion.semantic import SemanticMemoryIndex
+from youmi_companion import youmi_adapter as youmi, authorization as youmi_auth, reply
+from youmi_companion.context import ContextBuilder, turns
+from youmi_companion.embedding import SemanticEncoder
+from youmi_companion.memory import MemoryStore
+from youmi_companion.jobs import JobStore, MemoryWorker
+from youmi_companion.semantic import SemanticMemoryIndex
 
 
 def installed(path, names, namespace, evidence):

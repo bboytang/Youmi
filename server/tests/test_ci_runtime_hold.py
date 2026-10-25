@@ -36,7 +36,7 @@ class RuntimeHoldTests(unittest.IsolatedAsyncioTestCase):
         db.execute('INSERT INTO mia_jobs VALUES (?,?,?,?)', ('synthetic-unit-job', json.dumps({'text': source}), 'synthetic-owner', 'extracting'))
         worker = SimpleNamespace(resolve=resolve, jobs=SimpleNamespace(store=SimpleNamespace(db=db, lock=threading.RLock())),
                                  index=SimpleNamespace(encoder=object()))
-        with tempfile.TemporaryDirectory() as directory, patch.dict(sys.modules, {'mia_companion.extraction': extraction}):
+        with tempfile.TemporaryDirectory() as directory, patch.dict(sys.modules, {'youmi_companion.extraction': extraction}):
             root = Path(directory)
             (root / 'shutdown-release.json').write_text('{}')
             report = {}
@@ -55,7 +55,7 @@ class RuntimeHoldTests(unittest.IsolatedAsyncioTestCase):
             return lambda sources, context: value
 
         worker = SimpleNamespace(resolve=resolve, index=SimpleNamespace(encoder=object()))
-        with tempfile.TemporaryDirectory() as directory, patch.dict(sys.modules, {'mia_companion.extraction': extraction}):
+        with tempfile.TemporaryDirectory() as directory, patch.dict(sys.modules, {'youmi_companion.extraction': extraction}):
             root = Path(directory)
             report = {}
             observe_hold(worker, {'source': '我喜欢蓝色'}, root, report, threading.Lock(), lambda result: None)
@@ -87,7 +87,7 @@ class RuntimeHoldTests(unittest.IsolatedAsyncioTestCase):
             self.fail('Durable vector resume must not resolve a model')
         worker = SimpleNamespace(resolve=resolve, index=SimpleNamespace(encoder=SimpleNamespace(encode=encode)),
             jobs=SimpleNamespace(store=SimpleNamespace(db=db, lock=threading.RLock())))
-        with tempfile.TemporaryDirectory() as directory, patch.dict(sys.modules, {'mia_companion.extraction': extraction}):
+        with tempfile.TemporaryDirectory() as directory, patch.dict(sys.modules, {'youmi_companion.extraction': extraction}):
             root = Path(directory)
             (root / 'shutdown-release.json').write_text('{}')
             report = {}

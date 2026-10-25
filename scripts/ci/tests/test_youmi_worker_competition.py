@@ -37,8 +37,8 @@ class ExtractionBindingTests(unittest.TestCase):
         before = json.dumps(value, ensure_ascii=False)
         report = {'native_extractions': [{'owner': owner, 'job_id': 'job', 'attempt': 1,
             'original_output_sha256': hashlib.sha256(before.encode()).hexdigest()}]}
-        with patch.dict(sys.modules, {'mia_companion': sys.modules['server.companion'],
-                'mia_companion.jobs': actual_jobs, 'mia_companion.memory': actual_memory}), \
+        with patch.dict(sys.modules, {'youmi_companion': sys.modules['server.companion'],
+                'youmi_companion.jobs': actual_jobs, 'youmi_companion.memory': actual_memory}), \
                 patch.object(actual_jobs, 'validate_output', wraps=actual_jobs.validate_output) as original:
             probe.observe_validation_failures(worker, report, threading.RLock(), lambda value: None)
             with self.assertRaises(actual_memory.MemoryError):

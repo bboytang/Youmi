@@ -31,7 +31,7 @@ def migrate(db):
     if db.in_transaction:
         raise ValueError('Youmi schema migration requires its own transaction')
     migrations = [Path(__file__).with_name(name).read_text(encoding='utf-8')
-                  for name in ('schema.sql', 'schema-v2.sql', 'schema-v3.sql', 'schema-v4.sql', 'schema-v5.sql', 'schema-v6.sql', 'schema-v7.sql', 'schema-v8.sql', 'schema-v9.sql')]
+                  for name in ('schema.sql', 'schema-v2.sql', 'schema-v3.sql', 'schema-v4.sql', 'schema-v5.sql', 'schema-v6.sql', 'schema-v7.sql', 'schema-v8.sql', 'schema-v9.sql', 'schema-v10.sql')]
     digests = [hashlib.sha256(sql.encode()).hexdigest() for sql in migrations]
     db.execute('BEGIN IMMEDIATE')
     try:
@@ -48,7 +48,7 @@ def migrate(db):
                 raise ValueError('Unreviewed Youmi schema version or checksum')
             applied = len(rows)
         else:
-            if db.execute("SELECT 1 FROM sqlite_master WHERE name GLOB 'mia_*' LIMIT 1").fetchone():
+            if db.execute("SELECT 1 FROM sqlite_master WHERE name GLOB 'mia_*' OR name GLOB 'youmi_*' LIMIT 1").fetchone():
                 raise ValueError('Unversioned Youmi schema objects; refusing to overwrite')
             db.execute('CREATE TABLE mia_schema_migrations(version INTEGER PRIMARY KEY,checksum TEXT NOT NULL,schema_checksum TEXT NOT NULL,applied_at INTEGER NOT NULL)')
             applied = 0
@@ -66,7 +66,7 @@ def migrate(db):
 
 def _schema_checksum(db):
     objects = [tuple(row) for row in db.execute(
-        "SELECT type,name,sql FROM sqlite_master WHERE name GLOB 'mia_*' ORDER BY type,name")]
+        "SELECT type,name,sql FROM sqlite_master WHERE name GLOB 'mia_*' OR name GLOB 'youmi_*' ORDER BY type,name")]
     return hashlib.sha256(json.dumps(objects, ensure_ascii=False, separators=(',', ':')).encode()).hexdigest()
 
 

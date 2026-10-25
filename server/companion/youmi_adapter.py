@@ -32,7 +32,10 @@ EMOTIONS = {
 
 
 def _store():
-    path = Path(os.environ.get("MIA_MEMORY_DB", Path(__file__).resolve().parent.parent / "data/mia-memory.sqlite3"))
+    directory = Path(__file__).resolve().parent.parent / 'data'
+    historical = directory / 'mia-memory.sqlite3'
+    default = historical if historical.exists() else directory / 'youmi-memory.sqlite3'
+    path = Path(os.environ.get('YOUMI_MEMORY_DB') or os.environ.get('MIA_MEMORY_DB') or default)
     with _stores_lock:
         if path not in _stores:
             _stores[path] = MemoryStore(path)
@@ -46,7 +49,7 @@ def attach_private_config(conn, private_config):
     if not conn.read_config_from_api or not isinstance(private_config, dict):
         return
     scope = getattr(conn, "_youmi_scope", None)
-    if not isinstance(scope, AuthenticatedScope) or private_config.get("mia_owner") != scope.owner:
+    if not isinstance(scope, AuthenticatedScope) or private_config.get("youmi_owner", private_config.get("mia_owner")) != scope.owner:
         return
     conn._youmi_owner = scope.owner
     selected = private_config.get("selected_module")

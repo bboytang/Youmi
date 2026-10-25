@@ -109,7 +109,7 @@ def validate_config(config):
 
 def status(store, owner):
     with store.lock:
-        row = store.db.execute('SELECT * FROM mia_affect_system WHERE owner=?', (owner,)).fetchone()
+        row = store.db.execute('SELECT * FROM youmi_affect_system WHERE owner=?', (owner,)).fetchone()
         config = json.loads(row['config_json']) if row else defaults(store, owner)
         now = int(store.clock())
         saved = json.loads(row['state_json']) if row else {k: v['baseline'] for k, v in config.items()}
@@ -132,17 +132,17 @@ def status(store, owner):
 
 def _record(store, owner, kind, changes):
     now = int(store.clock())
-    store.db.execute('INSERT INTO mia_affect_system_history(owner,kind,changes_json,created_at) VALUES (?,?,?,?)',
+    store.db.execute('INSERT INTO youmi_affect_system_history(owner,kind,changes_json,created_at) VALUES (?,?,?,?)',
                      (owner, kind, json.dumps(changes, ensure_ascii=False), now))
-    store.db.execute('DELETE FROM mia_affect_system_history WHERE owner=? AND (created_at<? OR id NOT IN '
-        '(SELECT id FROM mia_affect_system_history WHERE owner=? ORDER BY id DESC LIMIT 10000))',
+    store.db.execute('DELETE FROM youmi_affect_system_history WHERE owner=? AND (created_at<? OR id NOT IN '
+        '(SELECT id FROM youmi_affect_system_history WHERE owner=? ORDER BY id DESC LIMIT 10000))',
         (owner, now - 90 * 86400, owner))
 
 
 def _write(store, owner, enabled, config, values, version):
     store.db.execute('INSERT OR IGNORE INTO mia_feature_settings(owner) VALUES (?)', (owner,))
     store.db.execute('UPDATE mia_feature_settings SET companion_emotion=? WHERE owner=?', (int(enabled), owner))
-    store.db.execute('INSERT INTO mia_affect_system VALUES (?,?,?,?,?,?) ON CONFLICT(owner) DO UPDATE SET '
+    store.db.execute('INSERT INTO youmi_affect_system VALUES (?,?,?,?,?,?) ON CONFLICT(owner) DO UPDATE SET '
         'enabled=excluded.enabled,config_json=excluded.config_json,state_json=excluded.state_json,'
         'version=excluded.version,updated_at=excluded.updated_at',
         (owner, int(enabled), json.dumps(config), json.dumps(values), version + 1, int(store.clock())))
@@ -158,7 +158,7 @@ def manage(store, owner, command):
             _fail()
         with store.lock:
             cutoff = int(store.clock()) - 90 * 86400
-            rows = store.db.execute('SELECT id,kind,changes_json,created_at FROM mia_affect_system_history '
+            rows = store.db.execute('SELECT id,kind,changes_json,created_at FROM youmi_affect_system_history '
                 'WHERE owner=? AND created_at>=? ORDER BY id DESC LIMIT 50 OFFSET ?', (owner, cutoff, offset)).fetchall()
             return {'records': [dict(id=r['id'], kind=r['kind'], changes=json.loads(r['changes_json']),
                 created_at=r['created_at']) for r in rows], 'offset': offset, 'page_size': 50}
@@ -248,12 +248,12 @@ def commit(store, owner, session, turn, proposal, expected_version):
     current = status(store, owner)
     if not current['enabled'] or current['version'] != expected_version:
         return False
-    if store.db.execute('SELECT 1 FROM mia_affect_system_turns WHERE owner=? AND session_id=? AND turn_id=?',
+    if store.db.execute('SELECT 1 FROM youmi_affect_system_turns WHERE owner=? AND session_id=? AND turn_id=?',
                         (owner, session, turn)).fetchone():
         return False
     updated = transition(current, proposal, int(store.clock()))
     _write(store, owner, True, current['dimensions'], updated['values'], current['version'])
-    store.db.execute('INSERT INTO mia_affect_system_turns VALUES (?,?,?)', (owner, session, turn))
+    store.db.execute('INSERT INTO youmi_affect_system_turns VALUES (?,?,?)', (owner, session, turn))
     _record(store, owner, 'interaction', {k: {'before': current['values'][k], 'after': v}
             for k, v in updated['values'].items() if v != current['values'][k]})
     return True

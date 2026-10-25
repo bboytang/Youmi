@@ -29,11 +29,11 @@ util.check_model_key = lambda *args, **kwargs: None
 sys.modules['core.utils.util'] = util
 
 from core.providers.llm.openai.openai import LLMProvider
-from mia_companion.authorization import AuthenticatedScope
-from mia_companion.embedding import DIMENSION, MODEL_KEY, REVISION
-from mia_companion.extraction import LLMMemoryExtractor
-from mia_companion.jobs import JobStore, MemoryWorker, TurnCompleted
-from mia_companion.memory import MemoryStore
+from youmi_companion.authorization import AuthenticatedScope
+from youmi_companion.embedding import DIMENSION, MODEL_KEY, REVISION
+from youmi_companion.extraction import LLMMemoryExtractor
+from youmi_companion.jobs import JobStore, MemoryWorker, TurnCompleted
+from youmi_companion.memory import MemoryStore
 
 
 class UnitEncoder:

@@ -39,8 +39,8 @@ export async function mockBackend(page, superAdmin = true) {
     else if (path.includes('/chat-history/test-session')) data = [{ id: 'test-message', chatType: 2, content: longText, createdAt: '2026-10-14T00:00:00Z' }];
     else if (path.includes('/snapshots/current')) data = { currentVersionNo: 1 };
     else if (path.includes('/device/bind/')) data = route.request().method() === 'POST' ? '{}' : [device];
-    else if (path === '/device/mia-auth/code') data = { device_id: device.id, authorization_code: 'b'.repeat(22), expires_in: 600 };
-    else if (path === '/device/mia-auth/revoke') data = {};
+    else if (path === '/device/youmi-auth/code') data = { device_id: device.id, authorization_code: 'b'.repeat(22), expires_in: 600 };
+    else if (path === '/device/youmi-auth/revoke') data = {};
     else if (path.includes('/device/address-book/')) data = { alias: longText.slice(0, 64), permissions: [] };
     else if (path.includes('status')) data = '{}';
     else if (path === '/models/names' || path.includes('/llm/names') || path.endsWith('/plugin/names')) data = [];

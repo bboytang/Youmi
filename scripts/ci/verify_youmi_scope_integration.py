@@ -20,7 +20,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 sys.path.insert(0, str(Path(os.environ['MIA_SCOPE_UPSTREAM']) / 'main/xiaozhi-server'))
 
 from config.manage_api_client import ManageApiClient
-from mia_companion.authorization import (PrivateAuthorization, PrivateAuthorizationRequired,
+from youmi_companion.authorization import (PrivateAuthorization, PrivateAuthorizationRequired,
     load_private_config, allow_generation, allow_output, execute_tool, server_tls_context, intent_reply)
 
 trace = []
@@ -170,16 +170,16 @@ async def main():
     executor = Executor()
     dispatcher.register_executor(ToolType.SERVER_PLUGIN, executor)
     assert (await dispatcher.execute_tool('synthetic_tool', {})).result == 'synthetic dispatch'
-    from mia_companion.memory import MemoryStore
-    from mia_companion.semantic import SemanticMemoryIndex
-    from mia_companion.context import ContextBuilder, ContextLimits, ContextError
-    from mia_companion import reply
-    from mia_companion.embedding import MODEL_KEY, REVISION, DIMENSION
-    from mia_companion import youmi_adapter as adapter
+    from youmi_companion.memory import MemoryStore
+    from youmi_companion.semantic import SemanticMemoryIndex
+    from youmi_companion.context import ContextBuilder, ContextLimits, ContextError
+    from youmi_companion import reply
+    from youmi_companion.embedding import MODEL_KEY, REVISION, DIMENSION
+    from youmi_companion import youmi_adapter as adapter
     # Actual installed DTO, Dialogue and guard; only the TTS consumer is a sink.
     from core.providers.tts.dto.dto import TTSMessageDTO, SentenceType, ContentType
     from core.utils.dialogue import Dialogue, Message
-    from mia_companion.persona import CORE, SAFE_REPLY
+    from youmi_companion.persona import CORE, SAFE_REPLY
     active.dialogue = Dialogue()
     active.prompt = ''
     active.change_system_prompt = lambda text: active.dialogue.update_system_message(adapter.compose_persona(active, text))
@@ -209,7 +209,7 @@ async def main():
             def fact(owner, content, marker):
                 return store.apply_extraction(owner, 'synthetic-session', store.snapshot(owner)['revision'], [content],
                     {'memories': [{'category': 'fact', 'content': content, 'source_index': 0}]}, marker)['memories'][0]
-            from mia_companion.jobs import JobStore, MemoryWorker, TurnCompleted
+            from youmi_companion.jobs import JobStore, MemoryWorker, TurnCompleted
             async def resolve_worker(restored):
                 assert restored == scope
                 async_models = await auth.worker_model(restored)
@@ -252,7 +252,7 @@ async def main():
                 "WHERE s.message_id='extract-own'").fetchone()
             assert extracted['owner'] == scope.owner
             assert store.db.execute('SELECT COUNT(*) FROM mia_vectors WHERE memory_id=?', (extracted['id'],)).fetchone()[0] == 1
-            from mia_companion.extraction import validate_output, context_for
+            from youmi_companion.extraction import validate_output, context_for
             relation_source = '我使用CI文具'
             relation_proposal = {'category': 'fact', 'content': relation_source, 'source_quote': relation_source,
                 'source_index': 0, 'kind': 'explicit', 'subject': 'user', 'value': 'durable',

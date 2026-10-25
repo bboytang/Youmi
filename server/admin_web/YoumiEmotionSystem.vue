@@ -89,7 +89,7 @@ import { getServiceUrl } from '@/apis/api';
 import RequestService from '@/apis/httpRequest';
 
 export default {
-  name: 'EmotionSystem', components: { HeaderBar, YoumiCharacterEditor },
+  name: 'YoumiEmotionSystem', components: { HeaderBar, YoumiCharacterEditor },
   data() {
     return { agents: [], agentId: '', state: null, draft: null, original: '', currentValues: {}, character: null,
       busy: false, error: '', tab: 'overview', history: [], historyOffset: 0,
@@ -150,7 +150,7 @@ export default {
     async load() {
       this.state = null; this.draft = null; this.character = null; this.history = []; this.historyOffset = 0;
       this.accept(await this.call({ action: 'status' }));
-      const legacy = await this.request('/agent/' + encodeURIComponent(this.agentId) + '/mia-settings', { action: 'status' });
+      const legacy = await this.request('/agent/' + encodeURIComponent(this.agentId) + '/youmi-settings', { action: 'status' });
       this.character = legacy.character;
     },
     async confirmDiscard() {
@@ -191,7 +191,7 @@ export default {
       try {
         const values = { ...command.values, warmth: this.state.dimensions.warmth.baseline / 100,
           attachment: this.state.dimensions.closeness.baseline / 100, temper: this.state.dimensions.temper.baseline / 100 };
-        const state = await this.request('/agent/' + encodeURIComponent(this.agentId) + '/mia-settings', { ...command, values });
+        const state = await this.request('/agent/' + encodeURIComponent(this.agentId) + '/youmi-settings', { ...command, values });
         this.character = state.character; this.accept(await this.call({ action: 'status' }));
         this.$message.success('角色基线已保存');
       } catch (error) { this.error = error.message; }

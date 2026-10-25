@@ -18,9 +18,9 @@ spec.loader.exec_module(observer)
 
 class InstalledMethodTraceTests(unittest.IsolatedAsyncioTestCase):
     async def test_observation_preserves_delivery_rechecks_delete_and_revoke(self):
-        modules = {'mia_companion': importlib.import_module('server.companion')}
+        modules = {'youmi_companion': importlib.import_module('server.companion')}
         for name in ('authorization', 'context', 'embedding', 'persona', 'reply', 'semantic'):
-            modules['mia_companion.' + name] = importlib.import_module('server.companion.' + name)
+            modules['youmi_companion.' + name] = importlib.import_module('server.companion.' + name)
         for name in ('test_each_validation_checks_current_permission_once_without_reusing_proof',
                 'test_stream_stops_and_closes_on_deletion_before_next_delivery',
                 'test_stream_stops_on_revocation_before_next_delivery_and_releases_slot'):

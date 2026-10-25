@@ -127,6 +127,8 @@ def private_config_guards(original):
                         '        Map<String, Object> authorized = new java.util.HashMap<>();\n'
                         '        data.forEach((key, value) -> authorized.put((String) key, value));\n'
                         '        authorized.put("mia_scope", scope);\n'
+                        '        authorized.put("youmi_scope", scope);\n'
+                        '        authorized.put("youmi_owner", scope.get("owner"));\n'
                         '        models = authorized;')
     text = replace_once(text, '    public Result<Object> getCorrectWords(',
                         '    @Transactional(rollbackFor = Exception.class)\n    public Result<Object> getCorrectWords(')
@@ -163,6 +165,8 @@ def build_changes(root):
         OTA: passport_discovery(originals[OTA]),
         TARGET: binding_guards(originals[TARGET]),
         SHIRO: replace_once(originals[SHIRO], '        filterMap.put("/**", "oauth2");',
+                            '        filterMap.put("/device/youmi-auth/exchange", "anon");\n'
+                            '        filterMap.put("/device/youmi-auth/renew", "anon");\n'
                             '        filterMap.put("/device/mia-auth/exchange", "anon");\n'
                             '        filterMap.put("/device/mia-auth/renew", "anon");\n'
                             '        filterMap.put("/**", "oauth2");'),

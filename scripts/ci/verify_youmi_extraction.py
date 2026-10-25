@@ -28,13 +28,13 @@ util.check_model_key = lambda *args, **kwargs: None
 sys.modules['core.utils.util'] = util
 
 from core.providers.llm.openai.openai import LLMProvider
-from mia_companion.authorization import AuthenticatedScope, PrivateAuthorizationRequired
-from mia_companion.context import ContextBuilder, ContextError, ContextLimits
-from mia_companion.embedding import SemanticEncoder
-from mia_companion.extraction import LLMMemoryExtractor, normalize
-from mia_companion.jobs import JobStore, MemoryWorker, TurnCompleted
-from mia_companion.memory import MemoryError, MemoryStore
-from mia_companion.semantic import SemanticMemoryIndex
+from youmi_companion.authorization import AuthenticatedScope, PrivateAuthorizationRequired
+from youmi_companion.context import ContextBuilder, ContextError, ContextLimits
+from youmi_companion.embedding import SemanticEncoder
+from youmi_companion.extraction import LLMMemoryExtractor, normalize
+from youmi_companion.jobs import JobStore, MemoryWorker, TurnCompleted
+from youmi_companion.memory import MemoryError, MemoryStore
+from youmi_companion.semantic import SemanticMemoryIndex
 
 
 class Policy:
@@ -212,7 +212,7 @@ async def evaluate(args, report):
                 'producer': 'validated_explicit_user_protocol', 'retry_reused_validation': mode == 'correction'})
         second.close()
         # P19/P20 installed mechanisms: real BGE, synthetic outputs and an EXPLICIT simulated clock.
-        from mia_companion import emotions
+        from youmi_companion import emotions
         target = targets['relation']
         old = store.db.execute('SELECT content FROM memories WHERE id=?', (target,)).fetchone()[0]
         builder = ContextBuilder(index)

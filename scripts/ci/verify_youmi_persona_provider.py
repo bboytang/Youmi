@@ -30,7 +30,7 @@ sys.modules['core.utils.util'] = util
 
 from core.providers.llm.openai.openai import LLMProvider
 from core.providers.tts.dto.dto import TTSMessageDTO, SentenceType, ContentType
-from mia_companion.persona import PersonaAgent, GuardedTTSQueue
+from youmi_companion.persona import PersonaAgent, GuardedTTSQueue
 
 
 def deadline(*unused):

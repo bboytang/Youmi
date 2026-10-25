@@ -14,12 +14,12 @@ import time
 import numpy as np
 
 from core.utils.dialogue import Dialogue, Message
-from mia_companion.authorization import AuthenticatedScope, PrivateAuthorizationRequired
-from mia_companion.context import ContextBuilder, ContextError, ContextLimits, estimate, turns
-from mia_companion.embedding import SemanticEncoder
-from mia_companion.memory import MemoryStore
-from mia_companion.persona import CORE
-from mia_companion.semantic import SemanticMemoryIndex
+from youmi_companion.authorization import AuthenticatedScope, PrivateAuthorizationRequired
+from youmi_companion.context import ContextBuilder, ContextError, ContextLimits, estimate, turns
+from youmi_companion.embedding import SemanticEncoder
+from youmi_companion.memory import MemoryStore
+from youmi_companion.persona import CORE
+from youmi_companion.semantic import SemanticMemoryIndex
 
 
 class FixturePolicy:

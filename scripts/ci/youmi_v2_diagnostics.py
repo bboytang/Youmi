@@ -17,7 +17,7 @@ def digest(value):
 
 
 async def cold_warm(index, scope, authorization, query):
-    from mia_companion.retrieval import FeatureCache
+    from youmi_companion.retrieval import FeatureCache
     from youmi_stage_trace import StageTrace
     rows = []
     original = FeatureCache._prepare
@@ -70,9 +70,9 @@ async def contention(worker, scopes, query, report, persist):
     import httpx
     import openai
     from core.providers.llm.openai.openai import LLMProvider
-    from mia_companion import jobs, extraction
-    from mia_companion.jobs import TurnCompleted
-    from mia_companion.model_requests import ModelRequestGate
+    from youmi_companion import jobs, extraction
+    from youmi_companion.jobs import TurnCompleted
+    from youmi_companion.model_requests import ModelRequestGate
 
     result = {'remote_requests': 0, 'sdk_cap': SDK_CAP, 'sdk_calls': [], 'http_entries': [], 'arms': [],
         'scope': 'Actual Worker/manager/BGE and actual fixed Provider SDK with MockTransport; foreground model lanes, not full ConnectionHandler/TTS/audio acceptance',

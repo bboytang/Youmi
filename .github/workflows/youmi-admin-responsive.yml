@@ -92,12 +92,12 @@ jobs:
         working-directory: server/admin_web/tests
         run: |
           npm ci --no-audit --no-fund
-          npx playwright install --with-deps chromium webkit firefox
       - name: Test every route and responsive interactions
-        working-directory: server/admin_web/tests
-        env:
-          MIA_ADMIN_DIST: /app/dist
-        run: npm test
+        run: |
+          docker run --rm --ipc=host \
+            -v "$GITHUB_WORKSPACE:/workspace" -v /app/dist:/app/dist:ro \
+            -w /workspace/server/admin_web/tests -e YOUMI_ADMIN_DIST=/app/dist \
+            mcr.microsoft.com/playwright:v1.51.1-noble npm test
       - name: Upload source, build and regression evidence
         if: always()
         uses: actions/upload-artifact@v4

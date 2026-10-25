@@ -66,7 +66,7 @@ def state(store, owner):
         feeling = row['feeling'] if max(abs(valence), abs(arousal - .2), tension) >= .08 else 'steady'
     else:
         valence, arousal, tension, feeling = 0, .2, 0, 'steady'
-    result = {'enabled': enabled, 'subject': 'mia', 'feeling': feeling, 'label': LABELS[feeling],
+    result = {'enabled': enabled, 'subject': 'youmi', 'feeling': feeling, 'label': LABELS[feeling],
             'valence': round(valence, 4), 'arousal': round(arousal, 4), 'tension': round(tension, 4),
             'version': row['version'] if row else 0, 'updated_at': row['updated_at'] if row else None,
             'recovery_half_life_seconds': half_life}
@@ -240,7 +240,7 @@ def request_appraisal(provider, query, current):
     client = provider.client.with_options(max_retries=0, timeout=5)
     params = {'model': provider.model_name, 'messages': [
         {'role': 'system', 'content': APPRAISAL_POLICY + (CHARACTER_APPRAISAL_POLICY if character else '')},
-        {'role': 'user', 'content': json.dumps({'user_text': query, 'mia_state': stimulus}, ensure_ascii=False)}],
+        {'role': 'user', 'content': json.dumps({'user_text': query, 'youmi_state': stimulus}, ensure_ascii=False)}],
         'stream': False, 'max_tokens': 256, 'temperature': 0}
     if current.get('affect_system'):
         from .emotional_system import APPRAISAL_POLICY as SYSTEM_POLICY, CATALOG

@@ -14,11 +14,11 @@ import time
 
 import numpy as np
 
-from mia_companion.authorization import AuthenticatedScope, PrivateAuthorizationRequired
-from mia_companion.embedding import DIMENSION, MODEL_KEY, REVISION, SemanticEncoder
-from mia_companion.memory import MemoryStore
-from mia_companion.retrieval import WEIGHTS, THRESHOLD, SEMANTIC_FLOOR, rank
-from mia_companion.semantic import SemanticMemoryIndex
+from youmi_companion.authorization import AuthenticatedScope, PrivateAuthorizationRequired
+from youmi_companion.embedding import DIMENSION, MODEL_KEY, REVISION, SemanticEncoder
+from youmi_companion.memory import MemoryStore
+from youmi_companion.retrieval import WEIGHTS, THRESHOLD, SEMANTIC_FLOOR, rank
+from youmi_companion.semantic import SemanticMemoryIndex
 
 
 class FixturePolicy:

@@ -53,8 +53,8 @@ class BridgeIdentity:
     async def config(self, scope):
         await self.authorization.require(scope, 'memory:read')
         from .authorization import _manager_scope
-        models = await self.authorization._request('/config/mia-auth/bridge-config', scope.snapshot())
-        if not isinstance(models, dict) or _manager_scope(models.get('mia_scope')) != scope:
+        models = await self.authorization._request('/config/youmi-auth/bridge-config', scope.snapshot())
+        if not isinstance(models, dict) or _manager_scope(models.get('youmi_scope', models.get('mia_scope'))) != scope:
             raise PrivateAuthorizationRequired()
         if models.get('prompt') is None:
             models['prompt'] = ''  # Manager uses null for an unconfigured owner role.

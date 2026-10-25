@@ -58,8 +58,8 @@ def task_verdict(jobs):
 
 def handler_for(worker, scopes, report, lock, persist, elapsed):
     from core.auth import AuthManager
-    from mia_companion.jobs import TurnCompleted
-    from mia_companion.youmi_adapter import _user_excerpts
+    from youmi_companion.jobs import TurnCompleted
+    from youmi_companion.youmi_adapter import _user_excerpts
 
     fixture = json.loads(FIXTURE.read_text())
     diagnostic = os.environ['MIA_P23_MODE'] == 'worker-fairness-diagnostic'

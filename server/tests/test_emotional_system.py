@@ -113,9 +113,9 @@ class EmotionalSystemTests(unittest.TestCase):
         import sqlite3
         from server.companion.schema import migrate, _schema_checksum
         with self.store.db:
-            for table in ('mia_affect_system_history', 'mia_affect_system_turns', 'mia_affect_system'):
+            for table in ('youmi_affect_system_history', 'youmi_affect_system_turns', 'youmi_affect_system'):
                 self.store.db.execute('DROP TABLE ' + table)
-            self.store.db.execute('DELETE FROM mia_schema_migrations WHERE version=9')
+            self.store.db.execute('DELETE FROM mia_schema_migrations WHERE version>=9')
         before = _schema_checksum(self.store.db)
         self.store.db.set_authorizer(lambda action, name, *rest: sqlite3.SQLITE_DENY
             if action == sqlite3.SQLITE_CREATE_TABLE and name == 'mia_affect_system_history' else sqlite3.SQLITE_OK)
@@ -140,9 +140,9 @@ class EmotionalSystemTests(unittest.TestCase):
             baseline = subprocess.check_output(['git', 'show', install_emotional.BASE + ':server/companion/' + name], text=True)
             (root / name).write_text(install_emotional.runtime_text(name, baseline, True))
         changed = install_emotional.changes(root, legacy=True)
-        self.assertIn("inputs['mia_affect']", changed['context.py'])
+        self.assertIn("inputs['youmi_affect']", changed['context.py'])
         self.assertIn('YOUMI_V1', changed['character.py'])
-        self.assertIn('from .xiaozhi_adapter import _store', changed['management.py'])
+        self.assertIn('from .youmi_adapter import _store', changed['management.py'])
         (root / 'context.py').write_text('custom source')
         with self.assertRaisesRegex(ValueError, 'Unreviewed'):
             install_emotional.changes(root, legacy=True)

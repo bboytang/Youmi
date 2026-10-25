@@ -149,7 +149,7 @@ class CharacterTests(unittest.IsolatedAsyncioTestCase):
         self.save();features.update(self.store, self.scope.owner, {'companion_emotion': True})
         old = dict(affect.state(self.store, self.scope.owner), feeling='angry', valence=-.7, tension=.8)
         affect.request_appraisal(provider, '我考砸了很伤心，不关你的事', old)
-        sent = json.loads(calls[0]['messages'][1]['content'])['mia_state']
+        sent = json.loads(calls[0]['messages'][1]['content'])['youmi_state']
         self.assertEqual(sent['character']['name'], '悠米')
         for field in ['feeling', 'valence', 'tension', 'version']:
             self.assertNotIn(field, sent)
@@ -165,7 +165,7 @@ class CharacterTests(unittest.IsolatedAsyncioTestCase):
             owner = 'migration-owner'
             features.update(older, owner, {'companion_emotion': True})
             with older.db:
-                for table in ('mia_affect_system_history', 'mia_affect_system_turns', 'mia_affect_system'):
+                for table in ('youmi_affect_system_history', 'youmi_affect_system_turns', 'youmi_affect_system'):
                     older.db.execute('DROP TABLE ' + table)
                 older.db.execute("INSERT INTO mia_affect_state VALUES (?, -.2, .4, .3, 'hurt', 7, 1800000000)", (owner,))
                 # Restore exactly V6's state table SQL and migration checksums.

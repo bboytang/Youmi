@@ -11,12 +11,12 @@ async function setup(page) {
   const state = {
     features: { memory_recall: true, personality_growth: true, interaction_events: true, companion_emotion: false },
     paused: false, emotion_tracking: { enabled: 0, version: 0 },
-    mia_emotion: { enabled: false, label: '平静', updated_at: null },
+    youmi_emotion: { enabled: false, label: '平静', updated_at: null },
     counts: { memories: 2, traits: 0, events: 1 }
   };
   const requests = [];
   const backend = { fail: false };
-  await page.route('**/agent/test-agent/mia-settings', async route => {
+  await page.route('**/agent/test-agent/youmi-settings', async route => {
     const request = route.request();
     const command = request.postDataJSON();
     requests.push({ command, authorization: request.headers()['authorization'] });
@@ -26,9 +26,9 @@ async function setup(page) {
     if (command.action === 'pause') state.paused = command.paused;
     if (command.action === 'set_feature_settings') {
       Object.assign(state.features, command.features);
-      state.mia_emotion.enabled = state.features.companion_emotion;
+      state.youmi_emotion.enabled = state.features.companion_emotion;
     }
-    if (command.action === 'reset_mia_emotion') { state.mia_emotion.label = '平静'; state.mia_emotion.updated_at = null; }
+    if (command.action === 'reset_youmi_emotion') { state.youmi_emotion.label = '平静'; state.youmi_emotion.updated_at = null; }
     if (command.action === 'emotion_consent') state.emotion_tracking.enabled = command.enabled ? 1 : 0;
     await route.fulfill({ json: { code: 0, data: state } });
   });
@@ -84,16 +84,16 @@ test('Youmi emotion has its own server switch, visible state and confirmed reset
   await dialog.getByRole('switch', { name: 'Youmi 的持续情绪', exact: true }).click();
   await expect(dialog.getByRole('switch', { name: 'Youmi 的持续情绪', exact: true })).toHaveAttribute('aria-checked', 'true');
   expect(state.emotion_tracking.enabled).toBe(0);
-  state.mia_emotion.label = '难过';
+  state.youmi_emotion.label = '难过';
   await dialog.getByRole('button', { name: '刷新', exact: true }).click();
   await expect(dialog).toContainText('Youmi 当前情绪：难过');
   await dialog.getByRole('button', { name: '重置 Youmi 情绪', exact: true }).click();
   await page.locator('.el-message-box').getByRole('button', { name: '取消', exact: true }).click();
-  expect(requests.some(item => item.command.action === 'reset_mia_emotion')).toBe(false);
+  expect(requests.some(item => item.command.action === 'reset_youmi_emotion')).toBe(false);
   await dialog.getByRole('button', { name: '重置 Youmi 情绪', exact: true }).click();
   await page.locator('.el-message-box').getByRole('button', { name: '确定', exact: true }).click();
   await expect(dialog).toContainText('Youmi 当前情绪：平静');
   expect(requests.filter(item => item.command.action !== 'status').map(item => item.command)).toEqual([
-    { action: 'set_feature_settings', features: { companion_emotion: true } }, { action: 'reset_mia_emotion' }
+    { action: 'set_feature_settings', features: { companion_emotion: true } }, { action: 'reset_youmi_emotion' }
   ]);
 });
