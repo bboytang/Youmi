@@ -1,42 +1,45 @@
 # 情感系统交接
 
-## 需求与授权
+截至2026-10-25 18:27 UTC：实现、精确提交CI与工作环境部署已完成；QQ/App/实体设备的真实对话及用户登录后保存参数仍需终端验收。
 
-用户已确认plan.md，并要求开始实施及持续记录。独立入口名称为「情感系统」。全部已列基础情绪、复杂情感、需要、性格和原则均可调。同一智能体所有绑定设备共用，不同智能体分开管理。
+## 已确认需求
 
-最新追加：前后端统一youmi/Youmi。不要部署已生成的旧Mia命名候选；该候选验证只证明原兼容方案可行，现需改为统一命名迁移。历史数据和旧凭据必须兼容。
+独立管理入口只叫「情感系统」。前后端运行包、类型、接口、新配置和新存储统一youmi/Youmi。51项维度完整覆盖基础情绪、复杂情感、六种需要、三项性格和六项调节原则，均可调。每个智能体独立；同一智能体的设备、App、QQ共用。已有身份、凭据和存储按兼容契约保留，不能盲目全局替换历史mia字段。
 
-## 仓库与接入位置
+## 仓库状态
 
-- /root/projects/Youmi，实施分支feature/emotional-system（从feature/astrbot-fusion分出）；保留前序AstrBot改动和YOUMI_ASTRBOT附件。
-- server/companion现有affect/character/context/reply及AstrBot账本负责状态和提交；management.py与Manager控制器负责所有者授权。
-- server/admin_web为前端源码补丁与组件，使用已校验上游重建，不能覆盖原有生产定制。
-- 文档plan.md为当前确认方案；worklog.md记录实际验证，不推断通过。
+- 工作区/root/projects/Youmi，实施分支feature/emotional-system，从feature/astrbot-fusion分出。
+- 已部署运行源码提交27601ab5f5dfed6dddd0f2d1d7bbc7b39571b901；后续文档提交不改变该运行源码。
+- integrations/astrbot_plugin_youmi下README.md、_conf_schema.json、main.py及integrations/tests/test_astrbot_compatibility.py这4个既有未提交修改，以及YOUMI_ASTRBOT附件，都保留且不属于本次提交。
+- plan.md为确认方案，worklog.md记录过程及失败，deployment.md记录精确工作流与实际发布。不要把早期旧命名候选当成当前发布物。
 
-## 当前进度
+## 关键实现
 
-已完成初始实现：V9迁移、51维度、状态计算、管理API、App/设备和QQ对话接入、独立Vue2页面及入口。本地后端471、scripts98、CI辅助39项通过；Vue模板与脚本解析通过。工作流、完整浏览器构建与交互、Java测试和部署尚待验证，不能将本地机制测试称为真机通过。生产数据尚未变动。
+- server/companion/emotional_system.py：51维度、固定/动态/临时锁定、恢复、限幅、版本冲突和幂等回合提交、90天/10000条变化历史。
+- schema-v9.sql保持不可变；schema-v10.sql将新情感表迁移为youmi_affect_system系列。历史mia表/身份字段保持原值。
+- affect/context/reply与astrbot_api复用状态计算，在完整成功回合后提交；旧持续情绪在新页首次保存前继续沿用。
+- Manager的affect-system和youmi-settings复用登录与所有者核验。运行包youmi_companion；Java自有类型Youmi命名；旧管理/授权路径继续兼容。
+- server/admin_web/YoumiEmotionSystem.vue及emotional_system.py提供页面和入口，支持智能体切换、全部配置、当前值调整、确认重置、历史、草稿及移动布局。
 
-新增源码：server/companion/emotional_system.py、schema-v9.sql/schema-v10.sql；前端YoumiEmotionSystem.vue和源码安装器emotional_system.py。重点复核旧字段兼容、跨设备版本控制和独立智能体权限。
+## 验证结果
 
-本地源码候选：/tmp/emotional-admin-JN8Pnt/xiaozhi-esp32-server-87c6df77b0220ddbd8fc804f984f83f69f3225e5；已应用前端补丁。模板校验依赖在同目录validator。磁盘仅约0.5GiB余量，不宜盲目安装完整依赖或清理用户资源。
+27601ab5精确提交：后端477项、Java191项与JAR、前端112项及构建、管理基线、真实向量/检索/上下文/回复/提取均通过。仓库检查98+10+39+16项、S3两板/C3/P4四个代表固件构建通过。运行链接见deployment.md。
 
-## 验证约束
+保留两项过程记录：上一轮Firefox旧情绪刷新偶发未发请求，当前相同前端完整112项通过，未声称已经修复偶发问题；真实向量首轮1次触发原有embedding_busy上限，未放宽阈值，原条件复跑全流程通过。后续若复现，应按独立问题定位，不能隐藏或直接放宽断言。
 
-使用/root/tmp/youmi-astrbot-venv执行实际测试。自动工作流按用户项目规则验证并给出精确提交证据，真机QQ/App另验。部署前核对当前镜像、旧命名运行源码与增量迁移；旧二进制不能直接接升级后的SQLite。
+## 当前工作环境
 
-## 分支与线上验证
+- 发布目录/opt/xiaozhi-server/youmi-emotional-system-27601ab5。
+- 语音镜像youmi-voice:emotional-27601ab5，ID sha256:f25c380c66b001153d88c91d54375b0d29fbf6a19aedd5a829e07c6bb8dacf11。
+- 管理镜像youmi-manager:emotional-27601ab5，ID sha256:4e40ac28c99dc74d97e43be9bdf8d8dbefc53bde40da763b3e496cc3794a6758。
+- 只重建语音与管理服务；现有7份Compose继续保留并追加compose.youmi.json。新环境变量采用YOUMI前缀，数据/证书目录保持历史路径，QQ侧车未重建。
+- 实际只读检查通过：SQLite V10/完整性ok、Worker可用、实际已授权智能体管理入口返回51维度、未登录请求被拒绝、index与CI一致及入口JS/CSS可用。两个容器重启次数0。
+- 未改变智能体参数，未导出生产数据库/密钥，未新增生产备份。旧生产镜像保留。V10后不能直接使用仅支持V8的旧语音二进制，恢复须用V10兼容运行包和Youmi授权路由。
 
-实现已在feature/emotional-system提交f918d703，CI修订880e2838。GitHub后端、管理基线、绑定授权、语义向量已通过，链接见worklog；前端仍在浏览器依赖安装步骤。最新运行代码的精确提交验证需在后续修订后补齐。
+## 部署工具和继续工作
 
-离线更新器install_emotional.py只对冻结基线匹配的源码候选操作；支持legacy名称。/tmp/emotional-admin-JN8Pnt/runtime/mia_companion为已导出的生产源码候选，已应用第一轮更新并用合成库验证；后续源码修改须重建候选，不对已安装候选重复应用。生产Manager实际类型MiaCompanionManagementController，JAR路径/app/xiaozhi-esp32-api.jar，发布只能替换已核对的该class并保留其他条目。
+normalize_runtime.py严格核对9个原生源码preimage并生成新youmi_companion覆盖目录；normalize_manager.py严格核对替换类型，保留其余JAR内容，只转换明确的自有类型引用。最终5个替换class与27601ab5 CI JAR逐字节相同；451个前端文件核对清单。
 
-上述单class/旧命名发布是用户追加命名前的历史方案，现已暂停。新发布需要统一youmi_companion包和Youmi Java类型，并迁移原生入口引用，不能直接套用旧Mia候选。
+本地临时目录/tmp/emotional-admin-JN8Pnt保存离线候选和合成检查，不包含生产数据库或配置密钥。早期runtime/mia_companion、manager旧命名候选已作废，不部署。可用测试环境为/root/tmp/youmi-astrbot-venv；本地磁盘余量有限，勿清理用户文件来腾空间。
 
-当前命名改动：安装器、验证脚本、前端请求统一youmi；管理和私有授权API增加youmi主入口并保留旧别名；新增状态表通过V10迁移为youmi_affect_system系列，旧SQL迁移保持不可变。身份persona_id及既有授权载荷中的历史字段仍兼容，避免现有设备失效。命名调整后本地474后端和39 CI辅助测试通过。前端新工作流使用匹配Playwright1.51.1的官方容器，避免上轮Azure APT镜像长时间下载。
-
-1b53fd4d的前端结果104通过/8失败，已定位并补总开关aria-label；Java191项中3个旧字段白名单断言失败，已加新旧youmi_scope一致性检查待重跑。不要将这两轮记为全部通过。
-
-统一命名部署工具：normalize_runtime.py（9个原生文件严格preimage，生成新youmi_companion覆盖目录）；normalize_manager.py（生产自有4类型+ShiroConfig严格preimage，保留JAR其他条目及启动前缀）。/tmp/emotional-admin-JN8Pnt/native为只读导出的原生源码，youmi-overlay为首个统一命名候选；后续源码修改需生成新目录。旧Mia单class候选已作废，不部署。生产仍为astrbot-494f0bab语音和astrbot-e87596a6管理镜像。
-
-3d922939后端40219250974、绑定授权40219251038、管理基线40219250968通过。前端40219250969进行中。最新UI补充legacy_enabled提示，测试域名/构建辅助变量亦统一youmi，后续提交仍需精确工作流验证。
+下一步是用户登录后台→情感系统→选择智能体→保存配置，再用QQ、App及实体设备对话观察共享状态和表达。不能把fixture浏览器检查、编译或容器健康称为真机验收；不要未经选择替所有智能体启用系统或覆盖参数。
