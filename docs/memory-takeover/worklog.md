@@ -46,3 +46,11 @@
 - 本地新增 17 项通过；相关回归合计 152 项通过。数据库内容、51 维情感和默认上下文在影子查询前后相同。
 - CI 增加原生依赖和双版本覆盖，并为实际安装包/真实 BGE 增加离线影子机制验证及 JSON artifact。准确提交结果待 CI 完成后补充。
 - 未变更 schema、未调用真实模型提供者、未操作生产数据库、未部署、未发送消息。功能及预算限制见 shadow-retrieval.md。
+
+### 步骤 2A 验收完成与交接
+
+- 产品提交 `e92439086a61810fc5c9a0e065b45e696a8b8e07` 已推送；[双版本矩阵](https://github.com/bboytang/Youmi/actions/runs/40244047520) 各 152 项通过，[完整后端](https://github.com/bboytang/Youmi/actions/runs/40244047754) 508 项及人设传输通过。
+- [真实向量链路](https://github.com/bboytang/Youmi/actions/runs/40244047561) 全部通过，包括安装后新增 BGE/Tantivy 影子机制检查；已核对 artifact SHA、passed=true 和八项机制检查全为 true。
+- [embedding 对照](https://github.com/bboytang/Youmi/actions/runs/40244047437)、[绑定授权](https://github.com/bboytang/Youmi/actions/runs/40244047533)、[Manager 基线](https://github.com/bboytang/Youmi/actions/runs/40244047448) 均通过。前者仅证明既有模型任务未回归，不证明新引擎召回质量优于旧引擎。
+- 本地 17 项和相关 152 项通过；diff 已检查，原有 10 个用户修改文件及 YOUMI_ASTRBOT/ 未提交、未覆盖。准确验证与观测值见 verification.md。
+- 步骤 2A 验收完成，步骤 2 整体尚未完成。下一项 2B：成功回合时的情感快照、认知状态、稳定 ID 合并关系及其增量迁移/写入兼容。新增存储不能绕过完成回合、证据和版本约束。

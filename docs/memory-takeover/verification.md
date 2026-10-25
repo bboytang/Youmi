@@ -33,3 +33,22 @@
 ### 验证边界
 
 没有变更 schema，没有打开生产数据库，没有新增生产备份，没有部署或发起真实 QQ/App/设备消息。此步骤只证明旧引擎经统一入口后的兼容性；不证明上游核心已经移植，不证明双向情感联动、数据迁移或生产回退已经完成。
+
+## 步骤 2A：canonical 仓储及移植检索核心
+
+准确产品提交：`e92439086a61810fc5c9a0e065b45e696a8b8e07`。以下检查均针对该 SHA，全部通过。
+
+| 检查 | 结果 | GitHub Actions |
+| --- | --- | --- |
+| Python 3.10 / 3.12 兼容矩阵 | 各 152 项，包含新增 17 项；原生依赖已安装 | https://github.com/bboytang/Youmi/actions/runs/40244047520 |
+| 完整后端及人设传输 | 后端 508 项及传输检查通过 | https://github.com/bboytang/Youmi/actions/runs/40244047754 |
+| 实际安装、真实 BGE/Tantivy 与原有向量/上下文/回复/提取 | 全部阶段通过，包含新增影子机制脚本 | https://github.com/bboytang/Youmi/actions/runs/40244047561 |
+| 中文 embedding 对照 | bge-small-zh 与 bge-base-zh 两个既有任务通过；不是新影子引擎质量对照 | https://github.com/bboytang/Youmi/actions/runs/40244047437 |
+| 绑定授权与 JAR | Java 192 项及构建通过 | https://github.com/bboytang/Youmi/actions/runs/40244047533 |
+| Manager 基线 | 原有 Java 150 项及基线复现 4 项通过 | https://github.com/bboytang/Youmi/actions/runs/40244047448 |
+
+已下载并检查上述向量工作流 artifact `Youmi-actual-vectors-e92439086a61810fc5c9a0e065b45e696a8b8e07` 中的 memory-shadow-results.json：commit 与产品 SHA 一致，passed=true；real_bge、real_tantivy、canonical_sources、owner_isolation、read_only_shadow、all_51_emotions_preserved、default_engine_unchanged、old_content_not_resurrected 均为 true。
+
+该小型合成语料中，纯 BM25 查询 17.26 ms、BM25+向量 55.13 ms、语义改写查询 163.60 ms；进程峰值 RSS 290052 KiB，包含 BGE。以上仅是本次离线机制用例的观测值，不能当作 10000 条容量、并发或生产延迟承诺。
+
+步骤 2A 未写生产数据，未新增 schema 或持久化索引，未使新结果进入正式回复。情绪/认知快照持久化、稳定 ID 合并与写入兼容仍属于步骤 2B；画像、笔记、反思、双向联动和最终切换仍待后续实施。
