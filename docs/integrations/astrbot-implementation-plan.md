@@ -1,5 +1,7 @@
 # Youmi × AstrBot × SnowLuma 当前实施方案与计划
 
+07:03 UTC接续状态：QQ已登录且反向WS已接通；55e9428e新增复用SnowLuma原生PTT转写，29项本地act集成及Meme全suite通过，已原生reload。官方Meme398图/19分类原生导入/规则已保存，AstrBot真实重启后资源和连接保持。当前具体待办是用户确认owner会话同机复用、添加QQ好友，之后走正常virtual/exchange并完成真机T01–T30；没有撤销生产授权或要求重新备份。完整目标仍未达成，不能因登录或自动化通过而停止剩余联调。
+
 更新时间：2026-10-25 06:12 UTC。**实际生产后端已切换、两个 sidecar 已启动，正在按用户要求先完成手机 QQ 登录；完整真机验收仍进行中。** 开发分支 `feature/astrbot-fusion`，基线 `739c509eb3f4bc231d879367b33a15a8a94c38f5`。最新完整本地 act 对应代码 `e87596a630d33f6aec47df429ee717ff67c8c4c8`，含原命名与生产旧命名两个 Java job；随后新增镜像配方和经实际镜像核对的 Compose 修订。实时部署状态见[生产记录](astrbot-production-deployment.md)，下文早期 V7/未部署数据为审计时快照。
 
 任务依据：用户附件 `YOUMI_ASTRBOT/YOUMI_ASTRBOT_SNOWLUMA_CODEX_PLAN.md` 与后续明确指令。入口索引：[审计](astrbot-audit.md)、[HTTP 契约](astrbot-contract.md)、[工作记录](astrbot-worklog.md)、[交接记录](astrbot-handoff.md)、[部署](../../deploy/astrbot-fusion/setup.md)、[回滚](../../deploy/astrbot-fusion/rollback.md)。

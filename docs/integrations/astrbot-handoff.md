@@ -1,5 +1,11 @@
 # AstrBot 融合交接记录
 
+**07:03 UTC 当前接手点：** 代码55e9428e本地act connector成功（29集成+Meme1045/1skip/85subtests），已上线并原生reload。官方Meme素材固定77f9768，经原生导入398图/19分类，默认规则已保存；首次网络下载失败后用同提交codeload原档导入，未重造图片管理。真实AstrBot容器重启证明插件、图库/规则保留、QQ仍online且反向WS自动重连；SnowLuma/QQ冷重启未验。
+
+**待用户动作：** 只查到1个有效原owner后台会话，已询问可否仅同机复用它走正常virtual/exchange；尚无答复，token未读取、grant未签发，bindings为空，QQ不能使用原App私有上下文。好友列表仍为0，已通知用户加专用QQ。已有生产/模型Key同机复用授权不必重问；此处owner会话的明确问题保持待答，不绕过当前Scope。收到答复后继续原生授权和T01–T30真机联调，不能把任务标完成。临时HTTPS桌面已关闭并恢复原Nginx哈希。
+
+最新证据与素材hash见production-deployment/test-evidence；下面06:43及更早条目为历史，插件不再是未提交修改。运行时release仍位于生产/opt/xiaozhi-server/astrbot-fusion-e87596a6，connector-deployment.json另记新插件SHA，避免只从目录名误判。
+
 **06:43 UTC 最新：QQ已登录，OneBot反向WS真实connected，临时手机桌面已关闭并恢复原Nginx指纹，原QQ进程/登录态保留。好友列表返回0，已通知用户添加专用账号。现正等待用户选择是否允许仅在生产主机内复用原owner有效后台会话来走正常virtual/exchange；未读取token或签发grant，bindings仍为空。不要把QQ登录视为已经取得原App人格/记忆授权。**
 
 新增入站语音适配复用固定SnowLuma原生fetch_ptt_text，等待钩子在Meme之前转换临时Record、保留raw；原native STT若已转换则保持原样。29项直接集成通过；目前工作树包含这一小改动，尚须精确提交act connector和原生插件reload。用户并未提供QQ好友/手机语音/原App双端验收结果。

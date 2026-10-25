@@ -86,3 +86,10 @@
 - 独立grant尚未签发。用户此前只允许模型Key同机复用，owner后台会话是另一种凭据，已明确询问是否允许在原主机内用有效会话走正常virtual接口；等待选择，未读取token或伪造身份。
 - 发现原生SnowLuma已有fetch_ptt_text，核对actions/extended、media-actions、PTT异步协议及AstrBotPreProcess→waiting→Agent顺序后，补入Connector等待钩子。无需新增ASR服务或Key；成功只换临时Record保留raw，失败走原media-only notice/claim/complete，独立插件请求不改。
 - 新增测试在旧代码上5失败/1通过，证明缺口；修复后完整固定源码集成29通过，含Meme等待优先级、8个新增转写/失败/授权用例。原始before/after日志位于/root/tmp/youmi-snowluma-stt-{before,after}.log；真实手机语音仍未测。正在准备精确提交本地act和线上原生reload。
+
+## 2026-10-25 07:03 UTC 语音适配交付、原生表情资源与重启证明
+
+- 55e9428e本地act connector通过29集成、Meme1045通过/1skip/85subtests；日志youmi-act-native-voice/connector.log。仅插件main.py在核对旧/新SHA256后原子替换并原生reload，原生API确认Youmi/Meme均activated。后端/Java与已测e875版本无差异。
+- 官方Meme包源固定77f976826f058e566b7a84035774192871b6baac。原生community安装先因加速源403/GitHub超时失败，未创建图片；改从同SHA codeload取得ZIP，经原生预检/确认导入398张/19分类，再通过原生规则API保存默认包。ZIP指纹54744f3a…4443e0dc完整值见生产记录；overwrite=false，只有空builtin-default被原生导入器移除，无用户图库被覆盖，没有第二个图库/Embedding或自制选图器。
+- 原生API确认默认包official-001。真实重启AstrBot容器后，PID/启动时刻变化，两个插件/398图/规则保持，SnowLuma get_status online=true，反向WS自动重连；QQ/SnowLuma进程未重启。第一探针超时，服务就绪后验证通过；不掩盖首个探针失败。SnowLuma/QQ冷重启仍未验。
+- 只读owner会话数量为1；token未读取，等待用户明确选择是否可同机复用。07:02:55好友列表仍为0，已告知用户添加专用QQ。共享人格/记忆、QQ真实收发/语音/图片/工具/主动/原App双端仍未验证，不能把基础连接、fixture或资源安装当整体验收。

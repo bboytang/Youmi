@@ -1,12 +1,12 @@
 {
-  "recorded_at_utc": "2026-10-25T06:13:02.200396+00:00",
-  "code_sha": "e87596a630d33f6aec47df429ee717ff67c8c4c8",
+  "recorded_at_utc": "2026-10-25T07:06:26.328878+00:00",
+  "code_sha": "55e9428e2da9b40bacc72ab36ad09122de4a7efc",
   "base_sha": "739c509eb3f4bc231d879367b33a15a8a94c38f5",
   "branch": "feature/astrbot-fusion",
   "runner": "nektos/act local self-hosted Linux runner",
   "github_hosted_actions_executed": false,
   "workflow": ".github/workflows/youmi-astrbot.yml",
-  "command": "scripts/ci/run_astrbot_act.sh backend connector manager manager-legacy",
+  "command": "scripts/ci/run_astrbot_act.sh connector",
   "versions": {
     "act": "0.2.89",
     "docker": "29.1.3",
@@ -53,8 +53,10 @@
       "passed": 39
     },
     "connector_fixed_source": {
-      "passed": 21,
-      "llm_and_qq_network": "fixtures"
+      "passed": 29,
+      "llm_and_qq_network": "fixtures",
+      "native_voice_tests": 8,
+      "phone_transcription_verified": false
     },
     "meme_native": {
       "passed": 1045,
@@ -93,22 +95,26 @@
     "backend": {
       "path": "/root/tmp/youmi-act-goal-audit/backend.log",
       "sha256": "0306c3e35a1fd57e31a3452f34450d0b1805a2b118fb26a42ffadeed9266c66a",
-      "job": "succeeded"
+      "job": "succeeded",
+      "source_sha": "e87596a630d33f6aec47df429ee717ff67c8c4c8"
     },
     "connector": {
-      "path": "/root/tmp/youmi-act-goal-audit/connector.log",
-      "sha256": "8d18ad81cf5548df5ec6635e627317eb754b25eccc4f09142d2f15e4b872bf27",
-      "job": "succeeded"
+      "path": "/root/tmp/youmi-act-native-voice/connector.log",
+      "sha256": "3afc07146bbb5062722b76f02c7970e607cba04b52a59aed5a485090420501ac",
+      "job": "succeeded",
+      "source_sha": "55e9428e2da9b40bacc72ab36ad09122de4a7efc"
     },
     "manager": {
       "path": "/root/tmp/youmi-act-goal-audit/manager.log",
       "sha256": "5efbc18afaa6d69366d6c8e398fc9804d9e2bc9d03158bf8aaf5c25539ced572",
-      "job": "succeeded"
+      "job": "succeeded",
+      "source_sha": "e87596a630d33f6aec47df429ee717ff67c8c4c8"
     },
     "manager-legacy": {
       "path": "/root/tmp/youmi-act-goal-audit/manager-legacy.log",
       "sha256": "b322a6ef782018a233c6292ca83da9271b3ce211dca1b2d229e53df5799fbc95",
-      "job": "succeeded"
+      "job": "succeeded",
+      "source_sha": "e87596a630d33f6aec47df429ee717ff67c8c4c8"
     }
   },
   "manager_candidate_jar": {
@@ -118,11 +124,11 @@
     "deployment_status": "local build only; must not replace customized production JAR wholesale"
   },
   "not_verified": [
-    "QQ login/device messaging/reconnect",
+    "QQ device messaging/reconnect",
     "live vision, STT, MCP, tool-loop and TTS providers",
     "real iOS and original device shared-memory interactions",
     "macOS/Xcode iOS build and UI tests",
-    "sidecar persistent-volume restart",
+    "SnowLuma/QQ cold restart and login persistence",
     "production rollback rehearsal",
     "production end-to-end latency and success rates"
   ],
@@ -230,8 +236,37 @@
       "rfb_greeting": true,
       "temporary_auto_expiry": true
     },
-    "qq_logged_in_verified": false,
-    "virtual_grant_issued": false
+    "qq_logged_in_verified": true,
+    "virtual_grant_issued": false,
+    "onebot_reverse_ws": "connected",
+    "temporary_mobile_desktop_closed": true,
+    "original_nginx_hash_restored": true,
+    "owner_session_reuse_approval": "pending",
+    "owner_session_token_read": false,
+    "native_friend_count": 0,
+    "connector_native_reload": "ok",
+    "connector_source_sha": "55e9428e2da9b40bacc72ab36ad09122de4a7efc",
+    "meme_assets": {
+      "repo": "anka-afk/astrbot-meme-pack-official-01",
+      "source_sha": "77f976826f058e566b7a84035774192871b6baac",
+      "zip_sha256": "54744f3ae5d518d70d8fd701c878a1877d587d662f222c3eb3dc6a4e4443e0dc",
+      "images": 398,
+      "categories": 19,
+      "native_import_and_rules": true,
+      "overwritten_existing_user_images": false,
+      "native_community_download_initially_failed": true,
+      "qq_delivery_verified": false
+    },
+    "astrbot_real_restart": {
+      "verified_at_utc": "2026-10-25T07:02:55.212195+00:00",
+      "new_process": true,
+      "both_plugins_active": true,
+      "meme_images_and_rules_preserved": true,
+      "qq_online": true,
+      "reverse_ws_reconnected": true,
+      "first_probe_timed_out": true,
+      "snowluma_qq_container_restarted": false
+    }
   },
   "production_configuration_validation": {
     "source_sha": "14390134daf413002675a673b53dcf3ccc2ba54f",
@@ -244,5 +279,15 @@
     "log": "/root/tmp/youmi-act-production-config/backend.log",
     "log_sha256": "8154c7199df40c851f581fab51b2c7378205daa3bd668504bee21d6a1bac7f65",
     "runtime_application_code_matches": "e87596a630d33f6aec47df429ee717ff67c8c4c8"
+  },
+  "component_verification": {
+    "connector": "55e9428e2da9b40bacc72ab36ad09122de4a7efc",
+    "backend_and_both_java": "e87596a630d33f6aec47df429ee717ff67c8c4c8",
+    "backend_and_java_files_changed_since_verified_sha": false,
+    "compose": "14390134daf413002675a673b53dcf3ccc2ba54f"
+  },
+  "previous_full_command": {
+    "source_sha": "e87596a630d33f6aec47df429ee717ff67c8c4c8",
+    "command": "scripts/ci/run_astrbot_act.sh backend connector manager manager-legacy"
   }
 }

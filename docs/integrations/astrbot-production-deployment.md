@@ -1,5 +1,11 @@
 # 2026-10-25 生产部署记录（进行中）
 
+**07:03 UTC 最新：** Connector代码`55e9428e2da9b40bacc72ab36ad09122de4a7efc`已通过本地act：29项集成、Meme1045通过/1跳过/85子测试；只更新已核对旧hash的插件main.py并原生reload，未重启QQ。后端/Java文件与e875四job版本相同。
+
+官方表情包通过Meme原生import/stage→import/apply导入398张/19分类，并通过原生settings/rules保存默认规则。素材固定为[官方包提交77f9768](https://github.com/anka-afk/astrbot-meme-pack-official-01/tree/77f976826f058e566b7a84035774192871b6baac)，ZIP SHA256=`54744f3ae5d518d70d8fd701c878a1877d587d662f222c3eb3dc6a4e4443e0dc`。首次原生community下载加速源403/GitHub超时失败；随后从同提交codeload取得原档，未自己管理图片或修改第三方源码。overwrite=false，原库只有空builtin-default占位包，原生导入器移除该空占位，不涉及原有用户图片；未生成生产备份。
+
+已实际重启**AstrBot**容器：新PID/StartedAt成立，两个插件activated、398张图片/默认规则保留、SnowLuma原生get_status返回online=true，反向WS自动重连。首次重启探针超时，待服务就绪后复核通过，未冒称首次通过。**SnowLuma/QQ完整冷重启尚未测试**。07:02:55 UTC原生好友列表仍返回0；虚拟grant仍未签发，owner会话复用许可仍待用户选择，未读取token。上述运行验证不等同QQ手机收到回复或共享记忆已接通。
+
 **06:43 UTC 更新：** 用户已完成QQ登录。固定SnowLuma原生API与日志均确认反向WS已连接AstrBot，native平台运行/错误数0。临时HTTPS桌面已关闭、htpasswd已移除、Nginx原哈希已恢复，QQ进程仍为原PID75，登录数据保留。原生好友列表当前返回0；已通知用户通过日常QQ加专用账号。独立虚拟grant仍未签发，原App数据未接入QQ；已询问是否可仅同机复用现有有效owner后台会话，尚待用户选择，未读取其token、未绕过权限。
 
 补充开发：固定SnowLuma已有原生`fetch_ptt_text`，Connector waiting钩子可据原message_id取得真实QQ转写，再交原Agent；不新增ASR服务/Key。29项固定源码集成直接pytest通过，其中8项新增；初次旧代码5失败的日志保留。精确提交本地act与上线结果随后追加，当前不能把pytest fixture当手机语音通过。
