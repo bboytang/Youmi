@@ -306,6 +306,7 @@ class AstrBotHandler:
             raise TurnConflict('context_snapshot_unavailable', 503)
         messages = bundle.request()['messages']
         dynamic = json.loads(messages[1]['content'])['youmi_context']
+        dynamic.update(input_origin=data['origin'], source_kind=data['source_kind'], user_evidence=user_evidence)
         if notice:
             dynamic['memory_action_notice'] = notice
         from .features import settings
@@ -321,6 +322,8 @@ class AstrBotHandler:
             if system.endswith(expression):
                 system = system[:-len(expression)]
                 dynamic['affect_expression_guidance'] = expression
+        if data['origin'] == 'scheduled':
+            system += '\n本轮由定时任务主动触发，不是用户新发言；不要声称用户刚说过任务提示。'
         payload = {'system_prompt': system, 'dynamic_context': dynamic,
             'persona_version': bundle.persona_version, 'snapshot': bundle.snapshot,
             'session': session, 'origin': data['origin'], 'source_kind': data['source_kind'],

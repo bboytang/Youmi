@@ -161,6 +161,14 @@ class BridgeHTTPTests(unittest.IsolatedAsyncioTestCase):
         prepared = await self.prepare(model='provider/model-v1')
         self.assertEqual(prepared['status'], 'prepared')
 
+    async def test_manager_null_role_uses_core_and_keeps_snapshot_valid(self):
+        self.auth.models['prompt'] = None
+        prepared = await self.prepare()
+        self.assertEqual(prepared['status'], 'prepared')
+        self.assertNotIn('owner-authored role', prepared['system_prompt'])
+        checked = await self.post('check', {'turn_token': prepared['turn_token'], 'final_text': '你好'})
+        self.assertEqual(checked['checked_text'], '你好')
+
     async def test_suppressed_media_and_control_do_not_create_pending_events(self):
         for index, changes in enumerate(({'source_kind': 'media'}, {'query_text': '这段别记'},
                 {'query_text': '请不要叫我小名'}, {'query_text': '把情绪设置为愤怒'})):

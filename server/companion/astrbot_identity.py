@@ -56,4 +56,6 @@ class BridgeIdentity:
         models = await self.authorization._request('/config/mia-auth/bridge-config', scope.snapshot())
         if not isinstance(models, dict) or _manager_scope(models.get('mia_scope')) != scope:
             raise PrivateAuthorizationRequired()
+        if models.get('prompt') is None:
+            models['prompt'] = ''  # Manager uses null for an unconfigured owner role.
         return models

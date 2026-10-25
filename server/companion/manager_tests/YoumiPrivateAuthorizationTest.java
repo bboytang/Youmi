@@ -119,10 +119,25 @@ class YoumiPrivateAuthorizationTest {
             JsonNode verified = verify(device, "astrbot:12345", credential);
             assertEquals(0, verified.path("code").asInt());
             assertEquals("user:" + USER_B + ":agent:" + AGENT_B, verified.path("data").path("owner").asText());
+            Map<String, Object> snapshot = new java.util.HashMap<>();
+            for (String key : List.of("owner", "operator_id", "device_id", "client_id", "binding_version", "credential_version")) {
+                snapshot.put(key, verified.path("data").path(key).asText());
+            }
+            String server = params.getValue("server.secret", false);
+            assertNotEquals(0, post("/config/mia-auth/bridge-config", snapshot, userToken(USER_B)).path("code").asInt());
+            JsonNode bridge = post("/config/mia-auth/bridge-config", snapshot, server);
+            assertEquals(0, bridge.path("code").asInt());
+            assertEquals(verified.path("data").path("owner"), bridge.path("data").path("mia_scope").path("owner"));
+            bridge.path("data").fieldNames().forEachRemaining(key -> assertTrue(
+                    java.util.Set.of("selected_module", "LLM", "TTS", "prompt", "mia_scope").contains(key)));
+            snapshot.put("owner", "user:" + USER_A + ":agent:" + AGENT_B);
+            assertNotEquals(0, post("/config/mia-auth/bridge-config", snapshot, server).path("code").asInt());
+            snapshot.put("owner", verified.path("data").path("owner").asText());
             assertNotEquals(0, verify(DEVICE_B, "astrbot:12345", credential).path("code").asInt());
             assertNotEquals(0, verify(device, CLIENT, credential).path("code").asInt());
             assertEquals(0, post("/device/mia-auth/revoke", Map.of("device_id", device), userToken(USER_B)).path("code").asInt());
             assertNotEquals(0, verify(device, "astrbot:12345", credential).path("code").asInt());
+            assertNotEquals(0, post("/config/mia-auth/bridge-config", snapshot, server).path("code").asInt());
         } finally {
             db.update("DELETE FROM ai_mia_device_authorization WHERE device_id=?", device);
             db.update("DELETE FROM ai_device WHERE id=?", device);
@@ -342,6 +357,7 @@ class YoumiPrivateAuthorizationTest {
         String server = params.getValue("server.secret", false);
         assertNotEquals(0, post("/config/mia-auth/check-scope", snapshot, userToken(USER_B)).path("code").asInt());
         assertEquals(0, post("/config/mia-auth/check-scope", snapshot, server).path("code").asInt());
+        assertNotEquals(0, post("/config/mia-auth/bridge-config", snapshot, server).path("code").asInt());
         snapshot.put("owner", "user:" + USER_A + ":agent:" + AGENT_B);
         assertNotEquals(0, post("/config/mia-auth/check-scope", snapshot, server).path("code").asInt());
         snapshot.put("owner", scope.path("owner").asText());
