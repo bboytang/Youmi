@@ -1,0 +1,14 @@
+# Youmi Connector
+
+For AstrBot v4.29.3 built-in Agent; deployment and scope registration:
+[setup](../../deploy/astrbot-fusion/setup.md). No owner/QQ whitelist/model key/voice setting is accepted by this plugin.
+
+The event adapter must be selected by its AstrBot platform ID. Use a neutral AstrBot Persona with an empty character story and the normal authorized tools. Disable AstrBot long-term fact extraction and competing automatic TTS for this adapter; keep its short conversation history, MCP, tool calling and Meme Manager enabled. Model capacity and reply limit must match the server-side reviewed profile. Disable streaming/segmented reply/visible intermediate tool reasoning for this QQ adapter; the Connector additionally sets event streaming flags before the native runner reads them.
+
+Youmi injects the authoritative system core and a temporary TextPart. Existing tool definitions, history, tool_call_id, images and other plugin instructions remain intact. Only the final Plain text is checked after Meme decoration. A durable server claim precedes exactly one dispatch through AstrBot event.send; the native result is cleared, and public after hooks run on successful acceptance. No direct OneBot client, alternate reply model or meme library is created.
+
+`/youmi_memory list`, `delete <id>`, `update <id> <content>`, `pause on|off`, `resume`, `feature_settings`, `events`, `emotion_status` reuse existing backend management and current Scope. `pause` is the existing owner-wide setting. “这段别记” suppresses this QQ conversation across restarts until explicit `resume`; it does not silently re-enable on reconnect. Original App settings and stored facts remain authoritative.
+
+Native cron uses on_agent_begin because it bypasses on_llm_request in this fixed version. It gets explicit scheduled context and no user evidence job. Native send_message_to_user plain text is checked before invocation; independent plugins' own LLM requests/commands keep their normal scope. Their private sends cannot be universally intercepted by a standard Connector hook. Enable Meme Manager's desired chat/plugin scope in its own settings and verify each plugin; see [compatibility](../../docs/integrations/astrbot-compatibility.md).
+
+Complete failures use a protected, short-lived JSON outbox in AstrBot data. Only complete is retried, never the model, tools or QQ send. A crash after sending but before durable completion may leave delivery uncertain and lose memory admission; it is deliberately not replayed. Voice uses an optional checked Youmi WAV; TTS failure falls back to checked text. ASR/STT and image understanding remain AstrBot capabilities and need actual provider configuration and QQ validation.

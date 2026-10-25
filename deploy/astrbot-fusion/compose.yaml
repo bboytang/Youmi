@@ -1,0 +1,61 @@
+name: youmi-astrbot-fusion
+services:
+  astrbot:
+    image: ${ASTRBOT_IMAGE:-soulter/astrbot:v4.29.3@sha256:d6f6508af78b9d0e427c0959a2fdd1016411720aad67cfcde8719870a89ee832}
+    platform: ${FUSION_PLATFORM:-linux/amd64}
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${ASTRBOT_WEB_PORT:-6185}:6185"
+    expose: ["6199"]
+    volumes:
+      - ./astrbot-data:/AstrBot/data
+      - ../../integrations/astrbot_plugin_youmi:/AstrBot/data/plugins/astrbot_plugin_youmi:ro
+    secrets:
+      - youmi_bridge_token
+    networks: [youmi_fusion]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:6185/', timeout=3)"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 90s
+  snowluma:
+    image: ${SNOWLUMA_IMAGE:-motricseven7/snowluma:v1.10.0@sha256:5680ab02064204668330685548829f12586ad4b5e51d3cc8274461d2c854b749}
+    platform: ${FUSION_PLATFORM:-linux/amd64}
+    restart: unless-stopped
+    shm_size: 1gb
+    cap_add: [SYS_PTRACE]
+    security_opt: [seccomp=unconfined]
+    ulimits:
+      nofile: {soft: 65536, hard: 1048576}
+    environment:
+      TZ: Asia/Shanghai
+      SNOWLUMA_HOOK_AUTOLOAD: "1"
+      SNOWLUMA_WEBUI_HOST: "0.0.0.0"
+      SNOWLUMA_WEBUI_PORT: "5099"
+      SNOWLUMA_QQ_FLAGS: "--disable-gpu --disable-software-rasterizer --disable-gpu-compositing"
+    ports:
+      - "127.0.0.1:${SNOWLUMA_DESKTOP_PORT:-6081}:6081"
+      - "127.0.0.1:${SNOWLUMA_WEB_PORT:-5099}:5099"
+    volumes:
+      - snowluma_data:/app/data
+      - snowluma_qqconfig:/app/.config
+      - snowluma_qqdata:/app/.local/share
+    networks: [youmi_fusion]
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:5099/').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 90s
+networks:
+  youmi_fusion:
+    external: true
+    name: ${YOUMI_NETWORK:?Set_existing_reviewed_Youmi_network}
+volumes:
+  snowluma_data:
+  snowluma_qqconfig:
+  snowluma_qqdata:
+secrets:
+  youmi_bridge_token:
+    file: ${YOUMI_BRIDGE_TOKEN_FILE:-./secrets/service-token}

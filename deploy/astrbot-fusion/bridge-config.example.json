@@ -1,0 +1,19 @@
+{
+  "service_token_file": "/run/secrets/youmi_bridge_token",
+  "allow_internal_http": false,
+  "bindings": [{
+    "bot_uin": "REPLACE_BOT_UIN",
+    "conversation_key": "qq:private:REPLACE_PEER_UIN",
+    "device_id": "REPLACE_NEW_MANAGER_VIRTUAL_DEVICE",
+    "client_id": "astrbot:REPLACE_BOT_UIN",
+    "credential_file": "/run/secrets/youmi_astrbot_virtual_credential"
+  }],
+  "models": {
+    "REPLACE_EXACT_ASTRBOT_MODEL": {
+      "context_window": 32768,
+      "response_tokens": 2048,
+      "input_tokens": 24576,
+      "capacity_source": "REPLACE_WITH_ACTUAL_PROVIDER_CONFIG_AND_REVIEWED_CAPACITY_SOURCE"
+    }
+  }
+}

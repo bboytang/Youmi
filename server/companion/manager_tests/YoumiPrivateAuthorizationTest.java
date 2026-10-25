@@ -102,6 +102,44 @@ class YoumiPrivateAuthorizationTest {
     }
 
     @Test
+    void virtualBridgeUsesIndependentDeviceGrantAndRejectsOtherOwner() throws Exception {
+        assertNotEquals(0, post("/device/mia-auth/virtual", Map.of("agent_id", AGENT_B, "bot_uin", "12345"), null).path("code").asInt());
+        assertNotEquals(0, post("/device/mia-auth/virtual", Map.of("agent_id", AGENT_B, "bot_uin", "12345"), userToken(USER_A)).path("code").asInt());
+        JsonNode created = post("/device/mia-auth/virtual", Map.of("agent_id", AGENT_B, "bot_uin", "12345"), userToken(USER_B));
+        assertEquals(0, created.path("code").asInt());
+        String device = created.path("data").path("device_id").asText();
+        try {
+            assertTrue(device.startsWith("astrbot-"));
+            assertEquals(32, device.length());
+            assertNotEquals(device, DEVICE_B);
+            String authorization = created.path("data").path("authorization").path("authorization_code").asText();
+            JsonNode exchanged = exchange(device, "astrbot:12345", authorization);
+            assertEquals(0, exchanged.path("code").asInt());
+            String credential = exchanged.path("data").path("private_credential").asText();
+            JsonNode verified = verify(device, "astrbot:12345", credential);
+            assertEquals(0, verified.path("code").asInt());
+            assertEquals("user:" + USER_B + ":agent:" + AGENT_B, verified.path("data").path("owner").asText());
+            assertNotEquals(0, verify(DEVICE_B, "astrbot:12345", credential).path("code").asInt());
+            assertNotEquals(0, verify(device, CLIENT, credential).path("code").asInt());
+            assertEquals(0, post("/device/mia-auth/revoke", Map.of("device_id", device), userToken(USER_B)).path("code").asInt());
+            assertNotEquals(0, verify(device, "astrbot:12345", credential).path("code").asInt());
+        } finally {
+            db.update("DELETE FROM ai_mia_device_authorization WHERE device_id=?", device);
+            db.update("DELETE FROM ai_device WHERE id=?", device);
+        }
+    }
+
+    @Test
+    void virtualRegistrationDoesNotAcceptCallerOwnedDeviceOrOwnerFields() throws Exception {
+        for (Map<String, Object> body : List.<Map<String, Object>>of(
+                Map.of("agent_id", AGENT_B, "bot_uin", "12345", "owner", "forged"),
+                Map.of("agent_id", AGENT_B, "bot_uin", "12345", "device_id", DEVICE_B),
+                Map.of("agent_id", AGENT_B, "bot_uin", "not-a-uin"))) {
+            assertNotEquals(0, post("/device/mia-auth/virtual", body, userToken(USER_B)).path("code").asInt());
+        }
+    }
+
+    @Test
     void identifiersAndOtherUserCannotAcquirePrivateGrant() throws Exception {
         assertNotEquals(0, post("/device/mia-auth/code", Map.of("device_id", DEVICE_B), null).path("code").asInt());
         assertNotEquals(0, post("/device/mia-auth/code", Map.of("device_id", DEVICE_B), userToken(USER_A)).path("code").asInt());

@@ -141,6 +141,31 @@ public class YoumiDeviceAuthorizationService {
         return prepareCode(deviceId, random(16));
     }
 
+    /** Independent virtual device, with the same grant lifecycle as physical clients. */
+    @Transactional(rollbackFor = Exception.class)
+    public Map<String, Object> createVirtual(String agentId, String botUin) {
+        UserDetail user = SecurityUser.getUser();
+        if (user == null || user.getId() == null || !agentService.checkAgentPermission(agentId, user.getId())
+                || !botUin.matches("[1-9][0-9]{4,19}")) throw new RenException(ErrorCode.NO_PERMISSION);
+        AgentEntity agent = agents.selectById(agentId);
+        if (agent == null || agent.getUserId() == null
+                || !currentAuthority(new Binding(user.getId(), agent.getUserId(), agentId))) {
+            throw new RenException(ErrorCode.NO_PERMISSION);
+        }
+        String device = "astrbot-" + random(18); // 32 chars, separate from every iOS/hardware ID.
+        db.update("INSERT INTO ai_device(id,mac_address,user_id,agent_id,board,alias,auto_update,creator,create_date) "
+                + "VALUES (?,?,?,?,?,'AstrBot QQ',0,?,NOW())",
+                device, device, user.getId(), agentId, "youmi-astrbot", user.getId());
+        return Map.of("device_id", device, "client_id", "astrbot:" + botUin,
+                "authorization", createCode(device));
+    }
+
+    public void requireVirtual(Map<String, Object> scope) {
+        if (!(scope.get("client_id") instanceof String client) || !client.matches("astrbot:[1-9][0-9]{4,19}")
+                || db.queryForObject("SELECT COUNT(*) FROM ai_device WHERE id=? AND board='youmi-astrbot'",
+                        Integer.class, scope.get("device_id")) != 1) throw new RenException(ErrorCode.NO_PERMISSION);
+    }
+
     // Six digits identify a pending device request; they are never a bearer proof.
     @Transactional(rollbackFor = Exception.class)
     public Map<String, Object> approveHardwareCode(String deviceId, String code) {

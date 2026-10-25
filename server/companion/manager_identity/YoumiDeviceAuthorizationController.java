@@ -73,6 +73,29 @@ public class YoumiDeviceAuthorizationController {
                 field(body, "authorization_code", 64), request.getRemoteAddr()));
     }
 
+    @PostMapping("/device/mia-auth/virtual")
+    @RequiresPermissions("sys:role:normal")
+    public Result<Map<String, Object>> virtual(@RequestBody Map<String, Object> body, HttpServletRequest request) {
+        secure(request);
+        if (!body.keySet().equals(java.util.Set.of("agent_id", "bot_uin"))) throw new RenException(ErrorCode.NO_PERMISSION);
+        return result(grants.createVirtual(field(body, "agent_id", 32), field(body, "bot_uin", 20)));
+    }
+
+    @PostMapping("/config/mia-auth/bridge-config")
+    @Transactional(rollbackFor = Exception.class)
+    public Result<Map<String, Object>> bridgeConfig(@RequestBody Map<String, Object> snapshot) {
+        Map<String, Object> scope = grants.requireSnapshot(snapshot, true);
+        grants.requireVirtual(scope);
+        Map<String, Object> models = configService.getAgentModels((String) scope.get("device_id"), Map.of());
+        if (!scope.get("owner").equals(models.get("mia_owner"))) throw new RenException(ErrorCode.NO_PERMISSION);
+        Map<String, Object> allowed = new java.util.HashMap<>();
+        for (String key : java.util.List.of("selected_module", "LLM", "TTS", "prompt")) {
+            if (models.containsKey(key)) allowed.put(key, models.get(key));
+        }
+        allowed.put("mia_scope", scope);
+        return result(allowed);
+    }
+
     @PostMapping("/device/mia-auth/renew")
     public Result<Map<String, Object>> renew(@RequestBody Map<String, Object> body, HttpServletRequest request) {
         secure(request);

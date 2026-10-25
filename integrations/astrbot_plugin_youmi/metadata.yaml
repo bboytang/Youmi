@@ -1,0 +1,7 @@
+name: astrbot_plugin_youmi
+display_name: Youmi Connector
+desc: Use Youmi as the sole persona, memory and affect authority with AstrBot's built-in Agent.
+version: v1.0.0
+author: bboytang
+repo: https://github.com/bboytang/Youmi
+astrbot_version: '>=4.29.3,<4.30.0'

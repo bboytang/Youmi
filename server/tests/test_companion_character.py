@@ -167,6 +167,7 @@ class CharacterTests(unittest.IsolatedAsyncioTestCase):
             with older.db:
                 older.db.execute("INSERT INTO mia_affect_state VALUES (?, -.2, .4, .3, 'hurt', 7, 1800000000)", (owner,))
                 # Restore exactly V6's state table SQL and migration checksums.
+                older.db.execute('DROP TABLE mia_astrbot_turns')
                 older.db.execute('DROP TABLE mia_companion_profile')
                 older.db.execute('ALTER TABLE mia_affect_state RENAME TO saved_affect')
                 sql = (source / 'schema-v6.sql').read_text()
@@ -174,7 +175,7 @@ class CharacterTests(unittest.IsolatedAsyncioTestCase):
                     if 'CREATE TABLE mia_affect_state (' in statement: older.db.execute(statement)
                 older.db.execute('INSERT INTO mia_affect_state SELECT * FROM saved_affect')
                 older.db.execute('DROP TABLE saved_affect')
-                older.db.execute('DELETE FROM mia_schema_migrations WHERE version=7')
+                older.db.execute('DELETE FROM mia_schema_migrations WHERE version>=7')
                 older.db.execute('UPDATE mia_schema_migrations SET schema_checksum=? WHERE version=6', (_schema_checksum(older.db),))
             before = tuple(older.db.execute('SELECT * FROM mia_affect_state').fetchone())
             older.db.set_authorizer(lambda action, name, *rest: sqlite3.SQLITE_DENY

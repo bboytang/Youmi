@@ -110,6 +110,7 @@ class FeatureSwitchTests(unittest.IsolatedAsyncioTestCase):
         with self.store.lock, self.store.db:
             self.store.db.execute('DROP TABLE mia_affect_turns')
             self.store.db.execute('DROP TABLE mia_affect_state')
+            self.store.db.execute('DROP TABLE mia_astrbot_turns')
             self.store.db.execute('DROP TABLE mia_companion_profile')
             self.store.db.execute('DELETE FROM mia_schema_migrations WHERE version>=6')
             self.store.db.execute('DROP TABLE mia_feature_settings')

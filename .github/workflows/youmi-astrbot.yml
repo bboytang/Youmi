@@ -1,0 +1,79 @@
+name: Verify Youmi AstrBot fusion
+on: workflow_dispatch
+permissions:
+  contents: read
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        if: ${{ !env.ACT }}
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        if: ${{ !env.ACT }}
+        with:
+          python-version: '3.12'
+      - run: |
+          cd "${YOUMI_REPO_ROOT:-$GITHUB_WORKSPACE}"
+          python -m pip install -r integrations/requirements-test.txt
+      - run: |
+          cd "${YOUMI_REPO_ROOT:-$GITHUB_WORKSPACE}"
+          python scripts/ci/verify_astrbot_fusion.py backend
+  connector:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        if: ${{ !env.ACT }}
+      - uses: actions/setup-python@v5
+        if: ${{ !env.ACT }}
+        with:
+          python-version: '3.12'
+      - run: |
+          cd "${YOUMI_REPO_ROOT:-$GITHUB_WORKSPACE}"
+          python -m pip install -r integrations/requirements-test.txt
+      - run: |
+          cd "${YOUMI_REPO_ROOT:-$GITHUB_WORKSPACE}"
+          python scripts/ci/verify_astrbot_fusion.py connector
+  manager:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      SPRING_DATASOURCE_DRUID_PASSWORD: youmi-ci-only
+      SPRING_DATASOURCE_DRUID_URL: jdbc:mysql://127.0.0.1:3306/youmi_esp32_server?useUnicode=true&characterEncoding=UTF-8&serverTimezone=UTC&nullCatalogMeansCurrent=true&allowPublicKeyRetrieval=true&useSSL=false
+      SPRING_DATA_REDIS_HOST: 127.0.0.1
+    services:
+      mysql:
+        image: public.ecr.aws/docker/library/mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: youmi-ci-only
+          MYSQL_DATABASE: youmi_esp32_server
+        ports: ["3306:3306"]
+        options: >-
+          --tmpfs /var/lib/mysql:rw,size=512m
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -pyoumi-ci-only"
+          --health-interval=10s --health-timeout=5s --health-retries=12
+      redis:
+        image: public.ecr.aws/docker/library/redis:8
+        ports: ["6379:6379"]
+        options: --health-cmd="redis-cli ping" --health-interval=5s --health-timeout=3s --health-retries=12
+    steps:
+      - uses: actions/checkout@v4
+        if: ${{ !env.ACT }}
+      - uses: actions/setup-python@v5
+        if: ${{ !env.ACT }}
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-java@v4
+        if: ${{ !env.ACT }}
+        with:
+          distribution: temurin
+          java-version: '21'
+      - run: |
+          cd "${YOUMI_REPO_ROOT:-$GITHUB_WORKSPACE}"
+          python -m pip install -r integrations/requirements-test.txt
+      - run: |
+          cd "${YOUMI_REPO_ROOT:-$GITHUB_WORKSPACE}"
+          python scripts/ci/verify_astrbot_fusion.py manager

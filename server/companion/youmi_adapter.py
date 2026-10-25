@@ -591,6 +591,8 @@ async def start_worker(server):
         return LLMMemoryExtractor(factory)
     worker = server._youmi_worker = MemoryWorker(JobStore(store), authorization, resolve, encoder=reply._encoder)
     await worker.start()
+    from .astrbot_api import attach_runtime
+    attach_runtime(store, worker)
 
 
 async def stop_worker(server, timeout=20):

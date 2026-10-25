@@ -239,9 +239,11 @@ def patch_app(text):
 
 def patch_http(text):
     text = replace_once(text, 'from aiohttp import web\n',
-                        'from aiohttp import web\nfrom mia_companion.management import ManagementHandler\n')
+                        'from aiohttp import web\nfrom mia_companion.management import ManagementHandler\n'
+                        'from mia_companion.astrbot_api import register_routes as register_astrbot_routes\n')
     return replace_once(text, '                app = web.Application()\n',
                         '                app = web.Application()\n'
+                        '                register_astrbot_routes(app, self.config)\n'
                         '                app.router.add_post("/mia/management", ManagementHandler(self.config).handle)\n')
 
 
@@ -282,7 +284,8 @@ def install(root, changes):
         for name in ["__init__.py", "memory.py", "youmi_adapter.py", "authorization.py", "schema.py", "schema.sql", "schema-v2.sql", "persona.py",
                      "embedding.py", "semantic.py", "retrieval.py", "context.py", "reply.py", "jobs.py", "extraction.py", "proposal.py", "model_requests.py",
                      "events.py", "emotions.py", "schema-v3.sql", "schema-v4.sql", "schema-v5.sql", "schema-v6.sql", "affect.py", "features.py", "management.py", "character.py", "schema-v7.sql",
-                     "request_accounting.py", "requirements-vector.txt"]:
+                     "request_accounting.py", "requirements-vector.txt", "schema-v8.sql", "astrbot_api.py",
+                     "astrbot_identity.py", "astrbot_turns.py", "astrbot_media.py"]:
             shutil.copy2(Path(__file__).parent / name, destination / name)
         for relative, (_, changed) in changes.items():
             (root / relative).write_text(changed, encoding="utf-8")
