@@ -119,3 +119,11 @@ v1.14.11只作只读候选核查，含消息缓存迁移，未部署；选择最
 13:09 UTC：新增SnowLuma本地act首次桥接46项通过，OneBot启动因忽略install脚本后缺proton编译产物失败；补显式pnpm --filter @snowluma/proton build，再对精确提交重跑。不是OneBot测试通过，不改第三方源码。
 
 13:10 UTC：proton首次显式build被宿主既存空/root/package.json的全局配置搜索阻断；保留该无关文件，使用tsup公开--no-config参数限制构建配置范围，再跑本地act。
+
+## 2026-10-25 13:18 UTC 自动化及后续入口排查
+
+**最新验证（13:18 UTC）：** 精确代码 `dbea27bfcc217759ca6dadf9ffa0ab5b16898ca5` 的本地act backend与新增snowluma job均成功：454 server、98 scripts、39 CI辅助/Compose；原生桥接46、OneBot414。日志/hash见test-evidence。测试先因缺proton产物、宿主空package.json失败，补显式构建/限制配置搜索、将公开源码缓存移到/tmp后成功，未改宿主无关文件或第三方源码。
+
+真实TTS API复用原音色返回200、56248字节有效WAV/24kHz单声道，0.91秒；scheduled探针无QQ发送、无用户记忆/情绪。Youmi实际prepare系统上下文包含用户反馈的角色名字，角色资料未导出或更改。
+
+用户再次反馈发偏好无回复：SnowLuma确实收到新消息且反向WS正常，但AstrBot现有配置开启了会话白名单、列表仅填裸QQ号，与原生统一会话ID不匹配，消息在模型前被拦截。按用户已确认的不加QQ白名单要求，仅关闭platform_settings.enable_id_white_list并重启AstrBot；保留其余用户新增插件/设置，Youmi服务Token及Scope检查不动。正在等待重启就绪后下一条真实消息验证，不将前一轮失败账本补成成功。

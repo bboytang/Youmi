@@ -1,5 +1,12 @@
 # T01–T30 执行与验收记录
 
+**最新验证（13:18 UTC）：** 精确代码 `dbea27bfcc217759ca6dadf9ffa0ab5b16898ca5` 的本地act backend与新增snowluma job均成功：454 server、98 scripts、39 CI辅助/Compose；原生桥接46、OneBot414。日志/hash见test-evidence。测试先因缺proton产物、宿主空package.json失败，补显式构建/限制配置搜索、将公开源码缓存移到/tmp后成功，未改宿主无关文件或第三方源码。
+
+真实TTS API复用原音色返回200、56248字节有效WAV/24kHz单声道，0.91秒；scheduled探针无QQ发送、无用户记忆/情绪。Youmi实际prepare系统上下文包含用户反馈的角色名字，角色资料未导出或更改。
+
+用户再次反馈发偏好无回复：SnowLuma确实收到新消息且反向WS正常，但AstrBot现有配置开启了会话白名单、列表仅填裸QQ号，与原生统一会话ID不匹配，消息在模型前被拦截。按用户已确认的不加QQ白名单要求，仅关闭platform_settings.enable_id_white_list并重启AstrBot；保留其余用户新增插件/设置，Youmi服务Token及Scope检查不动。正在等待重启就绪后下一条真实消息验证，不将前一轮失败账本补成成功。
+
+
 **13:07 UTC 接续：** v1.10.1官方补丁版已替换完整运行时，固定源码 `f470b7a10cc9da2d13534ea115287a0afc781d31`、官方archive SHA256 `b01c081e1e05411fa192ff58623251569e519d4b5c3ad67c4582538fb9c68f2b`。仅在原固定基础镜像上打包官方公开原档，未改第三方源码、QQ版本、Key、持久卷。先前QQ进程重启恢复登录但未修复回执；此次sidecar重建后登录自动恢复，反向WS接通，rkeys和好友列表均实际收到响应，好友读取0.116秒/3项（升级前15秒超时/空缓存）。镜像 `youmi-snowluma:v1.10.1-reviewed`，ID `sha256:7abf7dba05c5308ae2324eda3f23d996cefc343d02f508ff2f21cde703071fa2`。
 
 v1.14.11只作只读候选核查，含消息缓存迁移，未部署；选择最小补丁v1.10.1，其bridge/OneBot接口源码不变、EULA/PRIVACY哈希不变。官方SnowLuma桥接/OneBot测试接入新本地act job，待精确提交验证。已请用户发真实偏好继续验发送回执/唯一记忆job，尚未将下一轮QQ记忆写入标通过。
@@ -14,7 +21,7 @@ v1.14.11只作只读候选核查，含消息缓存迁移，未部署；选择最
 管理入口 https://43.143.230.174:6186/ 已外网200/TLS有效、原生JWT鉴权保留；用户已放行TCP6186且后台密码不可覆盖。没有新增备份或导出生产密钥。SnowLuma daemon重连未恢复回执，正在原生QQ进程重启并检查持久登录恢复，暂不把全链路标完成。
 
 
-日期：2026-10-25。当前是离线实现/自动化测试交付；**没有生产部署或 QQ/iOS 真机验收**。本报告区分固定源码测试、依赖fixture、只读生产审计与真实设备，任何离线通过均不得替换手机验收。
+日期：2026-10-25。当前已生产部署且收到过真实QQ回复，发送回执修复后端到端记忆验收仍在进行；iOS/设备未验。本报告区分固定源码测试、依赖fixture、只读生产审计与真实设备，任何离线通过均不得替换手机验收。
 
 代码分支 `feature/astrbot-fusion` 已推送，基线 `739c509eb3f4bc231d879367b33a15a8a94c38f5`。本地 act 对精确代码提交 **`b329c1e91903eb4ae801444862784ac0c46dc644`** 的 backend、connector、manager 三个 job 全部通过。之后的交付记录仅修订文档，运行代码和测试与该提交相同。完整计数、日志 SHA256 和 JAR 指纹见 [机器可读证据](astrbot-test-evidence.json)。
 
@@ -22,7 +29,7 @@ v1.14.11只作只读候选核查，含消息缓存迁移，未部署；选择最
 
 | ID | 执行方式及现有结果 | 真机/生产结论与剩余验证 |
 |---|---|---|
-| T01 | B单次/并发prepare、C原始OneBot序列化/无二次send通过 | NOT VERIFIED ON DEVICE：未执行QQ连续10轮 |
+| T01 | B单次/并发prepare、C原始OneBot序列化/无二次send通过 | 用户确认收到过真实人格回复；旧native发送回执超时，已升级恢复；下一轮成功回执与连续10轮未验 |
 | T02 | C真实ToolLoopAgentRunner两次续答，保留工具ID/参数/结果通过 | 真实web search/模型调用未验 |
 | T03 | C使用MCP CallToolResult格式、工具钩子保留；J内部权限通过 | 外部MCP成功/异常/拒权服务未连接，不宣称全项通过 |
 | T04 | C实际Meme parser/response/decorate/after，无控制标签出站通过 | 真实表情包选择与手机显示未验 |
@@ -30,14 +37,14 @@ v1.14.11只作只读候选核查，含消息缓存迁移，未部署；选择最
 | T06 | C单GIF/仅图/文字GIF及非混合补图通过；非Plain保留 | 手机多图/动图播放未验 |
 | T07 | B媒体不提炼；C图片字段保留、caption不进用户证据通过 | 真实QQ图片理解未验 |
 | T08 | C STT失败通过prepare/check/claim发送一次文字提示，重复钩子不重发；B ASR来源机制通过 | 真实STT质量/供应商/QQ语音未验 |
-| T09 | A当前配置voice/private_voice及参数保留、真实协议helpers→WAV通过 | 未调用生产TTS；音色/格式手机播放未验 |
+| T09 | A当前配置voice/private_voice及参数保留、真实协议helpers→WAV通过 | 真实TTS API 200/WAV 24kHz单声道/56248字节，原音色不变；QQ手机播放未验 |
 | T10 | C实际Record+Plain序列化，仅一次complete通过 | 手机两种组件实际接收未验 |
 | T11 | B后台角色变化使旧快照失效；R character多Scope共用通过 | 真实后台修改后QQ下一轮未验，生产角色未改 |
 | T12 | B向原JobStore admission与status真实pending；R抽取worker回归通过 | 未从QQ保存真实偏好再用iOS检索，不能将accepted当已存事实 |
 | T13 | B同owner既有App来源事实召回/删除通过 | fixture中的App来源不等于真实iOS交互 |
 | T14 | B原MemoryStore管理和删除使旧快照失效；R纠错/派生证据失效通过 | 双端真实纠正/删除未验 |
 | T15 | B disabled/unavailable/no_match区分通过 | DB/授权完全不可用时拒绝私有生成；无可信角色缓存，不承诺此时继续个性化回复 |
-| T16 | B伪owner/错误映射/撤销/版本变化拒绝；J授权子suite16项通过，含bridge-config实际成功、伪造owner、普通token、实体设备和撤销后拒绝 | 生产虚拟grant尚未注册；未增加好友白名单 |
+| T16 | B伪owner/错误映射/撤销/版本变化拒绝；J授权子suite16项通过，含bridge-config实际成功、伪造owner、普通token、实体设备和撤销后拒绝 | 正常virtual/exchange已签发，生产同Scope读取200、未映射403、错误Bearer401；原生QQ会话白名单已关闭 |
 | T17 | B情绪投影/仅一次commit、R衰减/恢复/跨Scope状态通过 | 真实模型“生气→道歉”表达及手机重启未验 |
 | T18 | B非法JSON保留旧状态；R情绪/原生模型超时回归通过 | 供应商超时率及正文体验未验；本轮评价有界等待 |
 | T19 | B人格事件checkpoint与故障恢复通过；R成长/证据删除回归通过 | 生产没有为验证伪造成长证据 |
@@ -46,8 +53,8 @@ v1.14.11只作只读候选核查，含消息缓存迁移，未部署；选择最
 | T22 | C重复after及原RespondStage无二次发送/complete通过 | 不能据after单独认定QQ送达 |
 | T23 | B入队后故障、队列满/恢复；C短期outbox只重试complete通过 | 手机发送后崩溃仍可能delivery uncertain，无重放承诺 |
 | T24 | B准备后删事实/改角色/撤销权限拒绝提交通过 | 生产竞态演练未做 |
-| T25 | B重放键保留；Compose有重启与持久卷配置 | NOT VERIFIED ON DEVICE：未登录QQ、未演练断线/风控 |
-| T26 | B重开账本/过期清除、outbox重开；I真实迁移失败回滚通过 | 两个实际sidecar重启、QQ登录态/图库卷保留未验 |
+| T25 | B重放键保留；Compose有重启与持久卷配置 | QQ已登录，原生QQ重启和SnowLuma sidecar重建均自动恢复登录/WS；风控演练未验 |
+| T26 | B重开账本/过期清除、outbox重开；I真实迁移失败回滚通过 | AstrBot真实重启保留插件/398图库及规则；SnowLuma重建保留QQ登录/配置并重连，资源证明见部署记录 |
 | T27 | C真实CronMessageEvent+原发送工具+Meme，B不建用户job通过 | 真实定时、静默限频和手机接收未验 |
 | T28 | B有界WAV/坏文件拒绝；A错包/跨会话拒绝；插件TTS失败回退文字 | QQ特定编码/大媒体传输边界未验 |
 | T29 | C独立命令/自调LLM不创建用户turn；发送工具保持原权限通过 | 任意第三方私有direct-send不可普遍拦截；逐插件实测 |

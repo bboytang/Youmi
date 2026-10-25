@@ -75,6 +75,8 @@ services:
 docker compose --env-file deploy/astrbot-fusion/.env -f deploy/astrbot-fusion/compose.yaml up -d
 ```
 
+按本项目已确认选择，将AstrBot原生 `platform_settings.enable_id_white_list` 设为 `false`；不建立QQ好友/会话白名单。不可将裸QQ号填入原生会话白名单来代替Youmi授权，原生这里匹配的是统一会话ID。Youmi独立服务Token、binding和当前Scope校验始终保留。
+
 首次启动保持 OneBot adapter/LLM 接收关闭，先确认 Connector 成功加载、后端 health/worker 可用、独立 grant 和模型容量已配置，再启用 QQ 接入。通过 SSH 隧道访问 AstrBot 6185、SnowLuma 5099/6081；均只绑定宿主机 127.0.0.1。OneBot 6199 不发布到宿主机。
 
 AstrBot 添加 OneBot v11 adapter，监听 `0.0.0.0:6199`，Token 两端一致。SnowLuma WebUI 的 wsClients 配 `ws://astrbot:6199/ws`，填同一 Token；QQ 扫码由账号所有者操作。桌面随机密码留在受控主机，勿发布。
