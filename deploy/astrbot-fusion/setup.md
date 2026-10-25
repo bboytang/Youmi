@@ -2,6 +2,8 @@
 
 当前交付没有切换生产、注册线上设备、发 QQ 消息或调用生产模型/TTS。先阅读 [审计](../../docs/integrations/astrbot-audit.md) 与 [契约](../../docs/integrations/astrbot-contract.md)。以下生产动作由获得授权的操作员执行。
 
+本次2026-10-25执行已获用户明确生产授权；用户随后明确取消新增备份。本次不执行下文第2项的新备份动作，保留现有镜像/数据卷并做升级前后完整性校验。该最新用户指令覆盖本次操作的默认备份步骤，不代表已创建备份。
+
 ## 版本与本地验证
 
 源码锁在 `versions.json`。Compose 的默认值固定 Linux amd64 manifest digest，已从 registry 获取；arm64 应分别改用 AstrBot `sha256:83cdfefaeb518ed8c6fdea4314e41172ab7564d97ac53c32ec2da9e7849acfc4`、SnowLuma `sha256:52f34aa598778f70eacfe7d4502483cadafa166571be6141198d114e217d49bf` 并复验。镜像 manifest 存在不等于已运行/与手机兼容。

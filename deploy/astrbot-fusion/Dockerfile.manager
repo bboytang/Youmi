@@ -1,0 +1,3 @@
+ARG YOUMI_BASE_IMAGE
+FROM ${YOUMI_BASE_IMAGE}
+COPY candidate.jar /app/xiaozhi-esp32-api.jar

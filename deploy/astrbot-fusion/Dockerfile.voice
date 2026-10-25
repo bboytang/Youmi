@@ -1,0 +1,6 @@
+ARG YOUMI_BASE_IMAGE
+FROM ${YOUMI_BASE_IMAGE}
+COPY bridge/ /tmp/youmi-astrbot-build/
+RUN python3 /tmp/youmi-astrbot-build/install_astrbot.py /opt/xiaozhi-esp32-server --apply \
+    && python3 -B -c "from pathlib import Path; root=Path('/opt/xiaozhi-esp32-server'); [(root/(name+'.astrbot-original')).unlink() for name in ('core/http_server.py','mia_companion/xiaozhi_adapter.py','mia_companion/schema.py')]; import mia_companion.astrbot_api" \
+    && rm -r /tmp/youmi-astrbot-build
