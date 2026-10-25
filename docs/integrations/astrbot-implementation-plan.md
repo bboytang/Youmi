@@ -1,6 +1,6 @@
 # Youmi × AstrBot × SnowLuma 当前实施方案与计划
 
-更新时间：2026-10-25 04:39 UTC。当前为**同一次完整交付的实施中记录**，不是上线/验收声明。开发分支 `feature/astrbot-fusion`，基线 `739c509eb3f4bc231d879367b33a15a8a94c38f5`；新增工作尚未提交。
+更新时间：2026-10-25 05:03 UTC。**离线实现、自动化验证和开发分支代码推送已完成；生产与真机验收待实际条件。** 开发分支 `feature/astrbot-fusion`，基线 `739c509eb3f4bc231d879367b33a15a8a94c38f5`，通过测试的代码提交 `b329c1e91903eb4ae801444862784ac0c46dc644`；最终文档修订不改变运行代码。
 
 任务依据：用户附件 `YOUMI_ASTRBOT/YOUMI_ASTRBOT_SNOWLUMA_CODEX_PLAN.md` 与后续明确指令。入口索引：[审计](astrbot-audit.md)、[HTTP 契约](astrbot-contract.md)、[工作记录](astrbot-worklog.md)、[交接记录](astrbot-handoff.md)、[部署](../../deploy/astrbot-fusion/setup.md)、[回滚](../../deploy/astrbot-fusion/rollback.md)。
 
@@ -27,17 +27,17 @@
 
 | 部分 | 当前代码 | 实现要点 | 验证状态 |
 |---|---|---|---|
-| 审计/契约 | docs/integrations/astrbot-audit.md、astrbot-contract.md | 按真实源码写新契约，示例接口不当现有 API | 已写，需随最终实现复核 |
-| 虚拟身份 | manager_identity 两个既有 Java 类；astrbot_identity.py | 独立 `astrbot-...` 虚拟设备，复用 code/exchange/renew/revoke；bridge-config 再验 Scope | Python否定用例已过；Java act完整190项/JAR已通过，最终SHA待复跑 |
+| 审计/契约 | docs/integrations/astrbot-audit.md、astrbot-contract.md | 按真实源码写新契约，示例接口不当现有 API | 已按最终路由/字段/边界复核 |
+| 虚拟身份 | manager_identity 两个既有 Java 类；astrbot_identity.py | 独立 `astrbot-...` 虚拟设备，复用 code/exchange/renew/revoke；bridge-config 再验 Scope | 精确提交act：Python与Java完整190项/JAR通过，含真实bridge-config正反例 |
 | 同库回合账本 | schema-v8.sql、astrbot_turns.py | prepared→sending→completed/failed/expired；发送前持久 claim；情绪/事件与步骤账本同事务，原 JobStore 幂等 admission | SQLite/故障/重启/重复测试已过 |
-| HTTP 适配 | astrbot_api.py | 复用 ContextBuilder、角色、RAG、PersonaAgent、同一 service-owned worker；只取系统核心及临时动态上下文 | 已有后端专项通过，仍需最终审查 |
-| QQ 记忆管理 | backend manage 与插件命令 | 复用 MemoryStore；pause 沿用 owner 级开关；“这段别记”只抑制当前 QQ 会话，明确 resume 才恢复 | 机制测试通过；须补充最终契约字段说明 |
-| Connector | integrations/astrbot_plugin_youmi | 逐请求去重注入临时 TextPart，保留 history/func_tool/tool_call_id/非 Plain；Meme 后校验，原 event.send 最终发送一次 | 固定源码集成15项通过 |
+| HTTP 适配 | astrbot_api.py | 复用 ContextBuilder、角色、RAG、PersonaAgent、同一 service-owned worker；只取系统核心及临时动态上下文 | 最终40项专项及448项完整server回归通过 |
+| QQ 记忆管理 | backend manage 与插件命令 | 复用 MemoryStore；pause 沿用 owner 级开关；“这段别记”只抑制当前 QQ 会话，明确 resume 才恢复 | 机制测试通过；契约已覆盖会话抑制/owner暂停差别 |
+| Connector | integrations/astrbot_plugin_youmi | 逐请求去重注入临时 TextPart，保留 history/func_tool/tool_call_id/非 Plain；Meme 后校验，原 event.send 最终发送一次 | 固定源码集成16项通过 |
 | 完成恢复 | turn_state.py / client.py | 有界重试和受保护短期 JSON complete outbox；不重放 QQ、模型或副作用工具 | 后端和 Connector 故障用例通过 |
-| 音频/图像 | astrbot_media.py、插件 media.py | 复用当前 Huoshan provider 的配置与协议 helpers 收集 PCM→有界 WAV；图像/STT 用原 AstrBot | WAV/Record 序列化通过；供应商/手机未测 |
+| 音频/图像 | astrbot_media.py、插件 media.py | 复用当前 Huoshan provider 的配置与协议 helpers 收集 PCM→有界 WAV；图像/STT 用原 AstrBot | 真实协议helpers/WAV/Record序列化及STT失败去重通知通过；供应商/手机未测 |
 | 主动聊天 | 插件 on_agent_begin / on_using_llm_tool | 原生 cron 注入 scheduled；不创建用户事实 job；发送工具文本校验 | 真实CronMessageEvent/发送工具/Meme联动及拒绝路径通过；实际定时未验 |
 | 部署/回滚 | deploy/astrbot-fusion | 两个 sidecar、固定镜像 digest、回环端口、持久卷、占位配置、离线 runtime 更新器 | Compose config 已通过；未启动生产 sidecar |
-| 本地 Actions | youmi-astrbot.yml、run_astrbot_act.sh | act 本机 runner 执行同一验证脚本；隔离 MySQL/Redis，不接生产 | 三类job前轮均成功；最终新增用例待精确提交act复跑 |
+| 本地 Actions | youmi-astrbot.yml、run_astrbot_act.sh | act 本机 runner 执行同一验证脚本；隔离 MySQL/Redis，不接生产 | 三个job在b329c1e9均成功，详见证据JSON |
 
 ## 发送与幂等取舍
 
@@ -49,22 +49,19 @@ Connector 在 Meme 已处理后的最终 decoration 中，通过 **AstrBot 原 e
 
 “这段别记”在 QQ 没有原硬件连接结束事件，因此采用保守隐私语义：跨重连/重启持续抑制当前私聊提炼，用户显式 resume 恢复；不静默恢复、不改变其他 App 自动保存开关。这一行为必须在契约/插件 README 中明确。
 
-## 剩余工作计划及成功条件
+## 计划执行结果与剩余实际工作
 
-这些是同一次开发任务内的工程顺序，不拆产品阶段。
+| 工程工作 | 当前状态 | 证明 |
+|---|---|---|
+| 只读审计与真实接口契约 | 已完成 | audit/contract，保留实际版本与生产只读证据 |
+| API/授权/同库回合/插件/音频/sidecar | 已实现 | 四次代码提交，最后代码b329c1e9，未重写第三方 |
+| 幂等/权限/故障/迁移/钩子/媒体验证 | 已通过离线测试 | 448 server、98 scripts、39 CI辅助、16兼容、Meme1045+85子测试、Java190/JAR |
+| T01–T30、工作/交接/部署/回滚 | 已写并同步最终结果 | acceptance/test-evidence/worklog/handoff/setup/rollback |
+| 分支代码交付 | 已推送feature/astrbot-fusion | 精确SHA与后续文档提交见git log，提交带skip ci |
+| 生产和设备验收 | 未执行 | 需要生产修改授权、QQ扫码/手机操作、实际provider配置和本地Mac/Xcode |
 
-1. **完成实现审查和缺口修正**：核对 complete/claim 竞争、过期终态、角色变更、scope 撤销、model/tool 预算、scheduled 失败处理、独立插件输出范围、临时数据清理；补足必要可查询回合状态和 updater/迁移回滚测试。成功条件：契约与实际路由/字段/错误一致，无仅文档承诺。
-2. **完成固定版本兼容验证**：补 scheduled/ASR 失败/发送工具路径测试，运行 Meme 原生完整测试；保留首次失败原因与最终结果，不以 fixture 当真机。成功条件：最终链文字、GIF/Image/Record 不丢失，控制标签不外泄，工具 ID/参数/结果完整，回合只提交一次。
-3. **完成本地 act 回归与构建**：backend 重新跑最终代码，connector 与 Meme 原生，Java 权限完整回归及 JAR 构建；修复实际失败。成功条件：记录准确代码 SHA、命令、原始结果及本地 runner 边界。没有 GitHub run link 就不写远端通过。
-4. **补齐统一验收材料**：astrbot-compatibility.md、astrbot-acceptance.md（T01–T30），完善运行/回滚/健康/配置/凭据生命周期说明。成功条件：每项区分机制 fixture、固定源码集成、真实生产/QQ/iOS，未测项有实际原因。
-5. **最终 diff/提交**：确认只改本任务相关文件，保留附件和其他 worktree；提交到 feature/astrbot-fusion，记录 SHA。若推送，避免触发用户已改为本地执行的远端 Actions。成功条件：最终提交与测试源码对应，剩余真机/生产阻塞明确。
+后续授权操作按setup和T01–T30执行：先在原主机完成一致备份与候选差异核对，再注册独立grant、配置真实模型容量/STT/MCP与Meme包，启用QQ并进行双端记忆/情绪/媒体/重启测试；逐项保留真实证据。不要把这些未验证项回填成离线通过，也不要重新从审计开始。
 
-## 当前证据与未验证边界
+已有SSH只读权限不等于生产修改授权。没有切换镜像、迁移生产DB、变更角色/模型/音色或调用生产供应商。QQ原生实时电话为NOT SUPPORTED/NOT VERIFIED。
 
-- 已成功：act0.2.89 / Docker29.1.3；较早act backend438server+98scripts、manager190/JAR成功；Meme原生1045passed+1skip、85subtests；最新工作区专项39项后端（含真实V7迁移与固定Huoshan协议）、15项Connector、39项CI辅助脚本测试通过。
-- 新增status路由、30秒后台过期擦除、原始OneBot文字与图片caption分离、scheduled真实工具测试、V7→V8失败回滚、真实provider构帧/解析测试已实现；不是待实现项。
-- 统一兼容和T01–T30报告已写。下一步只剩最终diff、提交及本地act完整复跑、回填证据和交接，不重新从审计开始。
-- 未执行：生产候选切换/备份/迁移、线上虚拟授权注册、QQ扫码/真机、实际模型工具/视觉/STT、生产TTS/手机播放、原App双端、生产回滚。已有只读SSH权限不等于修改授权。Linux act不具备macOS/Xcode。
-- 原生实时电话：NOT SUPPORTED / NOT VERIFIED。
-
-后续实际进度追加到worklog，并同步handoff和验收表。
+最终计数、精确提交、日志hash及JAR指纹以[验收](astrbot-acceptance.md)和[机器可读证据](astrbot-test-evidence.json)为准。工作记录中的旧计数/运行中是历史快照，最后追加条目代表当前状态。

@@ -2,9 +2,9 @@
 
 日期：2026-10-25。当前是离线实现/自动化测试交付；**没有生产部署或 QQ/iOS 真机验收**。本报告区分固定源码测试、依赖fixture、只读生产审计与真实设备，任何离线通过均不得替换手机验收。
 
-代码分支 `feature/astrbot-fusion`；基线 `739c509eb3f4bc231d879367b33a15a8a94c38f5`。最终精确提交的本地 act 结果将在完成运行后追加；当前工作区专项结果为39项后端、15项Connector通过。已有较早 act backend438+98、manager190/JAR成功、Meme1045+1skip/85subtests成功，不能把旧计数冒称最终提交结果。
+代码分支 `feature/astrbot-fusion` 已推送，基线 `739c509eb3f4bc231d879367b33a15a8a94c38f5`。本地 act 对精确代码提交 **`b329c1e91903eb4ae801444862784ac0c46dc644`** 的 backend、connector、manager 三个 job 全部通过。之后的交付记录仅修订文档，运行代码和测试与该提交相同。完整计数、日志 SHA256 和 JAR 指纹见 [机器可读证据](astrbot-test-evidence.json)。
 
-证据代号：B=`server/tests/test_astrbot_bridge.py`（34项实际aiohttp/SQLite/RAG/JobStore，Manager/LLM/worker消费是fixture）；I=`test_astrbot_install.py`（2项离线更新/真实SQLite迁移）；A=`test_astrbot_tts_protocol.py`（3项固定Huoshan源码协议、WSfixture）；C=`integrations/tests/test_astrbot_compatibility.py`（15项实际上游类，QQ/模型网络fixture）；M=Meme原生suite；J=隔离MySQL/Redis真实Java完整suite；R=原有Python回归。
+证据代号：B=`server/tests/test_astrbot_bridge.py`（35项实际aiohttp/SQLite/RAG/JobStore，Manager/LLM/worker消费是fixture）；I=`test_astrbot_install.py`（2项离线更新/真实SQLite迁移）；A=`test_astrbot_tts_protocol.py`（3项固定Huoshan源码协议、WSfixture）；C=`integrations/tests/test_astrbot_compatibility.py`（16项实际上游类，QQ/模型网络fixture）；M=Meme原生suite；J=隔离MySQL/Redis真实Java完整suite；R=原有Python回归。
 
 | ID | 执行方式及现有结果 | 真机/生产结论与剩余验证 |
 |---|---|---|
@@ -15,7 +15,7 @@
 | T05 | M完整原生测试通过；联动仍调用Meme公开API | 真实向量/辅助模型和用户图片包未验 |
 | T06 | C单GIF/仅图/文字GIF及非混合补图通过；非Plain保留 | 手机多图/动图播放未验 |
 | T07 | B媒体不提炼；C图片字段保留、caption不进用户证据通过 | 真实QQ图片理解未验 |
-| T08 | C STT失败停止；B ASR来源机制通过 | 真实STT质量/供应商/QQ语音未验 |
+| T08 | C STT失败通过prepare/check/claim发送一次文字提示，重复钩子不重发；B ASR来源机制通过 | 真实STT质量/供应商/QQ语音未验 |
 | T09 | A当前配置voice/private_voice及参数保留、真实协议helpers→WAV通过 | 未调用生产TTS；音色/格式手机播放未验 |
 | T10 | C实际Record+Plain序列化，仅一次complete通过 | 手机两种组件实际接收未验 |
 | T11 | B后台角色变化使旧快照失效；R character多Scope共用通过 | 真实后台修改后QQ下一轮未验，生产角色未改 |
@@ -23,7 +23,7 @@
 | T13 | B同owner既有App来源事实召回/删除通过 | fixture中的App来源不等于真实iOS交互 |
 | T14 | B原MemoryStore管理和删除使旧快照失效；R纠错/派生证据失效通过 | 双端真实纠正/删除未验 |
 | T15 | B disabled/unavailable/no_match区分通过 | DB/授权完全不可用时拒绝私有生成；无可信角色缓存，不承诺此时继续个性化回复 |
-| T16 | B伪owner/错误映射/撤销/版本变化拒绝；J新增虚拟设备授权16项子suite通过 | 生产虚拟grant尚未注册；未增加好友白名单 |
+| T16 | B伪owner/错误映射/撤销/版本变化拒绝；J授权子suite16项通过，含bridge-config实际成功、伪造owner、普通token、实体设备和撤销后拒绝 | 生产虚拟grant尚未注册；未增加好友白名单 |
 | T17 | B情绪投影/仅一次commit、R衰减/恢复/跨Scope状态通过 | 真实模型“生气→道歉”表达及手机重启未验 |
 | T18 | B非法JSON保留旧状态；R情绪/原生模型超时回归通过 | 供应商超时率及正文体验未验；本轮评价有界等待 |
 | T19 | B人格事件checkpoint与故障恢复通过；R成长/证据删除回归通过 | 生产没有为验证伪造成长证据 |
@@ -53,10 +53,31 @@ scripts/ci/run_astrbot_act.sh backend connector manager
 
 脚本用 `-P ubuntu-latest=-self-hosted`，是act本地执行工作流，不是容器化ubuntu runner的等价性声明，也不是GitHub run。manager启动任务专用MySQL/Redis（tmpfs、回环端口），退出仅down这两个测试服务且不带-v；3306/6379必须空闲。Maven可选 `YOUMI_MAVEN_REPO` 与受控 `YOUMI_MAVEN_SETTINGS`，不得提交含代理凭据的settings。原iOS工作流依赖macOS/Xcode，Linux act无法执行，需要有Xcode的本地Mac，未伪造运行链接。
 
-工作流本次为手动dispatch定义，开发中没有调用GitHub workflow_dispatch。测试源码SHA由每个job输出的source_sha给出；有未提交改动的旧日志只证明当时工作区。最终日志路径、计数、哈希和提交见后续记录。
+工作流本次为手动dispatch定义，开发中没有调用GitHub workflow_dispatch。测试源码SHA由每个job输出的source_sha给出；有未提交改动的旧日志只证明当时工作区。最终日志路径、计数、哈希和提交见下表及机器可读证据。
 
 ## 真实阻塞和授权边界
 
 已可SSH只读核查生产，因此不是“无服务器访问”。当前缺的是生产写入/切换授权、QQ账号扫码及实机操作、AstrBot实际模型容量与STT/MCP配置、用户选择的Meme图片包，以及本地macOS/Xcode。未复制生产密钥、未写数据库、未注册虚拟设备、未更改模型/角色/音色、未发布端口或重建现有服务。上述条件满足后按 [smoke-test](../../deploy/astrbot-fusion/smoke-test.md) 逐项记录，不需要重写本次代码才能开始验收。
 
 QQ原生实时语音电话：**NOT SUPPORTED / NOT VERIFIED**。不以Record语音消息替代电话验收。
+
+## 最终本地 act 结果（2026-10-25 05:03 UTC）
+
+| Job / 检查 | 实际结果 |
+|---|---|
+| backend / server unittest | **448通过**，其中本次专项40项：Bridge35、updater/迁移2、Huoshan协议3 |
+| backend / scripts unittest | **98通过** |
+| backend / scripts/ci unittest | **39通过** |
+| backend / docker compose config | **通过** |
+| connector / 固定AstrBot/Meme源码集成 | **16通过**，含STT失败文字提示与无重复complete |
+| connector / Meme原生完整suite | **1045通过、1跳过、85子测试通过** |
+| manager / 真实Java完整suite | **190通过、0失败、0错误、0跳过**；独立MySQL/Redis |
+| manager / Maven package | **BUILD SUCCESS**；本地JAR指纹见JSON，不是已部署制品 |
+
+Meme唯一跳过项：`test_qqofficial_sdk_delivery.py:14` 缺少`botpy.message`，属于QQ官方SDK路径；本集成目标OneBot路径已执行。保留固定依赖的audioop/websockets及Spring MockBean弃用警告；此前测试遥测后台线程警告已通过CI禁用原生遥测解决，没有过滤掉警告来制造通过。
+
+三个原始日志在 `/root/tmp/youmi-act-delivery/`，各job都输出上述source_sha及act=true，结尾Job succeeded；日志hash保存在JSON。本地manager JAR位于JSON所列target路径，SHA256为 `1d6a7cf635a727bfb503e20cff1a6f8434e50aa342817d76ee0814e4b20e8a19`。测试专用容器与网络已退出清理，未操作生产/CodeRove容器或数据卷。
+
+已审计生产源码副本另在一次性本地候选目录执行严格preimage的`install_astrbot --apply`，备份和源文件保留断言通过；日志 `/root/tmp/youmi-reviewed-runtime-updater.log`。这不是生产安装或完整镜像启动验证。
+
+首次失败及修复保留在worklog：旧迁移夹具、TLS/上游frontend测试条件、原生测试context夹具、临时Maven settings丢失；最终结果不替换历史失败。没有GitHub托管run链接，因为本轮按用户要求全部使用本地act。

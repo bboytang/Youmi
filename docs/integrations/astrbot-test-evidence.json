@@ -1,0 +1,109 @@
+{
+  "recorded_at_utc": "2026-10-25T05:02:32.957817+00:00",
+  "code_sha": "b329c1e91903eb4ae801444862784ac0c46dc644",
+  "base_sha": "739c509eb3f4bc231d879367b33a15a8a94c38f5",
+  "branch": "feature/astrbot-fusion",
+  "runner": "nektos/act local self-hosted Linux runner",
+  "github_hosted_actions_executed": false,
+  "workflow": ".github/workflows/youmi-astrbot.yml",
+  "command": "scripts/ci/run_astrbot_act.sh backend connector manager",
+  "versions": {
+    "act": "0.2.89",
+    "docker": "29.1.3",
+    "python": "3.12.3",
+    "java": "21.0.12.1",
+    "maven": "3.8.7"
+  },
+  "source_pins": {
+    "astrbot": {
+      "repo": "https://github.com/AstrBotDevs/AstrBot",
+      "ref": "v4.29.3",
+      "sha": "f61a7f42696da6df25dc7a249ec9b8d54ed9da18"
+    },
+    "meme": {
+      "repo": "https://github.com/anka-afk/astrbot_plugin_meme_manager",
+      "ref": "cf18e81c84fb3a713320addd57e56014d499f65c",
+      "sha": "cf18e81c84fb3a713320addd57e56014d499f65c"
+    },
+    "snowluma": {
+      "repo": "https://github.com/SnowLuma/SnowLuma",
+      "ref": "v1.10.0",
+      "sha": "7f391e065edb0a138b25c0456ed4151afc247ceb"
+    },
+    "xiaozhi": {
+      "repo": "https://github.com/xinnan-tech/xiaozhi-esp32-server",
+      "ref": "87c6df77b0220ddbd8fc804f984f83f69f3225e5",
+      "sha": "87c6df77b0220ddbd8fc804f984f83f69f3225e5"
+    }
+  },
+  "checks": {
+    "server_unittest": {
+      "passed": 448,
+      "focused_new_tests": {
+        "server/tests/test_astrbot_bridge.py": 35,
+        "server/tests/test_astrbot_install.py": 2,
+        "server/tests/test_astrbot_tts_protocol.py": 3
+      }
+    },
+    "scripts_unittest": {
+      "passed": 98
+    },
+    "ci_helpers_unittest": {
+      "passed": 39
+    },
+    "connector_fixed_source": {
+      "passed": 16,
+      "llm_and_qq_network": "fixtures"
+    },
+    "meme_native": {
+      "passed": 1045,
+      "skipped": 1,
+      "subtests_passed": 85,
+      "skip_reason": "botpy.message not installed; QQ official SDK test, outside OneBot target"
+    },
+    "manager_java": {
+      "tests": 190,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "private_authorization_tests": 16,
+      "database": "isolated local MySQL/Redis",
+      "package": "BUILD SUCCESS"
+    },
+    "compose_config": "passed"
+  },
+  "logs": {
+    "backend": {
+      "path": "/root/tmp/youmi-act-delivery/backend.log",
+      "sha256": "495c4b609dae86bcccc533a481c7ee3883141c1e9669cba5d40de8fa9a7b4d92",
+      "job": "succeeded"
+    },
+    "connector": {
+      "path": "/root/tmp/youmi-act-delivery/connector.log",
+      "sha256": "88f611d1fa640db25e3e0f34573c36103762bd8ce902911fc6698d30b5308aaa",
+      "job": "succeeded"
+    },
+    "manager": {
+      "path": "/root/tmp/youmi-act-delivery/manager.log",
+      "sha256": "21cd71a7f7f280c4bd232c3d4e1c8942c27a0c9ab822e9087dbf25a97396743c",
+      "job": "succeeded"
+    }
+  },
+  "manager_candidate_jar": {
+    "path": "/root/tmp/youmi-astrbot-audit/manager-candidate/main/manager-api/target/xiaozhi-esp32-api.jar",
+    "bytes": 85325525,
+    "sha256": "1d6a7cf635a727bfb503e20cff1a6f8434e50aa342817d76ee0814e4b20e8a19",
+    "deployment_status": "local build only; must not replace customized production JAR wholesale"
+  },
+  "not_verified": [
+    "QQ device messaging/login/reconnect",
+    "live LLM, vision, STT, MCP and TTS providers",
+    "real iOS and original device shared-memory interactions",
+    "macOS/Xcode iOS build and UI tests",
+    "sidecar runtime and volume restart",
+    "production migration, deployment and rollback",
+    "production latency and success rates"
+  ],
+  "production_mutations": false,
+  "qq_realtime_calls": "NOT SUPPORTED / NOT VERIFIED"
+}

@@ -19,11 +19,11 @@
 
 ## 已执行的兼容集成
 
-`integrations/tests/test_astrbot_compatibility.py` 当前15项通过：4种真实 GIF/仅图/混合与非混合组合；文字+Record；真实 send 异常；请求对象复用；两次工具续答；独立命令/自调 LLM；complete 网络中断；原生 cron 工具+Meme；发送工具校验失败；拆分 Plain 的整体检查；图文输入用户来源分离；STT失败停止生成。
+`integrations/tests/test_astrbot_compatibility.py` 当前16项通过：4种真实 GIF/仅图/混合与非混合组合；文字+Record；真实 send 异常；请求对象复用；两次工具续答；独立命令/自调 LLM；complete 网络中断；原生 cron 工具+Meme；发送工具校验失败；拆分 Plain 的整体检查；图文输入用户来源分离；STT失败幂等文字提示；缺少原始文字不生成用户证据。
 
-测试读取真实 GIF 文件并解码实际 OneBot 序列化结果；验证 Record base64 与临时 WAV 清理。LLM provider、HTTP客户端与 bot 网络 transport 明确为 fixture，未连接 QQ。原生数据库池在当前测试事件循环结束前释放，已修复首轮夹具的 event loop closed 警告。
+语音识别失败时不调用回复模型，先以media来源登记回合，再check/claim发送一次文字提示并complete；不提炼假转写。测试读取真实 GIF 文件并解码实际 OneBot 序列化结果；验证 Record base64 与临时 WAV 清理。LLM provider、HTTP客户端与 bot 网络 transport 明确为 fixture，未连接 QQ。CI使用原生ASTRBOT_DISABLE_METRICS开关关闭遥测，并在测试事件循环结束前释放原生数据库池，已消除首轮夹具的event loop closed警告。
 
-Meme Manager 原生完整 suite：1045 passed、1 skipped、85 subtests passed。原生测试覆盖分类、语义候选、自动收集、图片管理和联动，但不构成实际供应商识别/QQ发送证明。最终 act 日志记录 skip 原因和精确 SHA。固定依赖仍出现 audioop/websockets 的弃用警告，未修改第三方源码来隐藏它们。
+Meme Manager 原生完整 suite：1045 passed、1 skipped、85 subtests passed。原生测试覆盖分类、语义候选、自动收集、图片管理和联动，但不构成实际供应商识别/QQ发送证明。最终act在b329c1e9上通过；skip为未安装botpy.message的QQ官方SDK用例。完整SHA及日志hash见验收/证据JSON。固定依赖仍出现 audioop/websockets 的弃用警告，未修改第三方源码来隐藏它们。
 
 ## 支持范围与限制
 

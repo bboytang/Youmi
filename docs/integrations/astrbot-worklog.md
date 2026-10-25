@@ -23,7 +23,7 @@
 | 04:05 起 | 用户授权不影响 Youmi/CodeRove 的文件清理 | 确认 CodeRove 位于 claude 与 claude-session-concurrency；保留整个 projects、CodeRove state/镜像、源码/密钥/数据库/已安装依赖。清 npm 可再下载缓存与归档 journal，空间约170MiB→2.0GiB。旧日志/installer 清理扫描实际删除0项，不冒称释放其空间 |
 | 04:09 | 用户要求将当前实施方案、计划、工作与交接写 MD | 新增 implementation-plan/worklog/handoff；如实记录实施中、当前测试、未验证边界和下一步，不以文档替代开发 |
 
-## 日志与制品位置
+## 日志与制品位置（04:09历史快照，最终结果见文末）
 
 本地临时日志未当作生产数据上传：
 
@@ -46,3 +46,17 @@
 - 离线updater合成源码保护测试、真实V7→V8迁移失败事务回滚/旧loader拒绝V8通过；另对已审计生产源码副本执行严格preimage只读检查通过，没有运行生产--apply。
 - 固定Huoshan完整provider源码构帧/解析+WS fixture的3项测试通过，配置voice与参数保留；无生产音频调用。后端新增专项总计**39项通过**。原CI辅助39项也通过。
 - 已写compatibility和T01–T30 acceptance，明确Mac/Xcode、QQ与生产授权边界。下一步对提交精确SHA跑act并记录最终结果。
+
+## 2026-10-25 05:04 UTC 最终开发、验证与交付
+
+- 代码提交顺序：9f47d658（完整融合）、17d66729（媒体来源与测试遥测隔离）、a6d33891（真实bridge-config权限、null角色、scheduled来源）、b329c1e9（STT失败幂等文字提示）。当前最后代码SHA为 `b329c1e91903eb4ae801444862784ac0c46dc644`。
+- 9f47d658本地act backend447+98+39通过，connector15+Meme通过；manager在启动测试前因旧`/root/tmp/youmi-m2/settings.xml`不再存在失败，原日志保留在youmi-act-final。恢复环境的旧tmpfs已消失，未重建或复制任何旧代理密钥；改普通独立缓存和默认HTTPS仓库后重跑。
+- 17d66729在本地act三job均通过；16项Connector仅保留上游audioop弃用警告。原生遥测会创建异步指标任务，CI改用公开ASTRBOT_DISABLE_METRICS开关关闭；未屏蔽线程异常来制造通过。
+- a6d33891三job均通过：448+98+39、16、Meme1045/1skip/85subtests、Java190/JAR。新Java断言实际调用bridge-config，验证成功输出只含允许字段、普通登录token/伪造owner/实体grant/撤销后拒绝；空prompt:null规范为空角色；scheduled上下文明确非用户发言。
+- b329c1e9增加语音识别失败文字提示：prepare→check→claim→原event.send→complete，media来源，不调用回复模型、不写假转写；重复request钩子只通知一次。固定源码集成含实际Meme after钩子通过。
+- **最终完整本地act**对b329c1e9：backend448 server+98 scripts+39 CI辅助及Compose config全部通过；Connector16通过；Meme1045通过、1跳过、85子测试通过；真实Java190通过、0失败/错误/跳过，JAR package BUILD SUCCESS。原始日志 `/root/tmp/youmi-act-delivery/`，hash与制品指纹已写入astrbot-test-evidence.json。
+- Meme唯一跳过为未安装botpy.message的QQ官方SDK测试，不是本次OneBot目标路径。固定依赖弃用警告保留。没有GitHub托管run，本次全部Actions使用act本地self-hosted runner。
+- 对审计生产源码的本地一次性副本实际运行严格preimage updater --apply，备份逐字节一致、原始副本未改变、候选新增文件存在的断言通过；未运行生产安装或完整生产镜像。真实V7→V8原子失败/重开和旧V7拒绝V8均在专项中通过。
+- 已推送代码分支feature/astrbot-fusion到明确Youmi URL；提交带skip ci，未改origin/main或重写历史。后续交付记录修订只改文档。保留用户未跟踪的YOUMI_ASTRBOT附件。
+- 已同步方案/契约/兼容/T01–T30/交接/部署/回滚，区分实现、自动测试和未验证。生产数据、角色、模型、音色均未修改；QQ/iOS、真实供应商、两个sidecar启动/重启及生产迁移回滚仍未验，不伪造通过。
+- 清理仅为已确认可再下载安装缓存、归档journal和本任务无用下载；Youmi、CodeRove项目/state/镜像、数据库与密钥均保留。当前测试依赖和证据属于本项目后续复现所需，保留。

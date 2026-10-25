@@ -50,7 +50,13 @@ services:
 
 ## AstrBot / SnowLuma
 
-只新增两个 sidecar。准备 secret 后由操作员启动 `docker compose --env-file ... -f ... up -d`。不 down 原服务，不带 `-v`。通过 SSH 隧道访问 AstrBot 6185、SnowLuma 5099/6081；均只绑定宿主机 127.0.0.1。OneBot 6199 不发布到宿主机。
+只新增两个 sidecar。准备 secret 和实际 `.env` 后，由已获授权的操作员运行：
+
+```sh
+docker compose --env-file deploy/astrbot-fusion/.env -f deploy/astrbot-fusion/compose.yaml up -d
+```
+
+首次启动保持 OneBot adapter/LLM 接收关闭，先确认 Connector 成功加载、后端 health/worker 可用、独立 grant 和模型容量已配置，再启用 QQ 接入。通过 SSH 隧道访问 AstrBot 6185、SnowLuma 5099/6081；均只绑定宿主机 127.0.0.1。OneBot 6199 不发布到宿主机。
 
 AstrBot 添加 OneBot v11 adapter，监听 `0.0.0.0:6199`，Token 两端一致。SnowLuma WebUI 的 wsClients 配 `ws://astrbot:6199/ws`，填同一 Token；QQ 扫码由账号所有者操作。桌面随机密码留在受控主机，勿发布。
 
@@ -60,4 +66,4 @@ AstrBot 添加 OneBot v11 adapter，监听 `0.0.0.0:6199`，Token 两端一致�
 
 主动聊天沿用 AstrBot cron 的静默/限频/工具权限设置；Connector 不自建调度器。原生 cron 在 `on_agent_begin` 注入 scheduled 上下文，禁止把唤醒提示提交为用户事实。Meme 的候选/辅助模型/独立插件输出范围按其原配置逐项验收，不能说所有第三方插件自动兼容。
 
-健康路由需 service token，只证明 bridge/worker 摘要；不等于 QQ 在线、供应商可用或手机收到。运营日志仅保留类别和 turn_key，不开启带完整请求正文的调试日志。
+健康路由需 service token，只证明 bridge/worker 摘要；不等于 QQ 在线、供应商可用或手机收到。固定 AstrBot 的 STT 会在 INFO 输出转写，生产将其 `log_level` 设为 `WARNING`，关闭包含正文的调试/trace导出。后端桥接可独立保留 action/turn_key/耗时日志，避免开启完整请求正文。STT失败由Connector发一次有claim保护的文字提示，不保存假转写；后端或授权不可用时停止私有生成。

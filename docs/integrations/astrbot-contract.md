@@ -14,6 +14,10 @@ JSON 最大 64KiB。正常响应 JSON；失败为 `{"error":{"code":"..."}}`，�
 
 返回 `turn_key,turn_token,status:"prepared",system_prompt,dynamic_context,persona_version,expires_at,affect_status`。system 取自真实 ContextBundle；dynamic_context 取第二条 user 消息的 youmi_context，保留所有证据字段。既有 AstrBot 请求的 history/tools/image/audio 不覆盖；临时上下文不进入其永久历史。同一 attempt 重试返回冻结内容，另一 attempt 对同一回合返回 duplicate_turn 并停止第二次生成。已完成回合也不重发回复。
 
+`dynamic_context` 另外明确 `input_origin:user|scheduled`、`source_kind` 和 `user_evidence`。定时system上下文明确它不是用户新发言。Manager未配置角色返回的prompt:null规范为空字符串，既有角色字符串原样保留；每次配置校验使用相同规范化后的角色hash。
+
+STT失败不伪造ASR原话：Connector以media来源prepare，再check/claim发送固定文字提示并complete，不运行回复模型、不创建用户事实/情绪/事件；同一回合不会因重复钩子再发送。后端/授权不可用时仍按下述拒绝策略处理。
+
 冻结派生上下文仅在同一 SQLite 的新增回合表中暂存，最长 300 秒；用户来源摘录最多 512 字，完成/过期/失败立即或定期擦除。已终态只保留散列、状态、授权版本和完成结果，不做第二套事实表。为保证重放去重，终态键不随短期 payload 清理删除。
 
 ## check / claim
