@@ -5,6 +5,9 @@ on:
       - 'server/companion/embedding.py'
       - 'server/companion/semantic.py'
       - 'server/companion/memory_runtime.py'
+      - 'server/companion/memory_repository.py'
+      - 'server/companion/memory_shadow.py'
+      - 'server/companion/memory_search.py'
       - 'server/companion/retrieval.py'
       - 'server/companion/context.py'
       - 'server/companion/reply.py'
@@ -31,6 +34,7 @@ on:
       - 'server/companion/requirements-vector.txt'
       - 'scripts/ci/verify_youmi_vectors.py'
       - 'scripts/ci/verify_youmi_retrieval.py'
+      - 'scripts/ci/verify_youmi_memory_shadow.py'
       - 'scripts/ci/verify_youmi_context.py'
       - 'scripts/ci/verify_youmi_reply.py'
       - 'scripts/ci/verify_youmi_extraction.py'
@@ -42,6 +46,9 @@ on:
       - 'server/companion/embedding.py'
       - 'server/companion/semantic.py'
       - 'server/companion/memory_runtime.py'
+      - 'server/companion/memory_repository.py'
+      - 'server/companion/memory_shadow.py'
+      - 'server/companion/memory_search.py'
       - 'server/companion/retrieval.py'
       - 'server/companion/context.py'
       - 'server/companion/reply.py'
@@ -68,6 +75,7 @@ on:
       - 'server/companion/requirements-vector.txt'
       - 'scripts/ci/verify_youmi_vectors.py'
       - 'scripts/ci/verify_youmi_retrieval.py'
+      - 'scripts/ci/verify_youmi_memory_shadow.py'
       - 'scripts/ci/verify_youmi_context.py'
       - 'scripts/ci/verify_youmi_reply.py'
       - 'scripts/ci/verify_youmi_extraction.py'
@@ -129,6 +137,15 @@ jobs:
             -v "$RUNNER_TEMP/mia-vector-model:/model:ro" \
             -v "$RUNNER_TEMP/mia-vector-results:/results" \
             mia-vector-verification /experiment/scripts/ci/verify_youmi_retrieval.py --model-dir /model --output /results/retrieval-results.json
+      - name: Installed ported BM25 and RRF against canonical data without changing affect
+        run: |
+          docker run --rm --cpus 2 --memory 2g --memory-swap 2g --network none --entrypoint python \
+            -e GITHUB_SHA="$GITHUB_SHA" -e PYTHONPATH=/installed \
+            -v "$GITHUB_WORKSPACE:/experiment:ro" \
+            -v "$GITHUB_WORKSPACE/upstream/main/xiaozhi-server:/installed:ro" \
+            -v "$RUNNER_TEMP/mia-vector-model:/model:ro" \
+            -v "$RUNNER_TEMP/mia-vector-results:/results" \
+            mia-vector-verification /experiment/scripts/ci/verify_youmi_memory_shadow.py --model-dir /model --output /results/memory-shadow-results.json
       - name: Installed context budget, immutable history and legal tool continuations
         run: |
           docker run --rm --cpus 2 --memory 2g --memory-swap 2g --network none --entrypoint python \

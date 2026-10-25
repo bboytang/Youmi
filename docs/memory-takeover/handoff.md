@@ -6,19 +6,19 @@
 
 - 步骤 0 文档固化完成。
 - 步骤 1 兼容验收完成：运行时代码 `37f5680c`，最终验证提交 `1f781da9a990433a3dbf1b719f14043133523860`。GitHub Python 3.10/3.12 各 135 项、完整后端 491 项与人设传输、实际安装后的向量/上下文/回复/提取、绑定 Java 192 项及 Manager 基线均通过。准确链接见 verification.md。
-- 步骤 2–7 尚未完成，下一任务为步骤 2 canonical 仓储及上游核心适配；不得表述为已完成移植或已部署。用户已授权按计划持续开发，无需再次请求开始实施的许可。
+- 步骤 2A 代码完成、等待 CI：canonical 只读仓储与移植后的 CJK/BM25/RRF 影子检索；本地新增 17 项及重点 152 项通过。详见 shadow-retrieval.md。步骤 2B 和 3–7 未完成，不能表述为整体接管或已部署。用户已授权持续开发。
 
 ## 实施约束
 
 保留已有用户修改，尤其 context.py、astrbot_api.py；尽量从未修改的工厂与新增模块接入，不覆盖或提交用户工作。每完成一步，记录准确测试、限制、提交及 CI 链接，再更新本交接。
 
-步骤 1 的适配器只包含 `store`、`retrieve`、`_require`、`_check`，不是完整上游引擎，不向外暴露向量维护接口。向量维护仍由原有 SemanticMemoryIndex/MemoryWorker 执行，完成对话写入路径未改。工厂在不同独立进程中可分别创建实例，但复用同一权威数据库和 owner，不要求进程间共享 Python 对象。
+运行时保留 `store`、`retrieve`、`_require`、`_check`，新增显式 `shadow_retrieve`；默认回复不调用影子接口，不需要安装可选 Tantivy。向量维护仍由原有 SemanticMemoryIndex/MemoryWorker 执行，完成对话写入路径未改。不同进程分别创建实例，但复用同一权威数据库和 owner。
 
 ## 下一步具体入口
 
-步骤 2 先建立面向新引擎的 canonical 仓储适配：读取现有 memories、mia_memory_meta 和 sources；按服务端 owner、当前 persona、confirmed 和 active 状态筛选，保留 content_version/evidence_version；按 ID 读取和所有写动作也必须复核归属。persona_id 的历史值 `mia` 不能当作人物名称修改。
+先完成步骤 2A 的准确提交 CI。随后步骤 2B 为情绪快照、认知状态、稳定 ID 合并关系和写入适配引入必要的增量 schema，补齐迁移及新 schema 兼容回退。当前查询快照不是情绪快照持久化，当前 RAM 索引也不是生产索引 outbox。
 
-随后移植上游 BM25/融合与运行时编排，去掉 AstrBot 导入、public 回退和原生独立数据库写入。实际复制前记录 GPLv3 来源及修改。先提供隔离合成测试和只读影子评估，不能将新结果直接替换默认回复上下文。新增快照、画像、笔记或索引任务表时才引入新 schema，同时补齐安装载荷、历史升级及回退测试；不得修改 V1–V10 原文。
+后续不得直接使用上游原生独立数据库/public scope 或按 judgment 跨 owner 去重。persona_id 的历史值 `mia` 不当作人物名称修改。不得修改 V1–V10 原文。新检索结果仍不可进入默认回复，需完成步骤 3–7。
 
 现有情感系统必须持续生效；天使之魂四维状态不替代 51 维情感。人设原文保持不动。默认仍为现有记忆引擎，不允许未经验证启用新引擎。
 

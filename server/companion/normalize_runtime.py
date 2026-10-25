@@ -26,7 +26,8 @@ NATIVE_PREIMAGES = {
 }
 MODULES = ('__init__', 'affect', 'astrbot_api', 'astrbot_identity', 'astrbot_media', 'astrbot_turns',
            'authorization', 'character', 'context', 'embedding', 'emotional_system', 'emotions',
-           'events', 'extraction', 'features', 'jobs', 'management', 'memory', 'memory_runtime', 'model_requests',
+           'events', 'extraction', 'features', 'jobs', 'management', 'memory', 'memory_runtime',
+           'memory_repository', 'memory_shadow', 'memory_search', 'model_requests',
            'persona', 'proposal', 'reply', 'request_accounting', 'retrieval', 'schema', 'semantic', 'youmi_adapter')
 
 
@@ -65,6 +66,8 @@ def changes(root):
         result['youmi_companion/' + module + '.py'] = (bundle / (module + '.py')).read_text()
     for path in bundle.glob('schema*.sql'):
         result['youmi_companion/' + path.name] = path.read_text()
+    for name in ('requirements-memory-shadow.txt', 'YOUMI_MEMORY_NOTICE.md', 'YOUMI_MEMORY_LICENSE'):
+        result['youmi_companion/' + name] = (bundle / name).read_text()
     for name, source in result.items():
         if name.endswith('.py'):
             ast.parse(source, filename=name)

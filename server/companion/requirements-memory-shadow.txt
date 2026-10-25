@@ -1,0 +1,2 @@
+# Optional: explicit shadow evaluation, not needed by the current reply engine.
+tantivy==0.25.1

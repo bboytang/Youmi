@@ -34,7 +34,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y libopus0
-          python -m pip install -r server/requirements.txt numpy==1.26.4 openai==2.8.1
+          python -m pip install -r server/requirements.txt numpy==1.26.4 openai==2.8.1 -r server/companion/requirements-memory-shadow.txt
       - name: Test WebSocket and Opus protocol fixture
         env:
           MIA_MUSIC_TEST_SOURCE: ${{ runner.temp }}/play_music.py
