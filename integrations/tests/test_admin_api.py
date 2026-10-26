@@ -150,4 +150,3 @@ async def test_stale_or_cross_target_secret_handle_does_not_dispatch(tmp_path):
         with pytest.raises(BridgeError, match='admin_secret_handle_expired'):
             await admin.request(manifest, 'youmi', 'PUT', '/settings', body=result['result'])
         assert calls == ['/settings']
-
