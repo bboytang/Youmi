@@ -1,5 +1,19 @@
 # Youmi 记忆接管验证记录
 
+## 步骤 3A：反思动作与受控写入
+
+准确产品及测试提交：`04a440ea6583a694a307019e86cadaf807fd82ee`。后续工作记录提交只修改文档。
+
+| 检查 | 结果 | GitHub Actions |
+| --- | --- | --- |
+| Python 3.10 / 3.12 | 各 207 项通过，含新增 18 项反思动作验证 | https://github.com/bboytang/Youmi/actions/runs/40249592551 |
+| 完整后端及人设传输 | 551 项通过，传输检查通过 | https://github.com/bboytang/Youmi/actions/runs/40249592533 |
+| 安装后真实编码器、混合召回、影子检索、上下文、回复、结构化提取 | 所有阶段通过 | https://github.com/bboytang/Youmi/actions/runs/40249592608 |
+| 绑定授权 | Java 192 项通过，JAR 构建通过 | https://github.com/bboytang/Youmi/actions/runs/40249592534 |
+| Manager 基线 | 原有 150 项和基线 4 项通过 | https://github.com/bboytang/Youmi/actions/runs/40249592790 |
+
+新增用例使用真实 SQLite、合成提案及确定性编码器，验证新增/稳定 ID 修订、来源/所有者/版本/授权、待确认、整批校验、impression 不截断、失败回滚、重启重试、两次尝试上限及有持久化数据的 51 维情感/认知/人设不变。真实 BGE 流水线证明安装及既有链路回归，不等于真实模型已生成新反思格式或新引擎质量通过。未进行生产升级、真实 QQ/App/设备对话；3B 尚未完成。
+
 ## 步骤 1：统一运行时兼容入口
 
 产品代码提交：`37f5680c1738d03a7e2403e02ec360b8f4c55b43`。最终测试修正提交：`1f781da9a990433a3dbf1b719f14043133523860`。后续仅记录文档的提交不代表更改了被测产品代码。
