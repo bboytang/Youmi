@@ -163,6 +163,21 @@ async def verify(directory, report):
             assert await runtime.retrieve(scope, policy, query) == default_before
             report['checks'].update(persistent_shadow_reopen=True, persistent_shadow_dirty_recovery=True,
                 persistent_shadow_canonical_unchanged=True)
+            # V15 persists cleanup intent, not a claim of physical disk erasure.
+            from youmi_companion.memory_cache_invalidations import YoumiMemoryCacheInvalidations
+            invalidations = YoumiMemoryCacheInvalidations(store)
+            generation = next(row['generation'] for row in invalidations.pending() if row['owner'] == scope.owner)
+            affect_before_delete = emotional_system.status(store, scope.owner)
+            store.delete_memory(scope.owner, identifier)
+            assert not invalidations.acknowledge(scope.owner, generation)
+            reopened = MemoryStore(Path(folder) / 'canonical.sqlite3')
+            try:
+                pending = YoumiMemoryCacheInvalidations(reopened).pending()
+                assert next(row['generation'] for row in pending if row['owner'] == scope.owner) > generation
+                assert emotional_system.status(store, scope.owner) == affect_before_delete
+            finally:
+                reopened.close()
+            report['checks'].update(invalidation_survives_reopen=True, invalidation_stale_ack_refused=True)
         finally:
             store.close()
 

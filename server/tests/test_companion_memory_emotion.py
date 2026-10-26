@@ -357,7 +357,7 @@ class LinkMigrationTests(unittest.IsolatedAsyncioTestCase):
     def v13(self):
         with self.store.db:
             remove_v14(self.store.db)
-            self.store.db.execute('DELETE FROM mia_schema_migrations WHERE version=14')
+            self.store.db.execute('DELETE FROM mia_schema_migrations WHERE version>=14')
         namespace = {'__file__': str(Path('server/companion/schema.py').resolve())}
         source = subprocess.check_output(['git', 'show', 'f6aa0180:server/companion/schema.py'], text=True)
         exec(compile(source, 'frozen-v13.py', 'exec'), namespace)
@@ -399,7 +399,7 @@ migrate(db)
         self.assertEqual(result.returncode, 77)
         old(self.store.db)
         migrate(self.store.db)
-        self.assertEqual(self.store.db.execute('SELECT MAX(version) FROM mia_schema_migrations').fetchone()[0], 14)
+        self.assertEqual(self.store.db.execute('SELECT MAX(version) FROM mia_schema_migrations').fetchone()[0], 15)
 
 
 class NativeLinkCompletionTests(unittest.IsolatedAsyncioTestCase):

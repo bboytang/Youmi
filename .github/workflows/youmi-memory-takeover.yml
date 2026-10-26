@@ -41,6 +41,7 @@ jobs:
           server.tests.test_companion_memory_runtime
           server.tests.test_companion_memory_shadow
           server.tests.test_companion_memory_index_cache
+          server.tests.test_companion_memory_cache_invalidations
           server.tests.test_companion_memory_state
           server.tests.test_companion_memory_reflection
           server.tests.test_companion_memory_artifacts
