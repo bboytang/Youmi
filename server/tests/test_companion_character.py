@@ -204,6 +204,8 @@ class CharacterTests(unittest.IsolatedAsyncioTestCase):
             owner = 'migration-owner'
             features.update(older, owner, {'companion_emotion': True})
             with older.db:
+                from server.tests.companion_schema_fixtures import remove_v11
+                remove_v11(older.db)
                 for table in ('youmi_affect_system_history', 'youmi_affect_system_turns', 'youmi_affect_system'):
                     older.db.execute('DROP TABLE ' + table)
                 older.db.execute("INSERT INTO mia_affect_state VALUES (?, -.2, .4, .3, 'hurt', 7, 1800000000)", (owner,))
@@ -222,7 +224,7 @@ class CharacterTests(unittest.IsolatedAsyncioTestCase):
             older.db.set_authorizer(lambda action, name, *rest: sqlite3.SQLITE_DENY
                 if action == sqlite3.SQLITE_CREATE_TABLE and name == 'mia_affect_state_v7' else sqlite3.SQLITE_OK)
             with self.assertRaises(sqlite3.DatabaseError): migrate(older.db)
-            older.db.set_authorizer(None)
+            older.db.set_authorizer(lambda *args: sqlite3.SQLITE_OK)
             self.assertEqual(older.db.execute('SELECT MAX(version) FROM mia_schema_migrations').fetchone()[0], 6)
             self.assertFalse(older.db.execute("SELECT 1 FROM sqlite_master WHERE name='mia_companion_profile'").fetchone())
             migrate(older.db)

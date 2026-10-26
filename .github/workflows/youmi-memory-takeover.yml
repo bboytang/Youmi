@@ -43,6 +43,7 @@ jobs:
           server.tests.test_companion_memory_state
           server.tests.test_emotional_system
           server.tests.test_companion_affect
+          server.tests.test_companion_character
           server.tests.test_companion_features
           server.tests.test_companion_semantic
           server.tests.test_companion_reply
