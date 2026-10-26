@@ -135,6 +135,7 @@ jobs:
           (root / 'metadata.json').write_text(json.dumps(metadata, ensure_ascii=False, indent=2))
           PY
       - name: Install actual companion and prepare isolated CPU runtime
+        id: runtime
         run: |
           python -m server.companion.install_youmi upstream --apply
           mkdir -p "$RUNNER_TEMP/mia-vector-results"
@@ -151,6 +152,7 @@ jobs:
             -v "$RUNNER_TEMP/mia-vector-results:/results" \
             mia-vector-verification /experiment/scripts/ci/verify_youmi_vectors.py --model-dir /model --output /results/vector-results.json
       - name: Installed hybrid retrieval with frozen independent Chinese queries
+        if: ${{ !cancelled() && steps.runtime.outcome == 'success' }}
         run: |
           docker run --rm --cpus 2 --memory 2g --memory-swap 2g --network none --entrypoint python \
             -e GITHUB_SHA="$GITHUB_SHA" -e PYTHONPATH=/installed \
@@ -160,6 +162,7 @@ jobs:
             -v "$RUNNER_TEMP/mia-vector-results:/results" \
             mia-vector-verification /experiment/scripts/ci/verify_youmi_retrieval.py --model-dir /model --output /results/retrieval-results.json
       - name: Installed ported BM25 and RRF against canonical data without changing affect
+        if: ${{ !cancelled() && steps.runtime.outcome == 'success' }}
         run: |
           docker run --rm --cpus 2 --memory 2g --memory-swap 2g --network none --entrypoint python \
             -e GITHUB_SHA="$GITHUB_SHA" -e PYTHONPATH=/installed \
@@ -169,6 +172,7 @@ jobs:
             -v "$RUNNER_TEMP/mia-vector-results:/results" \
             mia-vector-verification /experiment/scripts/ci/verify_youmi_memory_shadow.py --model-dir /model --output /results/memory-shadow-results.json
       - name: Installed context budget, immutable history and legal tool continuations
+        if: ${{ !cancelled() && steps.runtime.outcome == 'success' }}
         run: |
           docker run --rm --cpus 2 --memory 2g --memory-swap 2g --network none --entrypoint python \
             -e GITHUB_SHA="$GITHUB_SHA" -e PYTHONPATH=/installed \
@@ -178,6 +182,7 @@ jobs:
             -v "$RUNNER_TEMP/mia-vector-results:/results" \
             mia-vector-verification /experiment/scripts/ci/verify_youmi_context.py --model-dir /model --output /results/context-results.json
       - name: Installed connection text protocol and recursive tools through real SDK
+        if: ${{ !cancelled() && steps.runtime.outcome == 'success' }}
         run: |
           docker run --rm --cpus 2 --memory 2g --memory-swap 2g --network none --entrypoint python \
             -e GITHUB_SHA="$GITHUB_SHA" -e PYTHONPATH=/installed \
@@ -187,6 +192,7 @@ jobs:
             -v "$RUNNER_TEMP/mia-vector-results:/results" \
             mia-vector-verification /experiment/scripts/ci/verify_youmi_reply.py --model-dir /model --output /results/reply-results.json
       - name: Installed structured extraction, atomic metadata and true incremental vectors
+        if: ${{ !cancelled() && steps.runtime.outcome == 'success' }}
         run: |
           docker run --rm --cpus 2 --memory 2g --memory-swap 2g --network none --entrypoint python \
             -e GITHUB_SHA="$GITHUB_SHA" -e PYTHONPATH=/installed \
