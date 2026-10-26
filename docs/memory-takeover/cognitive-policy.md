@@ -23,3 +23,15 @@ V17新增youmi_memory_pins扩展表，以canonical memory_id为主键/级联删�
 3. 精确产品SHA运行GitHub双Python、完整后端、实际安装/BGE、Java与Manager，以及变动页面四浏览器。更新工作记录/交接后继续6C冻结质量/预算/容量/迁移和7真实调用/部署/兼容回退，完成后才开启生产新引擎。
 
 保持V1–V16不变，任何新schema验收后冻结。不能把6B1后端机制或静态JSON测试替代所有端实际生效及生产部署证明。
+
+## 6B2平台适配确认（实现前补充）
+
+已读取固定生产AstrBot4.29.3的ProviderRequest及internal agent pipeline：OnLLMRequest在选定provider/build_main_agent之后调用，ProviderRequest没有每轮temperature/max_tokens参数。不能动态修改共享provider配置或绕开原Agent重发模型请求。QQ采用同一cognitive policy的系统表达/创造指导，保持原生媒体/工具路径；App/设备原生OpenAI兼容provider同时接收受原预算限制的max_tokens与0–1温度。不能宣称QQ已改变SDK温度，验证必须检查实际合并system_prompt。若日后AstrBot提供per-request选项，再独立适配。
+
+共享context通过干净的新子类接入，避免覆盖用户context.py/astrbot_api.py并行修改。cognitive版本加入上下文核验；新指导必须计入预算，保留人设、事实和工具序列，必要时放弃本轮认知指导并明确diagnostics，不因新可选指导阻断原情感/回复。召回参数先接显式影子候选，默认正式引擎仍由6C/7统一切换。
+
+## 6B1实际安装检查中的并发问题（2026-10-26）
+
+准确08a99335的双Python/后端/Java/Manager/结构化提供者通过，新影子27项（含认知/固定）全部真；实际向量并发短句case2/3为embedding_busy，其余逐位一致，长句4次全一致，工作流40280427034整体失败。失败样本仍保留，不将独立影子通过写成全流程验收。
+
+短句两条活跃线程连续获取空位，两个早到等待者超0.4秒；原threading.BoundedSemaphore不保证FIFO。先写可重复的“释放后新到者抢占老等待者”机制测试，若复现，再仅改为有界FIFO准入（仍两路native/0.4秒，至多4等待者），不改模型、会话参数、并发验证断言、资源或延长超时。这是生产前容量问题的必要修复候选，仍需原真实BGE检查与6C完整容量验证，不能单凭机制测试宣称根因全部解决。

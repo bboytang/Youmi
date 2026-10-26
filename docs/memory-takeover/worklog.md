@@ -309,3 +309,5 @@
 - 新增16项真实SQLite测试通过；相关82项及完整兼容387项通过。首轮新增幂等测试误用job_id字段，改为既有id后保持全部断言通过，不改产品幂等。覆盖原子失败重试、配置竞争、认知故障隔离、能量边界、owner/来源/固定版本/候选/受控缓存/清空、V16升级失败与进程中断及旧loader拒绝。
 - 三种安装载荷加入V17及认知依赖，历史夹具同步清理新对象，V1–V16未改。实际安装脚本补同任务认知/固定CAS及级联检查，等待准确提交CI。数学设计来源已注明，不复制上游独立内存/数据库权威。
 - 生产仅只读核查：当前youmi_companion与旧mia_companion均在镜像，后续必须确认原生入口实际导入新包，不能误覆盖旧副本当部署。实际库data/mia-memory.sqlite3为V10，quick_check=ok，owners2/memories20/sources20/vectors15/jobs530；未导出正文或凭据，未迁移/修改生产。
+- 6B1产品08a993350d8272e7591f2337d5ef20db99ce16d0：GitHub双Python/后端/Java/Manager/结构化提供者通过；40280427034实际编码并发失败，下载/tmp/youmi-cognition-first-results核对：新影子27项全真，但短句case2/3为embedding_busy（16/18次实际native），其余短句和长句全部bitwise_equal。未宣称完整验收，不盲目重跑掩盖问题。
+- 对照native窗口与当前BoundedSemaphore实现，准备有界FIFO准入候选，先写新到者抢占老等待者的可重复测试，保留两路/0.4秒和所有原真实编码断言及资源上限，再用原CI验证。
