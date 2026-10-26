@@ -333,3 +333,6 @@
 先提交quality-migration.md（9cbd967a），再新增verify_youmi_memory_quality.py。沿用已冻结V5事实/P13独立查询、原旧引擎及BGE参数，实际安装包同库顺序对照旧/新4条检索。记录逐例ID、canonical不变、owner/active/原句/快照/上限、质量三指标、耗时/峰值内存和精确SHA；新质量不得低于旧基线及原最低门槛，失败保留报告并使CI失败。未改查询/答案、不访问生产或增加模型调用。新脚本已语法检查，真实BGE评估待准确CI，不能把新增检查当通过。
 
 - 对照真实start_worker入口发现上一条“旧引擎任务策略使自动认知未启用”的判断不准确：JobStore默认policy_version=2，原生/QQ共用start_worker均使用默认构造；已通过同一次实际SDK认知验证。因此capabilities.automatic_cognition应为true，是否运行仍由该智能体认知/反思开关和成功任务决定；旧召回引擎只限制recall的正式行为，不阻止自动能量。改为默认JobStore构造回归并修正页面说明，未改变既有任务策略或自动打开生产开关。
+
+- 6B2首次前端40284347813：200项中192通过，8失败为两场景各四浏览器。新增无guard的capabilities读取使旧后端夹具页面渲染失败；补缺失能力字段兼容，保留原情感来源跳转断言。新增有效值测试fill错误定位el-input-number外层div，改为控件内真实input，不削弱编辑/有效值分离断言。
+- 6C1首轮d0026454/40284772244真实报告保存在/tmp/youmi-quality-first-results：canonical/owner/state/原句均通过；独立32正例两引擎完整召回/首条均100%，回归48正例新完整100%/首条97.92%，旧97.92%/97.92%；两套各16无关查询旧空召回100%，新0%。新median128.50ms/p95 177.20ms，旧62.51/92.21ms，小语料不代表容量。禁止切换。
