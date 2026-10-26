@@ -184,7 +184,7 @@ class V2RequestTests(unittest.IsolatedAsyncioTestCase):
         try:
             await self.worker.run_once()
         finally:
-            self.store.db.set_authorizer(None)
+        self.store.db.set_authorizer(lambda *args: sqlite3.SQLITE_OK)
         self.assertEqual(self.row(job)['attempts'], 0)
         self.assertEqual(self.row(job)['error_category'], 'database')
         self.assertEqual(self.http, [])
