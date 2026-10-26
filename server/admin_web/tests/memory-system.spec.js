@@ -1,6 +1,8 @@
 import { test, expect } from '@playwright/test';
 import { mockBackend } from './fixtures.js';
 
+test.afterEach(async ({ page }) => { await page.unrouteAll({ behavior: 'wait' }); });
+
 const clone = value => JSON.parse(JSON.stringify(value));
 const dimensions = Object.fromEntries(['recall', 'impression', 'expression', 'creativity'].map(key => [key, {
   minimum: ['recall', 'impression'].includes(key) ? 1 : 0,
@@ -102,14 +104,14 @@ for (const code of [409, 500]) test('failed save retains draft and blocks stale 
   await page.getByRole('button', { name: '保存联动设置' }).click();
   await expect(page.getByRole('alert').filter({ hasText: code === 409 ? '已变化' : '操作结果未确认' })).toBeVisible();
   await expect(page.getByText('有未保存的修改', { exact: true })).toBeVisible();
-  await expect(page.getByRole('switch', { name: '启用记忆情感联动' })).toHaveAttribute('aria-checked', 'true');
+  await expect(page.getByRole('switch', { name: '启用记忆情感联动' }).locator('input[type="checkbox"]')).toBeChecked();
   await expect(page.getByRole('button', { name: '保存联动设置' })).toBeDisabled();
   await expect(page.locator('.el-message--success')).toHaveCount(0);
   backend.fail = 0;
   await page.getByRole('button', { name: '刷新并核对服务器状态' }).click();
   await page.locator('.el-message-box').getByRole('button', { name: '确定', exact: true }).click();
   await expect(page.getByText('有未保存的修改', { exact: true })).toHaveCount(0);
-  await expect(page.getByRole('switch', { name: '启用记忆情感联动' })).toHaveAttribute('aria-checked', 'false');
+  await expect(page.getByRole('switch', { name: '启用记忆情感联动' }).locator('input[type="checkbox"]')).not.toBeChecked();
 });
 
 test('switching agents or leaving the page protects unsaved drafts', async ({ page }) => {
@@ -119,6 +121,8 @@ test('switching agents or leaving the page protects unsaved drafts', async ({ pa
   await page.locator('.el-select').first().click();
   await page.getByText('智能体二', { exact: true }).last().click();
   await page.locator('.el-message-box').getByRole('button', { name: '取消', exact: true }).click();
+  await expect(page.locator('.el-message-box__wrapper')).toBeHidden();
+  await expect(page).toHaveURL(/agentId=first/);
   await expect(page.getByText('正在管理：')).toContainText('智能体一');
   await expect(page.getByText('有未保存的修改', { exact: true })).toBeVisible();
   await page.evaluate(() => { location.hash = '#/affect-system?agentId=first'; });
@@ -212,9 +216,10 @@ test('an in-flight source read cannot apply to a different selected agent', asyn
   });
   await page.getByRole('button', { name: '查看来源与编辑' }).first().click();
   await expect.poll(() => typeof release).toBe('function');
-  await page.evaluate(() => { location.hash = '#/memory-system?agentId=second'; });
-  await expect(page).toHaveURL(/agentId=first/);
-  release();
+  try {
+    await page.evaluate(() => { location.hash = '#/memory-system?agentId=second'; });
+    await expect(page).toHaveURL(/agentId=first/);
+  } finally { release(); }
   await expect(page.getByRole('textbox', { name: '记忆内容' })).toHaveValue('first 当前来源');
   await page.locator('.el-select').first().click();
   await page.getByText('智能体二', { exact: true }).last().click();

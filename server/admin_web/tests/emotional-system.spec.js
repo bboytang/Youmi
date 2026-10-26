@@ -1,8 +1,9 @@
 import { test, expect } from '@playwright/test';
 import { mockBackend } from './fixtures.js';
 
+test.afterEach(async ({ page }) => { await page.unrouteAll({ behavior: 'wait' }); });
+
 async function setup(page) {
-  await mockBackend(page);
   const states = {};
   const commands = [];
   await page.route('https://youmi-fixture.invalid/**', async route => {
@@ -10,6 +11,7 @@ async function setup(page) {
     const response = await route.fetch({ url: 'http://127.0.0.1:4173' + url.pathname + url.search });
     await route.fulfill({ response });
   });
+  await mockBackend(page);
   await page.route('**/xiaozhi/agent/list', route => route.fulfill({ json: { code: 0, data: [
     { id: 'first', agentName: '智能体一' }, { id: 'second', agentName: '智能体二' }
   ] } }));
