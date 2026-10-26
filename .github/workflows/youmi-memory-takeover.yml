@@ -5,12 +5,14 @@ on:
     paths:
       - 'server/companion/**'
       - 'server/tests/test_companion_*.py'
+      - 'server/tests/companion_schema_fixtures.py'
       - 'server/tests/test_emotional_system.py'
       - '.github/workflows/youmi-memory-takeover.yml'
   pull_request:
     paths:
       - 'server/companion/**'
       - 'server/tests/test_companion_*.py'
+      - 'server/tests/companion_schema_fixtures.py'
       - 'server/tests/test_emotional_system.py'
       - '.github/workflows/youmi-memory-takeover.yml'
   workflow_dispatch:
@@ -38,6 +40,7 @@ jobs:
           python -m unittest
           server.tests.test_companion_memory_runtime
           server.tests.test_companion_memory_shadow
+          server.tests.test_companion_memory_state
           server.tests.test_emotional_system
           server.tests.test_companion_affect
           server.tests.test_companion_features

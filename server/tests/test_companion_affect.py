@@ -109,6 +109,8 @@ class AffectStateTests(unittest.IsolatedAsyncioTestCase):
 
     async def test_v5_migration_failure_is_atomic_and_reopen_preserves_defaults(self):
         with self.store.lock, self.store.db:
+            from server.tests.companion_schema_fixtures import remove_v11
+            remove_v11(self.store.db)
             for table in ('youmi_affect_system_history', 'youmi_affect_system_turns', 'youmi_affect_system'):
                 self.store.db.execute('DROP TABLE ' + table)
             self.store.db.execute('DROP TABLE mia_affect_turns')

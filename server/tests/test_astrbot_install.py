@@ -44,6 +44,8 @@ class InstalledRuntimeTests(unittest.TestCase):
                 {'memories': [{'category': 'preference', 'content': '喜欢蓝色', 'source_index': 0}]}, 'before-upgrade')
             # Remove ONLY the new empty V8 table in this synthetic test DB.
             with store.db:
+                from server.tests.companion_schema_fixtures import remove_v11
+                remove_v11(store.db)
                 for table in ('youmi_affect_system_history', 'youmi_affect_system_turns', 'youmi_affect_system'):
                     store.db.execute('DROP TABLE ' + table)
                 store.db.execute('DROP TABLE mia_astrbot_turns')
@@ -58,10 +60,10 @@ class InstalledRuntimeTests(unittest.TestCase):
                 if action == sqlite3.SQLITE_CREATE_INDEX and name == 'mia_astrbot_session' else sqlite3.SQLITE_OK)
             with self.assertRaises(sqlite3.DatabaseError):
                 schema.migrate(store.db)
-            store.db.set_authorizer(None)
+            store.db.set_authorizer(lambda *args: sqlite3.SQLITE_OK)
             self.assertEqual(list(store.db.iterdump()), before)
             schema.migrate(store.db)
-            self.assertEqual(store.db.execute('SELECT MAX(version) FROM mia_schema_migrations').fetchone()[0], 10)
+            self.assertEqual(store.db.execute('SELECT MAX(version) FROM mia_schema_migrations').fetchone()[0], 11)
             self.assertEqual(store.list_memories(owner)[0]['content'], '喜欢蓝色')
             with self.assertRaisesRegex(ValueError, 'version or checksum'):
                 legacy['migrate'](store.db)

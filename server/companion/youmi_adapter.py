@@ -554,7 +554,8 @@ def completed_chat(function):
                     from .authorization import allow_output
                     try:
                         if frame.get('assistant') and not output_was_blocked(conn):
-                            await reply.finish_affect(conn)
+                            await reply.finish_affect(conn, event)
+                            await reply.finish_memory_state(conn, event)
                         turn = getattr(conn, '_youmi_context_turn', None)
                         if turn and any(item['state'] == 'pending' for item in turn.bundle.diagnostics()['events']):
                             activated = await turn.builder.complete(turn.bundle, conn._youmi_authorization, frame.get('assistant', ''))

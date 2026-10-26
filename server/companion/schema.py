@@ -31,7 +31,7 @@ def migrate(db):
     if db.in_transaction:
         raise ValueError('Youmi schema migration requires its own transaction')
     migrations = [Path(__file__).with_name(name).read_text(encoding='utf-8')
-                  for name in ('schema.sql', 'schema-v2.sql', 'schema-v3.sql', 'schema-v4.sql', 'schema-v5.sql', 'schema-v6.sql', 'schema-v7.sql', 'schema-v8.sql', 'schema-v9.sql', 'schema-v10.sql')]
+                  for name in ('schema.sql', 'schema-v2.sql', 'schema-v3.sql', 'schema-v4.sql', 'schema-v5.sql', 'schema-v6.sql', 'schema-v7.sql', 'schema-v8.sql', 'schema-v9.sql', 'schema-v10.sql', 'schema-v11.sql')]
     digests = [hashlib.sha256(sql.encode()).hexdigest() for sql in migrations]
     db.execute('BEGIN IMMEDIATE')
     try:
@@ -82,3 +82,18 @@ def check_worker_rollback(db):
     if active or unresolved:
         raise ValueError('V2 rollback requires terminal tasks and quiescent, reconciled native requests')
     return {'compatible_worker_required': True, 'ledger_preserved': True}
+
+
+def check_memory_rollback(db):
+    """Read-only offline precondition; never a downgrade or a quiescence proof."""
+    check_worker_rollback(db)
+    active = db.execute("SELECT COUNT(*) FROM mia_jobs WHERE state IN "
+                        "('pending','extracting','validated','retry_wait')").fetchone()[0]
+    turns = db.execute("SELECT COUNT(*) FROM mia_astrbot_turns WHERE status IN ('prepared','sending')").fetchone()[0]
+    if active or turns:
+        raise ValueError('Memory rollback requires terminal jobs and drained turns')
+    if db.execute('PRAGMA foreign_key_check').fetchall():
+        raise ValueError('Memory rollback requires valid evidence relationships')
+    return {'compatible_build_required': True, 'schema_version': db.execute(
+        'SELECT MAX(version) FROM mia_schema_migrations').fetchone()[0],
+        'ledger_preserved': True, 'offline_precondition_only': True}

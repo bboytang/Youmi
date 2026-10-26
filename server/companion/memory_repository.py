@@ -3,6 +3,7 @@
 import asyncio
 from contextlib import closing
 from dataclasses import dataclass
+import json
 from pathlib import Path
 import sqlite3
 
@@ -107,6 +108,17 @@ class YoumiMemoryRepository:
                                     'FROM sources WHERE memory_id=?', (row['id'],)).fetchone()
                 record.update(source=dict(source) if source else None,
                               evidence_session_count=counts[0], evidence_source_count=counts[1])
+                snapshot = db.execute('SELECT t.affect_json,t.cognition_json,t.captured_at,s.content_version '
+                    'FROM youmi_memory_source_state s JOIN youmi_memory_turn_state t ON t.owner=s.owner '
+                    'AND t.session_id=s.session_id AND t.turn_id=s.turn_id '
+                    'WHERE s.owner=? AND s.memory_id=? AND s.session_id=? AND s.fingerprint=?',
+                    (scope.owner, row['id'], source['session_id'], source['fingerprint'])).fetchone() if source else None
+                if snapshot:
+                    record['state_snapshot'] = dict(kind='completed_turn', captured_at=snapshot['captured_at'],
+                        content_version=snapshot['content_version'], affect=json.loads(snapshot['affect_json']) if snapshot['affect_json'] else None,
+                        cognition=json.loads(snapshot['cognition_json']) if snapshot['cognition_json'] else None)
+                else:
+                    record['state_snapshot'] = None
                 records[row['id']] = record
             return [records[memory_id] for memory_id in ids]
 

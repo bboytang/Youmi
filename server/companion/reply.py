@@ -362,7 +362,7 @@ def response(conn, functions, depth):
     return guarded()
 
 
-async def finish_affect(conn):
+async def finish_affect(conn, event=None):
     pending = getattr(conn, '_youmi_affect_pending', None)
     if not pending or getattr(getattr(conn, '_youmi_memory', None), 'suppressed', False):
         return False
@@ -379,6 +379,46 @@ async def finish_affect(conn):
             store.db.execute('BEGIN IMMEDIATE')
             if turn.builder._versions(turn.bundle.scope) != turn.bundle.snapshot:
                 raise ContextError('context_changed')
-            return commit(store, turn.bundle.scope.owner, inputs['session_id'], turn.bundle.turn_id,
-                          inputs['query'], proposal, inputs['youmi_affect']['version'])
+            changed = commit(store, turn.bundle.scope.owner, inputs['session_id'], turn.bundle.turn_id,
+                             inputs['query'], proposal, inputs['youmi_affect']['version'])
+            if event is not None and changed:
+                _capture_memory_state(store, turn, event)
+            return changed
+    return await asyncio.to_thread(finish)
+
+
+def _capture_memory_state(store, turn, event):
+    inputs = json.loads(turn.bundle.inputs_json)
+    if (event.scope != turn.bundle.scope or event.session_id != inputs.get('session_id')
+            or event.turn_id != turn.bundle.turn_id):
+        raise ContextError('context_changed')
+    if event.revision != turn.bundle.snapshot[0]:
+        return False  # A stale memory job must not roll back a valid affect change.
+    from .memory_state import try_capture_turn
+    return try_capture_turn(store, event.scope.owner, event.session_id, event.turn_id, event.text)
+
+
+async def finish_memory_state(conn, event):
+    """No-appraisal completion still captures the then-current authoritative state."""
+    turn = getattr(conn, '_youmi_context_turn', None)
+    if turn is None or event is None:
+        return False
+    pending = getattr(conn, '_youmi_affect_pending', None)
+    if pending and pending[0].bundle.turn_id == event.turn_id:
+        return False
+    authorization = getattr(conn, '_youmi_authorization', None)
+    if authorization is None:
+        raise PrivateAuthorizationRequired()
+    await turn.builder.validate(turn.bundle, authorization)
+    await authorization.require(event.scope, 'memory:write')
+    if (turn.bundle.scope != getattr(conn, '_youmi_scope', None)
+            or authorization is not getattr(conn, '_youmi_authorization', None)):
+        raise ContextError('context_turn_unavailable')
+    def finish():
+        store = turn.builder.index.store
+        with store.lock, store.db:
+            store.db.execute('BEGIN IMMEDIATE')
+            if turn.builder._versions(event.scope) != turn.bundle.snapshot:
+                raise ContextError('context_changed')
+            return _capture_memory_state(store, turn, event)
     return await asyncio.to_thread(finish)

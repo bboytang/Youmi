@@ -117,6 +117,8 @@ class EmotionalSystemTests(unittest.TestCase):
         import sqlite3
         from server.companion.schema import migrate, _schema_checksum
         with self.store.db:
+            from server.tests.companion_schema_fixtures import remove_v11
+            remove_v11(self.store.db)
             for table in ('youmi_affect_system_history', 'youmi_affect_system_turns', 'youmi_affect_system'):
                 self.store.db.execute('DROP TABLE ' + table)
             self.store.db.execute('DELETE FROM mia_schema_migrations WHERE version>=9')

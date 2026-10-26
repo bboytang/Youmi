@@ -92,6 +92,9 @@ class TurnLedger:
                 if payload['pending_events']:
                     activated = complete(self.store, scope.owner, payload['session'], row['turn_key'],
                                          payload['pending_events'], text[:512])
+                if payload['excerpt']:
+                    from .memory_state import try_capture_turn
+                    try_capture_turn(self.store, scope.owner, payload['session'], row['turn_key'], payload['excerpt'])
             effects = {'emotion': emotion, 'events': activated}
             # Events may advance their own epoch; save it with the same commit.
             payload['snapshot'] = self.builder._versions(scope)

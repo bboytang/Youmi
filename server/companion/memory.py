@@ -328,6 +328,7 @@ class MemoryStore:
                     "SELECT 1 FROM checkpoints WHERE owner=? AND checkpoint_id=?", (owner, checkpoint_id)).fetchone():
                 return {"applied": False, "memories": [], "trait_updated": False}
             changed = []
+            new_source_memories = []
             corrected = False
             for item_index, item in enumerate(extraction["memories"]):
                 source = sources[item["source_index"]]
@@ -349,6 +350,8 @@ class MemoryStore:
                     existing = self.db.execute("SELECT * FROM memories WHERE owner=? AND id=?", (owner, replaced_id)).fetchone()
                     if existing is None:
                         continue
+                    if self.db.execute('SELECT 1 FROM youmi_memory_replacements WHERE retired_id=?', (replaced_id,)).fetchone():
+                        continue
                     self._invalidate_traits(owner, replaced_id)
                     self._invalidate_observations(owner, replaced_id)
                     self.db.execute("DELETE FROM sources WHERE memory_id=?", (replaced_id,))
@@ -359,6 +362,9 @@ class MemoryStore:
                 else:
                     existing = self.db.execute("SELECT id,confirmed FROM memories WHERE owner=? AND category=? AND content=?",
                                                (owner, item["category"], item["content"])).fetchone()
+                    if existing and self.db.execute('SELECT 1 FROM youmi_memory_replacements WHERE retired_id=?',
+                                                    (existing['id'],)).fetchone():
+                        continue  # Repeating an old wording does not undo a completed merge.
                     memory_id = existing["id"] if existing else uuid.uuid4().hex
                     self.db.execute("INSERT OR IGNORE INTO memories VALUES (?,?,?,?,?,?,?)",
                                     (memory_id, owner, item["category"], item["content"], confirmed, now, now))
@@ -371,6 +377,7 @@ class MemoryStore:
                                 (memory_id, session_id, hashlib.sha256(source.encode()).hexdigest(),
                                  structured['memories'][item_index]['source_quote'] if reconciliation else source, now)).rowcount
                 if source_added:
+                    new_source_memories.append(memory_id)
                     # Adding corroboration does not retract an unchanged fact or repeat its event.
                     self.db.execute('UPDATE mia_event_evidence SET evidence_version=(SELECT evidence_version FROM mia_memory_meta WHERE memory_id=?) '
                         'WHERE memory_id=? AND content_version=(SELECT content_version FROM mia_memory_meta WHERE memory_id=?) '
@@ -429,6 +436,8 @@ class MemoryStore:
             self.db.execute("DELETE FROM checkpoints WHERE owner=? AND checkpoint_id NOT IN "
                             "(SELECT checkpoint_id FROM checkpoints WHERE owner=? ORDER BY rowid DESC LIMIT 100)", (owner, owner))
             if job_id is not None:
+                from .memory_state import attach_job_sources
+                attach_job_sources(self, job, new_source_memories)
                 from .emotions import commit as commit_observations
                 observations = commit_observations(self, job, structured)
                 pending = any(not self.db.execute('SELECT confirmed FROM memories WHERE id=?', (memory_id,)).fetchone()[0]
@@ -468,6 +477,8 @@ class MemoryStore:
             row = self.db.execute("SELECT confirmed,content FROM memories WHERE owner=? AND id=?", (owner, memory_id)).fetchone()
             if row is None:
                 raise MemoryError("not_found", "Memory does not exist")
+            if self.db.execute('SELECT 1 FROM youmi_memory_replacements WHERE retired_id=?', (memory_id,)).fetchone():
+                raise MemoryError('conflict', 'Merged memory is read-only; edit the survivor')
             self._invalidate_traits(owner, memory_id)
             self._invalidate_observations(owner, memory_id)
             status = confirmed if confirmed is not None else (bool(row["confirmed"]) and not SENSITIVE.search(content))
@@ -523,6 +534,12 @@ class MemoryStore:
                     {key: item['baseline'] for key, item in system['dimensions'].items()}, system['version'])
             self.db.execute('DELETE FROM youmi_affect_system_turns WHERE owner=?', (owner,))
             self.db.execute('DELETE FROM youmi_affect_system_history WHERE owner=?', (owner,))
+            self.db.execute('DELETE FROM youmi_memory_turn_state WHERE owner=?', (owner,))
+            from .memory_state import cognitive_status
+            cognition = cognitive_status(self, owner)
+            if cognition['version']:
+                self.db.execute('UPDATE youmi_cognitive_state SET energy_json=?,version=version+1,updated_at=? WHERE owner=?',
+                    (json.dumps({key: 0.0 for key in cognition['energy']}), int(self.clock()), owner))
             self.db.execute('UPDATE mia_scope_versions SET observation_epoch=observation_epoch+1,event_epoch=event_epoch+1 WHERE owner=?', (owner,))
             self.db.execute("UPDATE owners SET revision=revision+1,version=version+1 WHERE owner=?", (owner,))
             self._cancel_jobs(owner)

@@ -27,7 +27,7 @@ NATIVE_PREIMAGES = {
 MODULES = ('__init__', 'affect', 'astrbot_api', 'astrbot_identity', 'astrbot_media', 'astrbot_turns',
            'authorization', 'character', 'context', 'embedding', 'emotional_system', 'emotions',
            'events', 'extraction', 'features', 'jobs', 'management', 'memory', 'memory_runtime',
-           'memory_repository', 'memory_shadow', 'memory_search', 'model_requests',
+           'memory_repository', 'memory_shadow', 'memory_search', 'memory_state', 'model_requests',
            'persona', 'proposal', 'reply', 'request_accounting', 'retrieval', 'schema', 'semantic', 'youmi_adapter')
 
 
