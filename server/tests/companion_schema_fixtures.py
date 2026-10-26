@@ -1,7 +1,14 @@
 """Remove ONLY empty extension objects when constructing historical fixtures."""
 
 
+def remove_v14(db):
+    if db.execute("SELECT 1 FROM sqlite_master WHERE name='youmi_memory_emotion_settings'").fetchone():
+        db.execute('DROP TABLE youmi_memory_emotion_cooldown')
+        db.execute('DROP TABLE youmi_memory_emotion_settings')
+
+
 def remove_v13(db):
+    remove_v14(db)
     if db.execute("SELECT 1 FROM sqlite_master WHERE name='youmi_memory_reflection_settings'").fetchone():
         db.execute('DROP TRIGGER youmi_memory_reflection_terminal')
         db.execute('DROP TABLE youmi_memory_reflection_jobs')

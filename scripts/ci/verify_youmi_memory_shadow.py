@@ -104,6 +104,48 @@ async def verify(directory, report):
             assert await runtime.list_artifacts(scope, policy) == []
             report['checks'].update(installed_reflection_artifacts=True, artifact_source_invalidation=True,
                 maintenance_preview_only=True)
+            from youmi_companion import affect
+            from youmi_companion.memory_emotion import DEFAULTS
+            from youmi_companion.memory_emotion_context import YoumiEmotionContextBuilder
+            from youmi_companion.context import ContextLimits
+            from youmi_companion.memory_state import capture_turn
+            await runtime.emotion_linkage(scope, policy, dict(DEFAULTS, action='configure', enabled=True))
+            source = '我练舞时喜欢听轻音乐'
+            async def resolve_link(verified):
+                return lambda sources, context: {'memories': [dict(category='preference', content=source,
+                    source_quote=source, source_index=0, kind='explicit', subject='user', value='durable')]}
+            worker.resolve = resolve_link
+            with store.lock, store.db:
+                store.db.execute('BEGIN IMMEDIATE')
+                capture_turn(store, scope.owner, 'link-fixture', 'captured', source)
+            admitted = await worker.submit(TurnCompleted(scope, 'link-fixture', 'captured', 'new-source',
+                source, store.snapshot(scope.owner)['revision']))
+            assert await worker.run_once() and jobs.current(admitted)['state'] == 'committed'
+            await index.rebuild_batch(scope, policy)
+            identifier = store.db.execute('SELECT id FROM memories WHERE owner=? AND content=?', (scope.owner, source)).fetchone()[0]
+            metadata = dict(store.db.execute('SELECT content_version,evidence_version FROM mia_memory_meta WHERE memory_id=?', (identifier,)).fetchone())
+            query = source + '，谢谢你'
+            default_before = await runtime.retrieve(scope, policy, query)
+            builder = YoumiEmotionContextBuilder(runtime)
+            bundle = await builder.build(scope, policy, 'linked-turn', query,
+                limits=ContextLimits('fixture', 32768, 128, 'isolated synthetic capacity; not production'))
+            proposal = affect.parse_appraisal(json.dumps(dict(version=2,
+                changes=[dict(dimension='joy', delta=2, quote='谢谢你')], memory_changes=[
+                    dict(metadata, memory_id=identifier, quote=source, dimension='joy', delta=40)]), ensure_ascii=False), query)
+            proposal['system_version'] = emotional_system.status(store, scope.owner)['version']
+            await builder.with_affect(bundle, policy, proposal)
+            with store.lock, store.db:
+                store.db.execute('BEGIN IMMEDIATE')
+                assert affect.commit(store, scope.owner, 'link-fixture', 'linked-turn', query, proposal, 0)
+                assert not affect.commit(store, scope.owner, 'link-fixture', 'linked-turn', query, proposal, 0)
+            assert emotional_system.status(store, scope.owner)['values']['joy'] == 22
+            assert store.db.execute('SELECT COUNT(*) FROM youmi_memory_emotion_cooldown').fetchone()[0] == 1
+            ranked = await runtime.shadow_retrieve(scope, policy, '练舞轻音乐')
+            assert identifier in [r['id'] for r in ranked['results']]
+            assert all(1 <= r['retrieval']['emotion_factor'] <= 1.1 for r in ranked['results'])
+            assert await runtime.retrieve(scope, policy, query) == default_before
+            report['checks'].update(versioned_memory_emotion=True, cooldown_committed_once=True,
+                emotion_ranking_bounded=True, legacy_recall_still_unchanged=True)
         finally:
             store.close()
 

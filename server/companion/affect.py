@@ -252,6 +252,13 @@ def request_appraisal(provider, query, current):
                 if item['group'] in {'personality', 'regulation'} and system['dimensions'][k]['enabled']},
             'character': character}, ensure_ascii=False)}]
         params['max_tokens'] = 1024
+        linkage = current.get('_memory_link_context')
+        if linkage:
+            from .memory_emotion import APPRAISAL_POLICY as LINK_POLICY
+            params['messages'][0]['content'] += LINK_POLICY
+            payload = json.loads(params['messages'][1]['content'])
+            payload['memory_evidence'] = linkage['evidence']
+            params['messages'][1]['content'] = json.dumps(payload, ensure_ascii=False)
     provider._apply_thinking_disabled(params)
     return client.chat.completions.create(**params).choices[0].message.content
 
@@ -261,6 +268,9 @@ def parse_appraisal(raw, query):
         raise ValueError('Invalid affect appraisal size')
     fenced = re.fullmatch(r'```(?:json)?\s*\n(.*?)\n```', raw.strip(), re.S | re.I)
     data = json.loads(fenced.group(1) if fenced else raw)
+    if isinstance(data, dict) and 'version' in data:
+        from .memory_emotion import parse
+        return parse(data, query)
     if isinstance(data, dict) and 'changes' in data:
         from .emotional_system import parse_appraisal as parse_system
         return parse_system(data, query)

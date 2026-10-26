@@ -1,6 +1,7 @@
 """Explicit read-only evaluation of the ported search; never the reply engine."""
 
 import asyncio
+import sqlite3
 
 from .embedding import EmbeddingUnavailable
 from .memory_repository import YoumiMemoryRepository
@@ -75,6 +76,13 @@ class YoumiMemoryShadow:
             scores = await self._search(corpus.records, query, vector_scores)
         records = await self.repository.get_by_ids(scope, authorization, corpus, [row['id'] for row in scores])
         results = [dict(record, retrieval=score) for record, score in zip(records, scores)]
+        from .memory_emotion import rerank
+        try:
+            with self.index.store.lock:
+                results = rerank(self.index.store, scope.owner, results, query)
+        except (sqlite3.Error, ValueError, KeyError, TypeError):
+            pass  # Coupling failure keeps the original qualified search order.
+        await self.repository.validate(scope, authorization, corpus)
         return {'shadow_only': True, 'engine': 'youmi_bm25_rrf',
                 'snapshot': {'revision': corpus.version[0], 'content_epoch': corpus.version[1]},
                 'memory_status': 'disabled' if not corpus.enabled else 'matched' if results else 'no_match',

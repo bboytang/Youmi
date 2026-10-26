@@ -7,6 +7,8 @@ are deliberately not part of this key. Values are role-expression parameters.
 import copy
 import json
 import math
+import logging
+import sqlite3
 
 from .memory import MemoryError, SECRET, _text
 
@@ -254,12 +256,31 @@ def commit(store, owner, session, turn, proposal, expected_version):
     if store.db.execute('SELECT 1 FROM youmi_affect_system_turns WHERE owner=? AND session_id=? AND turn_id=?',
                         (owner, session, turn)).fetchone():
         return False
+    if 'memory_link' in proposal:
+        from .memory_emotion import resolve, record
+        store.db.execute('SAVEPOINT youmi_memory_emotion')
+        try:
+            resolved, resolution = resolve(store, owner, proposal)
+            updated = _commit_interaction(store, owner, session, turn, current, resolved)
+            record(store, owner, session, turn, resolution, current, updated)
+        except (sqlite3.Error, ValueError) as error:
+            store.db.execute('ROLLBACK TO youmi_memory_emotion')
+            _commit_interaction(store, owner, session, turn, current, {'changes': proposal['memory_link']['base_changes']})
+            logging.getLogger(__name__).warning('Youmi memory emotion unavailable (%s)', type(error).__name__)
+        finally:
+            store.db.execute('RELEASE youmi_memory_emotion')
+        return True
+    _commit_interaction(store, owner, session, turn, current, proposal)
+    return True
+
+
+def _commit_interaction(store, owner, session, turn, current, proposal):
     updated = transition(current, proposal, int(store.clock()))
     _write(store, owner, True, current['dimensions'], updated['values'], current['version'])
     store.db.execute('INSERT INTO youmi_affect_system_turns VALUES (?,?,?)', (owner, session, turn))
     _record(store, owner, 'interaction', {k: {'before': current['values'][k], 'after': v}
             for k, v in updated['values'].items() if v != current['values'][k]})
-    return True
+    return updated
 
 
 def expression(current):

@@ -550,6 +550,7 @@ class MemoryStore:
                 self.db.execute('UPDATE youmi_cognitive_state SET energy_json=?,version=version+1,updated_at=? WHERE owner=?',
                     (json.dumps({key: 0.0 for key in cognition['energy']}), int(self.clock()), owner))
             self.db.execute('UPDATE youmi_memory_reflection_settings SET last_maintenance_at=NULL,last_signature=NULL WHERE owner=?', (owner,))
+            self.db.execute('DELETE FROM youmi_memory_emotion_cooldown WHERE owner=?', (owner,))
             self.db.execute('UPDATE mia_scope_versions SET observation_epoch=observation_epoch+1,event_epoch=event_epoch+1 WHERE owner=?', (owner,))
             self.db.execute("UPDATE owners SET revision=revision+1,version=version+1 WHERE owner=?", (owner,))
             self._cancel_jobs(owner)

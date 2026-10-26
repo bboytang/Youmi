@@ -292,7 +292,7 @@ class ReflectionMigrationTests(unittest.IsolatedAsyncioTestCase):
     def v12(self):
         with self.store.db:
             remove_v13(self.store.db)
-            self.store.db.execute('DELETE FROM mia_schema_migrations WHERE version=13')
+            self.store.db.execute('DELETE FROM mia_schema_migrations WHERE version>=13')
         namespace = {'__file__': str(Path('server/companion/schema.py').resolve())}
         code = subprocess.check_output(['git', 'show', 'b07bb764:server/companion/schema.py'], text=True)
         exec(compile(code, 'frozen-v12.py', 'exec'), namespace)
@@ -333,4 +333,4 @@ migrate(db)
         self.assertEqual(result.returncode, 77)
         old(self.store.db)
         migrate(self.store.db)
-        self.assertEqual(self.store.db.execute('SELECT MAX(version) FROM mia_schema_migrations').fetchone()[0], 13)
+        self.assertEqual(self.store.db.execute('SELECT MAX(version) FROM mia_schema_migrations').fetchone()[0], 14)
