@@ -17,4 +17,4 @@
 
 YoumiMemoryRuntime.list_artifacts 显式读取，delete_artifact 需要 memory:manage 及当前条目版本；无公开 HTTP 路由、无默认注入。更新按 owner/kind/key 保留 ID。原始事实和任务终态与整理写入同事务，条目更新提升 owner revision 并取消其他旧快照任务。来源任一版本变化即清除整条整理视图，宁可后续重新整理，也不保留局部过期资料。
 
-提交 `033cfd05efc5a1c4cba2ae3c532af4f031558564` 的 CI 全部通过，准确链接见 verification.md：Python 3.10/3.12 各 231 项、后端 575 项及人设传输、实际 BGE 安装链路、绑定授权和 Manager 基线。新增 24 项使用合成 SQLite/提案；安装后额外验证整理写入及证据失效清理。没有真实模型反思生成、线上升级或真实终端对话；自动生成与维护调度仍待接入。
+提交 `033cfd05efc5a1c4cba2ae3c532af4f031558564` 的 CI 全部通过，准确链接见 verification.md：Python 3.10/3.12 各 231 项、后端 575 项及人设传输、实际 BGE 安装链路、绑定授权和 Manager 基线。新增 24 项使用合成 SQLite/提案；安装后额外验证整理写入及证据失效清理。没有真实模型质量、线上升级或真实终端对话；后续 3C 的生成/调度实现见 reflection-generation.md，当前状态见 handoff.md。

@@ -9,3 +9,11 @@
 5. 增加 V13，冻结 V1–V12，同步历史夹具和安装载荷。测试真实 SQLite、固定 SDK + MockTransport、重试、取消、故障与源版本；CI 验证准确提交。没有真实模型质量或真实终端证据时明确记录，不提前切换生产或默认召回。
 
 这次的“定期”是成功完成回合驱动的到期维护，不是夜间无对话模型唤醒。与后续完整新引擎切换、情感联动、持久化索引恢复、管理页和真实质量评估分别验收。
+
+## 接入与验收
+
+内部入口为 YoumiMemoryRuntime.reflection_settings，status 需 memory:read，configure 需 memory:manage；配置包含 enabled、interval_seconds、version，CAS 保存会取消旧任务。未增加公开 HTTP 路由或生产配置。V2 原审阅 Provider 限制保持，JSON 适配不豁免单次发送计量。
+
+V13 保存配置及任务名额；一次仅一个维护任务，retry_wait 保留名额，终态释放。配置改变取消旧任务；清空记忆保留开关/间隔，重置最近执行历史。维护依据原有最多八条提取参考的 ID/内容版本/证据版本签名，不是全库清理。没有可验证来源不触发维护。显式修订免模型路径与普通逐轮事实提取不受维护间隔限制。
+
+产品提交 299fc994，最终验证 c0a4a288af38dfe7c1774f41052040f12faa633b；GitHub 双版本各 268 项、后端 595 项、真实 BGE 安装链路及授权/管理基线全部通过。准确链接见 verification.md。安装后 extraction-results.json 的 reflection_generation 确认实际固定 Provider/SDK+MockTransport、原请求预算、成功任务和维护时钟提交通过，remote_model_calls=0。未运行真实模型质量测试、未部署或开启生产开关；下一步为步骤 4 双向情感联动。

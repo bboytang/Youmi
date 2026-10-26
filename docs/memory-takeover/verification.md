@@ -1,5 +1,21 @@
 # Youmi 记忆接管验证记录
 
+## 步骤 3C：反思生成与完成回合驱动维护
+
+产品提交 `299fc9947c9ec1d4e30f6adae98f46e2823e4449`；最终验证提交 `c0a4a288af38dfe7c1774f41052040f12faa633b`，包含 Python 3.10 测试夹具清理修正。后续文档提交不改变被测产品。首轮 Python 3.10 失败及中间缩进错误已如实记录在 worklog.md，不作为通过证据。
+
+| 对应最终提交的检查 | 结果 | GitHub Actions |
+| --- | --- | --- |
+| Python 3.10 / 3.12 | 各 268 项通过，含新增 20 项及原有 17 项 V2 计量验证 | https://github.com/bboytang/Youmi/actions/runs/40255594310 |
+| 完整后端及人设传输 | 595 项通过，传输检查通过 | https://github.com/bboytang/Youmi/actions/runs/40255594352 |
+| 实际安装/真实 BGE/Tantivy/固定 Provider+SDK/反思生成 | 所有阶段通过，MockTransport 无远程模型调用 | https://github.com/bboytang/Youmi/actions/runs/40255631366 |
+| 绑定授权 | Java 192 项通过，JAR 构建通过 | https://github.com/bboytang/Youmi/actions/runs/40255635550 |
+| Manager 基线 | 原有 150 项及基线 4 项通过 | https://github.com/bboytang/Youmi/actions/runs/40255639489 |
+
+安装结果 artifact 已下载，extraction-results.json 的 code_sha 为最终提交，passed=true；reflection_generation 确认固定 Provider、实际 SDK/MockTransport、原请求预算、成功完成任务及维护时钟提交通过，远程模型调用数 0。新增用例覆盖配置/CAS/owner、一次请求、时钟/签名、维护名额、重试/取消/重启、明确修订免模型、无来源/清空、51 维情感保持、V12 迁移故障/进程中断。
+
+默认反思关闭，生产数据库及默认召回未升级或切换。未运行真实模型质量测试、真实 QQ/App/设备或物理硬件验收；维护并非无对话夜间唤醒，仍需完成步骤 4–7。
+
 ## 步骤 3B：画像、笔记与维护候选后端机制
 
 准确产品及测试提交：`033cfd05efc5a1c4cba2ae3c532af4f031558564`。后续文档提交不改变被测产品代码。

@@ -131,3 +131,11 @@
 - 产品提交 `299fc9947c9ec1d4e30f6adae98f46e2823e4449` 的完整后端 595 项及人设传输通过；双版本中 3.12 的 268 项通过，3.10 在新纳入矩阵的既有 V2 故障测试中失败。
 - `test_reservation_transaction_failure_does_not_call_sdk` 使用 set_authorizer(None) 清理注入，Python 3.10 后续读仍报 not authorized；按其他夹具已有方式改用返回 SQLITE_OK 的回调。保留故障注入、原断言及计量边界，不跳过测试，不修改产品代码或迁移 SQL。待修正提交完整相关 CI 验证。
 - 首个夹具修正提交 `0eb4e066` 的 finally 内缩进漏写，本地单测已报语法错，但串联命令仍继续提交；立即补正缩进，独立确认单测通过后再提交。该提交不能作为验证通过证据。
+
+### 2026-10-26 — 步骤 3C 机制验收完成与交接
+
+- 最终验证提交 `c0a4a288af38dfe7c1774f41052040f12faa633b`，产品代码保持 `299fc994`。修正单测本地通过后，最终 [双 Python](https://github.com/bboytang/Youmi/actions/runs/40255594310) 各 268 项、[完整后端](https://github.com/bboytang/Youmi/actions/runs/40255594352) 595 项及人设传输通过。
+- 对准确最终提交手动补齐了不由测试路径触发的检查：[实际 BGE/安装链路](https://github.com/bboytang/Youmi/actions/runs/40255631366)、[绑定授权](https://github.com/bboytang/Youmi/actions/runs/40255635550) 192 项及 JAR、[Manager 基线](https://github.com/bboytang/Youmi/actions/runs/40255639489) 原有 150 项及基线 4 项全部通过。没有调用 live 模型工作流。
+- 下载最终 artifact 并核对 extraction-results.json：code_sha 与最终提交一致，passed=true；reflection_generation 的 installed_provider、real_sdk_mock_transport、existing_request_budget、completed_job、maintenance_clock_committed、default_recall_unchanged 均为 true，remote_model_calls=0。实际模型响应仍是测试合成内容，不能作为质量/风格证明。
+- 最终 diff 已复核，V1–V12 未改、V13 冻结，10 个原有用户修改及 YOUMI_ASTRBOT/ 未覆盖或提交；生产未连接、未升级、未开启反思、未新增备份或发送消息。
+- 步骤 3A–3C 后端机制验收完成。下一步 4：版本化记忆证据、单次情感计算、冷却及受控排序；管理 UI、索引恢复、真实质量对照与获授权终端验收仍在切换前完成，不能提前上线。
