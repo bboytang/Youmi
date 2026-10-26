@@ -37,6 +37,10 @@ class YoumiMemoryRuntime:
         from .memory_artifacts import YoumiMemoryArtifacts
         return await YoumiMemoryArtifacts(self.store).list(scope, authorization)
 
+    async def reflection_settings(self, scope, authorization, command):
+        from .memory_reflection_policy import YoumiReflectionPolicy
+        return await YoumiReflectionPolicy(self.store).manage(scope, authorization, command)
+
     async def delete_artifact(self, scope, authorization, identifier, version):
         from .memory_artifacts import YoumiMemoryArtifacts
         return await YoumiMemoryArtifacts(self.store).remove(scope, authorization, identifier, version)

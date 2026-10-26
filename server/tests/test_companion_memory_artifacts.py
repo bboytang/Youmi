@@ -380,7 +380,7 @@ class ArtifactMigrationTests(unittest.IsolatedAsyncioTestCase):
     def v11(self):
         with self.store.db:
             remove_v12(self.store.db)
-            self.store.db.execute('DELETE FROM mia_schema_migrations WHERE version=12')
+            self.store.db.execute('DELETE FROM mia_schema_migrations WHERE version>=12')
         namespace = {'__file__': str(Path('server/companion/schema.py').resolve())}
         source = subprocess.check_output(['git', 'show', 'a0df6332:server/companion/schema.py'], text=True)
         exec(compile(source, 'frozen-v11-schema.py', 'exec'), namespace)
@@ -401,7 +401,7 @@ class ArtifactMigrationTests(unittest.IsolatedAsyncioTestCase):
         old(self.store.db)
         migrate(self.store.db)
         migrate(self.store.db)
-        self.assertEqual(check_memory_rollback(self.store.db)['schema_version'], 12)
+        self.assertEqual(check_memory_rollback(self.store.db)['schema_version'], 13)
         with self.assertRaises(ValueError):
             old(self.store.db)
         self.assertEqual(self.store.db.execute('PRAGMA foreign_key_check').fetchall(), [])
@@ -422,4 +422,4 @@ migrate(db)
         self.assertEqual(result.returncode, 77)
         old(self.store.db)
         migrate(self.store.db)
-        self.assertEqual(check_memory_rollback(self.store.db)['schema_version'], 12)
+        self.assertEqual(check_memory_rollback(self.store.db)['schema_version'], 13)

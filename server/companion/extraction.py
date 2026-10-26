@@ -585,12 +585,19 @@ class LLMMemoryExtractor:
 
     def __call__(self, sources, context):
         tracking = getattr(context, 'tracking', {'enabled': 0})
+        reflection = getattr(context, 'reflection', None)
+        if reflection:
+            context.maintenance_generated = False
+            context.reflection_fastpath = False
         if len(sources) == 1:
             change = explicit_change(sources[0], context)
             if change is not None:
+                if reflection:
+                    context.reflection_fastpath = True
                 return change
-        if not any(source_supported(source, None, allow_transient=bool(tracking['enabled'])) for source in sources):
-            return {'memories': [], 'trait': None}
+        if (not any(source_supported(source, None, allow_transient=bool(tracking['enabled'])) for source in sources)
+                and not (reflection and reflection['maintenance_due'] and context)):
+            return ({'reflection_version': 1, 'memory_actions': []} if reflection else {'memories': [], 'trait': None})
         try:
             provider = self.factory()
         except Exception:
@@ -665,6 +672,12 @@ class LLMMemoryExtractor:
                     '仍须核对唯一target、old_value/new_value与完整原句。不要给候选加字或拼成两句不共有的新词。')
             if feedback:
                 payload['validation_feedback'] = feedback
+            if reflection:
+                from .reflection_prompt import INSTRUCTIONS as reflection_instructions
+                instruction += reflection_instructions
+                payload.update(reflection_version=1, maintenance_due=reflection['maintenance_due'],
+                    existing_artifact_keys=[dict(kind=kind, key=key)
+                        for kind, key in sorted(getattr(context, 'artifact_versions', {}))[:8]])
             cancellation = getattr(context, 'request_cancelled', None)
             if hasattr(context, 'model_request_phase'):
                 context.model_request_phase = 'queued'
@@ -683,6 +696,9 @@ class LLMMemoryExtractor:
                 tool = tool_definition(context, sources=payload['user_excerpts'], natural=natural, growth=growth,
                     significance=bool(has_importance), tracking=bool(tracking['enabled']), feedback=feedback,
                     whole_source=whole, require_importance=bool(required_importance))
+                if reflection:
+                    from .reflection_prompt import tool_definition as reflection_tool
+                    tool = reflection_tool(tool, context, reflection['maintenance_due'])
                 instruction += ('\nUse the ' + NAME + ' function to return this proposal. '
                     'It only submits model-generated arguments for server validation; no action is executed and nothing is yet saved. '
                     'For this function schema, optional importance fields are supplied only for source-supported affirmative importance; '
@@ -694,9 +710,12 @@ class LLMMemoryExtractor:
                     before_sdk = getattr(context, 'before_sdk', None)
                     if before_sdk is not None:
                         before_sdk()
-                    return read_stream(provider.response_with_functions('',
+                    result = read_stream(provider.response_with_functions('',
                         [{'role': 'system', 'content': instruction}, {'role': 'user', 'content': json.dumps(payload, ensure_ascii=False)}],
                         functions=[tool]))
+                    if reflection:
+                        context.maintenance_generated = bool(reflection['maintenance_due'])
+                    return result
                 except (MemoryError, PrivateAuthorizationRequired, sqlite3.Error, TimeoutError):
                     raise
                 except Exception:
@@ -705,7 +724,10 @@ class LLMMemoryExtractor:
                 before_sdk = getattr(context, 'before_sdk', None)
                 if before_sdk is not None:
                     before_sdk()
-                return provider.response_no_stream(instruction, json.dumps(payload, ensure_ascii=False))
+                result = provider.response_no_stream(instruction, json.dumps(payload, ensure_ascii=False))
+                if reflection:
+                    context.maintenance_generated = bool(reflection['maintenance_due'])
+                return result
             except (MemoryError, PrivateAuthorizationRequired, sqlite3.Error, TimeoutError):
                 raise
             except Exception:

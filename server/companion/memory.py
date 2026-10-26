@@ -312,6 +312,8 @@ class MemoryStore:
                         or sources != [json.loads(job['source_payload'])['text']]
                         or session_id != job['session_id'] or checkpoint_id != job_id):
                     raise MemoryError('evidence_changed', 'Task evidence does not match')
+                from .memory_reflection_policy import validate_completion
+                validate_completion(self, job, structured)
                 evidence = [relation for record in structured['memories'] for relation in record['relations']]
                 evidence.extend(record['reconciliation'] for record in structured['memories'] if 'reconciliation' in record)
                 evidence.extend((structured.get('trait') or {}).get('evidence_quotes', []))
@@ -445,6 +447,8 @@ class MemoryStore:
                     self._cancel_jobs(owner, exclude=job_id)
                 from .emotions import commit as commit_observations
                 observations = commit_observations(self, job, structured)
+                from .memory_reflection_policy import commit_completion
+                commit_completion(self, job, structured)
                 pending = any(not self.db.execute('SELECT confirmed FROM memories WHERE id=?', (memory_id,)).fetchone()[0]
                               for memory_id in changed)
                 summary = json.dumps({'confirmation_required': True}) if pending else None
@@ -545,6 +549,7 @@ class MemoryStore:
             if cognition['version']:
                 self.db.execute('UPDATE youmi_cognitive_state SET energy_json=?,version=version+1,updated_at=? WHERE owner=?',
                     (json.dumps({key: 0.0 for key in cognition['energy']}), int(self.clock()), owner))
+            self.db.execute('UPDATE youmi_memory_reflection_settings SET last_maintenance_at=NULL,last_signature=NULL WHERE owner=?', (owner,))
             self.db.execute('UPDATE mia_scope_versions SET observation_epoch=observation_epoch+1,event_epoch=event_epoch+1 WHERE owner=?', (owner,))
             self.db.execute("UPDATE owners SET revision=revision+1,version=version+1 WHERE owner=?", (owner,))
             self._cancel_jobs(owner)

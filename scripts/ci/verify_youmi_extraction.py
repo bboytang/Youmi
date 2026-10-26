@@ -262,6 +262,28 @@ async def evaluate(args, report):
         report['emotion_trend'] = {'clock': 'SIMULATED_UTC_not_real_seven_day_acceptance',
             'observations': 5, 'sessions': 3, 'calendar_span_days': 7, 'related_context': True,
             'disable_retains_five_but_blocks_usage': store.db.execute('SELECT COUNT(*) FROM mia_observations').fetchone()[0] == 5}
+        from youmi_companion.extraction import context_for
+        from youmi_companion.memory_artifacts import YoumiMemoryArtifacts
+        from youmi_companion.memory_reflection_policy import YoumiReflectionPolicy, status as reflection_status
+        await YoumiReflectionPolicy(store).manage(scope, policy, dict(action='configure', enabled=True,
+            interval_seconds=60, version=0))
+        evidence = next(r for r in context_for(store, scope.owner) if r['evidence'])
+        current = dict(id='reflection-maintenance', source='你好', output=dict(reflection_version=1, memory_actions=[
+            dict(action='note', key='installed-reflection', title=evidence['content'][:8],
+                evidence=[dict(id=evidence['id'], quote=evidence['content'])])]))
+        start = len(requests)
+        admitted = await worker.submit(TurnCompleted(scope, 'reflection-session', current['id'], current['id'],
+            current['source'], store.snapshot(scope.owner)['revision']))
+        await worker.run_once()
+        assert jobs.current(admitted)['state'] == 'committed'
+        assert len(requests) == start + 1
+        assert store.db.execute('SELECT COUNT(*) FROM mia_model_requests WHERE job_id=?', (admitted['id'],)).fetchone()[0] == 1
+        artifacts = await YoumiMemoryArtifacts(store).list(scope, policy)
+        assert len(artifacts) == 1 and artifacts[0]['body'] == evidence['content']
+        assert reflection_status(store, scope.owner)['last_maintenance_at'] is not None
+        report['reflection_generation'] = dict(installed_provider=True, real_sdk_mock_transport=True,
+            existing_request_budget=True, completed_job=True, maintenance_clock_committed=True,
+            remote_model_calls=0, default_recall_unchanged=True)
         report['sdk_calls'] = len(requests)
         report['peak_rss_mib'] = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024
         report['passed'] = True

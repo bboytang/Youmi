@@ -38,6 +38,8 @@ def validate_proposal(value, sources, context):
         except (ValueError, RecursionError):
             return validate_output(value, sources, context)
     if not isinstance(raw, dict) or not {'reflection_version', 'memory_actions'}.intersection(raw):
+        if getattr(context, 'reflection', None) and not getattr(context, 'reflection_fastpath', False):
+            raise ExtractionError('field_schema', 'Enabled reflection requires version 1 actions')
         return validate_output(value, sources, context)
     if (set(raw) - {'reflection_version', 'memory_actions', 'trait', 'observations'}
             or type(raw.get('reflection_version')) is not int or raw['reflection_version'] != 1):
@@ -70,6 +72,8 @@ def validate_proposal(value, sources, context):
         normalized['observations'] = raw['observations']
     result = validate_output(normalized, sources, context)
     if artifacts:
+        if getattr(context, 'reflection', None) and not context.reflection['maintenance_due']:
+            raise ExtractionError('field_schema', 'Maintenance is not due for this task')
         derived = validate_actions(artifacts, context)
         referenced = {proof['id'] for item in derived for proof in item['evidence']}
         changed = {item['reconciliation']['target_id'] for item in result['memories'] if 'reconciliation' in item}

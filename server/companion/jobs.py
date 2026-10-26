@@ -72,6 +72,8 @@ class JobStore:
                  ensure_ascii=False), 'pending', now, now, now + self.lifetime))
             if self.policy_version == 2:
                 db.execute("INSERT INTO mia_job_policy(job_id,version,phase,phase_at) VALUES (?,2,'admitted',?)", (key, now))
+            from .memory_reflection_policy import bind_job
+            bind_job(self.store, key, event.scope.owner, self.policy_version)
             return {'status': 'accepted', 'accepted': True, 'id': key, 'state': 'pending'}
 
     def recover(self):
@@ -121,6 +123,8 @@ class JobStore:
 
     def eligible(self, job):
         with self.store.lock:
+            from .memory_reflection_policy import for_job
+            for_job(self.store, job)
             current = self.current(job)
             state = self.store.snapshot(job['owner'])
             return (current['state'] in ACTIVE and current['deadline'] > self.store.clock()
@@ -233,6 +237,10 @@ class MemoryWorker:
                     return True
                 context = await asyncio.to_thread(context_for, self.jobs.store, scope.owner,
                     json.loads(job['source_payload']).get('emotion_consent_version'))
+                from .memory_reflection_policy import for_job, signature
+                with self.jobs.store.lock:
+                    context.reflection = for_job(self.jobs.store, job)
+                maintenance_signature = signature(context)
                 context.validation_feedback = (json.loads(policy['feedback']) if policy.get('feedback')
                     else self.validation_feedback.get(job['id']))
                 extract = await self.resolve(scope)
@@ -271,6 +279,9 @@ class MemoryWorker:
                     # a fresh model request when a slot becomes available later.
                     context.request_cancelled.set()
                 validated = validate_output(output, [json.loads(job['source_payload'])['text']], context)
+                if (context.reflection and context.reflection['maintenance_due']
+                        and getattr(context, 'maintenance_generated', False)):
+                    validated['_maintenance_signature'] = maintenance_signature
                 if policy['version'] == 2:
                     await asyncio.to_thread(context.request_accounting.phase, 'validation_succeeded')
                 self.validation_feedback.pop(job['id'], None)

@@ -50,7 +50,10 @@ class RequestAccounting:
         expected = self.context
         actual = context_for(self.store, self.job['owner'],
             json.loads(self.job['source_payload']).get('emotion_consent_version'))
-        if actual != expected or actual.tracking != expected.tracking:
+        from .memory_reflection_policy import for_job
+        if (actual != expected or actual.tracking != expected.tracking
+                or actual.artifact_versions != expected.artifact_versions
+                or for_job(self.store, self.job) != getattr(expected, 'reflection', None)):
             raise MemoryError('evidence_changed', 'Extraction context changed before SDK request')
 
     def _phase(self, value):
