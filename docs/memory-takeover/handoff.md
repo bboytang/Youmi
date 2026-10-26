@@ -138,3 +138,10 @@
 生产候选目录/操作脚本在/opt/xiaozhi-server/youmi-memory-takeover-090bfe9b；本地/tmp/youmi-memory-release-090bfe9b。source-manifest.json记录67文件和保留的两定制/九native，manager-proof显示1009条保持。source.tar.gz SHA77031bc05fa272f74b2f3c7fa3503509658f47edcc3c15cfd79f7caaef4623e3；后补离线轮子SHAaa7c4932e8fde1f09f2d46226060e827e197c2749abdc6129d73a752773adc38和Dockerfile已记录。原在线构建进程已精确终止，其他容器未动。prepare_compose.py已生成仅改两image的compose-command.json/compose-proof.json，无重启。初始JAR核查自动拒绝已用容器哈希/Docker内打包安全替代解决，不需要再询问SSH或审批。
 
 live_probe.py/run_live_probe.py仅读原配置/公证书/既有虚拟凭据，合成临时DB，不挂生产库；报告在live-probe-attempt-01..05。模块需在asyncio.run外预初始化，默认缓存配置单文件也需只读挂到应用data/.config.yaml；不能改成挂整个生产data。新时间变更后探针应验证旧ID仍在且superseded、原来源不变、新当前事实周四，而非期待同一当前ID覆盖。实际回复应走provider.response(session,messages)流，不能误用response_no_stream(system,user)签名。模型调用预算仍不增加。audit_db.py仅聚合只读hash/计数，尚未对停服前后生产运行。模型合格后继续新精确候选、真实V10→V18/owner引擎启用与兼容回退、健康/配置/人设/51维核对；不得备份DB/密钥或发送QQ测试。
+
+
+## 2026-10-26：真实提供者通过与最终刷新验证
+
+- 3046b54e04abd57153616db32b0013dcef474d28 精确后端/管理/向量/兼容CI通过：40321879747、40321879742、40321880106、40321879842、40321879835及结构化提供者40321879910。最终前端40322159653为211通过/1 Firefox失败，失败制品12649334005保留；不把先前090的212通过算作本版通过。
+- 3046候选语音镜像72a67443bedf675797c621af1c2ff64fe5784e52919eb21482782ff39ba75729在独立目录构建，生产仍V10、未重启。真实提供者attempt01完成：两次反思各一次HTTP均committed，自然时间变更保留历史，实际有据情感评价joy增加且51维配置保留，删除后物理清理complete且实际回答承认未知；共4次模型请求/预算6次。报告在生产候选目录live-probe-attempt-01/live-model-probe.json，仅合成临时DB，不挂生产库、不向QQ发送。
+- 下载失败trace核对：刷新时加载遮罩仍退场，点击过程滚动位置发生变化，网络只有初始status/保存，无第三次刷新请求。按live-validation.md先写计划，再仅调整测试等待遮罩隐藏，并同步监听真实刷新响应、校验响应难过和原UI文本；不改产品代码、不加force/重试/超时。JS语法与diff检查通过，准确CI待验证。

@@ -83,9 +83,15 @@ test('Youmi emotion has its own server switch, visible state and confirmed reset
   const { dialog, requests, state } = await setup(page);
   await dialog.getByRole('switch', { name: 'Youmi 的持续情绪', exact: true }).click();
   await expect(dialog.getByRole('switch', { name: 'Youmi 的持续情绪', exact: true })).toHaveAttribute('aria-checked', 'true');
+  await expect(dialog.locator('.el-loading-mask')).toBeHidden();
   expect(state.emotion_tracking.enabled).toBe(0);
   state.youmi_emotion.label = '难过';
-  await dialog.getByRole('button', { name: '刷新', exact: true }).click();
+  const [refreshed] = await Promise.all([
+    page.waitForResponse(response => response.url().endsWith('/agent/test-agent/youmi-settings')
+      && response.request().postDataJSON().action === 'status'),
+    dialog.getByRole('button', { name: '刷新', exact: true }).click()
+  ]);
+  expect((await refreshed.json()).data.youmi_emotion.label).toBe('难过');
   await expect(dialog).toContainText('Youmi 当前情绪：难过');
   await dialog.getByRole('button', { name: '重置 Youmi 情绪', exact: true }).click();
   await page.locator('.el-message-box').getByRole('button', { name: '取消', exact: true }).click();
