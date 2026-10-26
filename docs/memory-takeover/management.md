@@ -2,6 +2,8 @@
 
 日期：2026-10-26。步骤 5 分成 5A 管理接口和 5B 页面，两阶段均通过才算完成。本文件先记录计划，不表示已经实现或上线。
 
+当前状态：5A、5B 的机制和页面验收已完成，最终准确提交 `088033fe827b102baac61076da713911752f503c`；全部 CI 链接及验证边界见 verification.md。以下计划保留作为实施依据，生产尚未部署或切换。
+
 ## 5A 管理接口
 
 - 新增 `/agent/{agentId}/memory-system`，沿用登录、同源 HTTPS 和 manager 所有者核验，经现有 `/youmi/management` 代理。owner 仅取服务端核验结果，不接受浏览器指定 owner 或设备身份。
@@ -24,13 +26,15 @@
 
 ## 5A 已实现的接口契约
 
-首轮产品提交 `38eab3be5ca166fbe768b67f6c61f9c42a851367`；修正 Java 冲突响应后的最终产品/验证提交 `8d0e7209215a128d888c142aebca612c125f5c4b`，5A 检查全部通过，链接见 verification.md。没有新增数据库版本。浏览器只向现有 manager 的 `/agent/{agentId}/memory-system` POST，下列 operation 直接作为请求体；manager 包装成 `memory_system` 后才发送到原内部管理端点。5B 页面尚未接入。
+首轮产品提交 `38eab3be5ca166fbe768b67f6c61f9c42a851367`；修正 Java 冲突响应后的 5A 产品/验证提交 `8d0e7209215a128d888c142aebca612c125f5c4b`，5A 检查全部通过，链接见 verification.md。没有新增数据库版本。浏览器只向现有 manager 的 `/agent/{agentId}/memory-system` POST，下列 operation 直接作为请求体；manager 包装成 `memory_system` 后才发送到原内部管理端点。5B 已通过独立页面接入，edit/delete 为 5B 补充能力。
 
 | operation | 字段与返回 |
 | --- | --- |
 | status | 仅 action；返回 revision、features、reflection、emotion_linkage、cognition、capabilities |
 | list | action、可选 offset；每页 50 条，返回 memories、total、offset、page_size、revision |
 | detail | action、id、可选来源 offset；返回 memory、sources/source_total、分页、revision、最多 50 条相关 replacements |
+| edit（5B 新增） | action、id、content、confirmed、expected；expected 为 revision/content_version/evidence_version，三项均在写事务内检查；保留 ID，改文撤回旧来源 |
+| delete（5B 新增） | action、id、expected；同事务版本校验，删除事实及其衍生引用 |
 | reflection | action、operation；子命令仅 status 或完整 configure（version、enabled、interval_seconds，60–604800） |
 | emotion_linkage | action、operation；子命令仅 status 或完整 configure（全部配置及 version），沿用权重 0–1、排序上限 0–0.1、冷却 0–2592000 秒 |
 | cognition | action、operation；子命令 status、完整 configure（version、enabled、dimensions）或 adjust（version、energy）；自动策略未接入 |
@@ -46,6 +50,8 @@
 
 本阶段没有修改旧 memory_list/memory_delete 弹窗接口。5B 如要在新页面加入事实编辑/确认/删除，应先补充同事务的内容/证据版本校验，不能在事务外先查版本再调用旧无 CAS 写接口。来源分页与相关合并关系上限是不同限制，页面不能声称展示了无限合并图谱。
 
+5B 已在候选代码中补齐上述 edit/delete：新接口不允许省略 expected 或传 null，底层原方法仅为既有调用保留可选参数兼容。完整页面验收结果见验证记录，不因新增能力表而代表已上线。
+
 ## 5B 实施顺序与成功标准
 
 1. 在既有事实编辑/删除事务中增加可选版本前置条件，新管理接口强制传 owner revision、内容/证据版本；旧调用契约保持。真实库验证并发修改、来源新增、外部智能体、待确认、合并退役、删除与来源级联清理。
@@ -53,3 +59,5 @@
 3. 列表和详情支持来源分页、事实编辑/确认/删除；整理分画像/笔记/维护预览，保留证据跳转。手动合并只接受页面选定的两条有效事实，逐条核对、带版本确认；不把模型候选当成授权。
 4. 情感变化记录显示联动处理原因和来源跳转。详情跳转始终重新读取当前智能体来源，未知/删除显示不可用；不复制旧审计正文。
 5. GitHub 验证准确提交的后端/安装/Java 与原前端基线、Vue 构建、Chromium/Android Chrome/iOS WebKit/Firefox 全套模拟。页面草稿、失败、冲突、智能体切换、来源消失、删除取消、手机溢出须有交互断言。真实手机与 QQ/App/设备验证仍属后续获授权验收，不部署生产。
+
+5B 最终页面包含导航及卡片入口、来源详情与版本化事实写入、证据整理与候选、分组配置和能量调整、情感审计跳转。草稿放弃使用页面自有 el-dialog，Promise 在确认/取消/关闭/销毁时结束；不同于通用 MessageBox 的 hashchange 关闭逻辑，浏览器地址变化仍允许用户明确取消离开。结果不明时保留草稿，配置或事实旧版本不自动重试；正在请求时阻止切换。现有记忆弹窗继续兼容，事实内容仍沿用原有存储限制，人设原文不由此页编辑或截断。

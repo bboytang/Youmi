@@ -1,5 +1,26 @@
 # Youmi 记忆接管验证记录
 
+## 步骤 5B：独立记忆系统页面与版本化事实管理
+
+准确最终产品及验证提交：**`088033fe827b102baac61076da713911752f503c`**。首轮 `f6329ed3`，后续浏览器修正逐次记录于 worklog.md；以下全部针对最终 SHA，后续文档提交不改变被测产品。
+
+| 检查 | 结果 | GitHub Actions |
+| --- | --- | --- |
+| 前端基线、构建和四浏览器 | 原有契约 9 项、组件 53 项、快照 13 项及 Chromium/Android Chrome/iOS WebKit/Firefox 共 164 项全部通过 | https://github.com/bboytang/Youmi/actions/runs/40263498051 |
+| Python 3.10 / 3.12 | 各 311 项通过；新增 4 项事务内 CAS 测试，管理路由累计 19 项 | https://github.com/bboytang/Youmi/actions/runs/40263572354 |
+| 完整后端及人设传输 | 638 项及传输检查通过 | https://github.com/bboytang/Youmi/actions/runs/40263498050 |
+| 实际安装、BGE/Tantivy、上下文、回复、提取及联动 | 全部阶段通过 | https://github.com/bboytang/Youmi/actions/runs/40263580515 |
+| 绑定授权及管理代理 | Java 194 项及 JAR 构建通过 | https://github.com/bboytang/Youmi/actions/runs/40263574857 |
+| Manager 基线 | 原有 150 项及基线 4 项通过 | https://github.com/bboytang/Youmi/actions/runs/40263577050 |
+
+前端首次字节比较为 48/49，随后严格检查模块内容、依赖顺序及 CSS 规则的语义比较通过；没有把字节不完全一致当作完全相同。工作流保留现有前端回归、生产构建及四浏览器全套测试，不跳过原测试。新增 13 个交互场景在四种浏览器运行，覆盖独立保存、鉴权请求、草稿/409/500、取消切换和地址变化离开、事务版本提交、来源失效、合并确认、手机认知布局、外部智能体、深链接、导航及在途读取。原角色设定相关测试亦通过。
+
+前端 artifact `Youmi-responsive-admin-088033fe827b102baac61076da713911752f503c`（ID 12625442301，134676454 字节，保留 14 天）包含可维护源码、静态文件、提交标记、基线结果、浏览器报告及已有路由截图。本机未整体下载大型前端 artifact；以准确 SHA 工作流和其产物供后续发布审查，不宣称人工验收了每张截图。
+
+实际安装 artifact（109995 字节）已下载，核对 memory-shadow-results.json 的 commit 与最终 SHA 一致、passed=true，15 项机制检查全部为 true，包含 all_51_emotions_preserved/default_engine_unchanged/versioned_memory_emotion/cooldown_committed_once/emotion_ranking_bounded/legacy_recall_still_unchanged。
+
+后台路由测试为真实临时 SQLite/本地 HTTP，Java 为真实登录/Shiro/MySQL/Redis及合成内部代理，浏览器使用合成 API。没有真实生产登录写入、手机真机、QQ/App/设备或真实模型质量验收。没有部署、生产库访问、新备份或外发消息；V1–V14、人设及情感算法保持。步骤 5A–5B 机制与页面验收完成，步骤 6–7、认知自动策略和永久固定能力仍未完成，不能提前切换生产。
+
 ## 步骤 5A：按智能体管理接口
 
 首轮产品 `38eab3be5ca166fbe768b67f6c61f9c42a851367`；最终产品及验证提交 **`8d0e7209215a128d888c142aebca612c125f5c4b`**。以下检查全部对应最终 SHA；后续交接文档提交不改变产品代码。
