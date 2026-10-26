@@ -19,11 +19,11 @@ async function setup(page, query = 'agentId=first', cleanup = null) {
       reflection: { enabled: false, version: 0, interval_seconds: 86400, last_maintenance_at: null },
       emotion_linkage: { enabled: false, version: 0, memory_to_emotion: true, emotion_to_memory: true,
         stimulus_weight: .25, ranking_limit: .1, cooldown_seconds: 86400 },
-      cognition: { enabled: false, version: 0, dimensions: clone(dimensions), energy: { recall: 0, impression: 0, expression: 0, creativity: 0 } },
-      capabilities: { engine: 'legacy', automatic_cognition: false },
+      cognition: { enabled: false, version: 0, dimensions: clone(dimensions), energy: { recall: 0, impression: 0, expression: 0, creativity: 0 }, effective: { recall: 7, impression: 3, expression: .5, creativity: .5 } },
+      capabilities: { engine: 'legacy', automatic_cognition: false, permanent_memories: true },
       memories: [
-        { id: agent + '-blue', content: agent + ' 我喜欢蓝色 <script>unsafe</script>', confirmed: true, state: 'active', content_version: 1, evidence_version: 2 },
-        { id: agent + '-green', content: agent + ' 我喜欢绿色', confirmed: true, state: 'active', content_version: 1, evidence_version: 2 }
+        { id: agent + '-blue', content: agent + ' 我喜欢蓝色 <script>unsafe</script>', confirmed: true, pinned: false, state: 'active', content_version: 1, evidence_version: 2 },
+        { id: agent + '-green', content: agent + ' 我喜欢绿色', confirmed: true, pinned: false, state: 'active', content_version: 1, evidence_version: 2 }
       ]
     };
   }
@@ -42,7 +42,7 @@ async function setup(page, query = 'agentId=first', cleanup = null) {
     commands.push({ agent, command, authorization: route.request().headers()['authorization'] });
     let data;
     const action = command.action;
-    if (backend.fail && (command.operation || ['edit', 'delete', 'merge'].includes(action))) {
+    if (backend.fail && (command.operation || ['edit', 'delete', 'merge', 'pin'].includes(action))) {
       await route.fulfill({ json: { code: backend.fail, msg: 'synthetic failure' } }); return;
     }
     if (action === 'status' && backend.statusFail) { await route.fulfill({ json: { code: backend.statusFail, msg: 'status unavailable' } }); return; }
@@ -68,6 +68,13 @@ async function setup(page, query = 'agentId=first', cleanup = null) {
       const row = current.memories.find(item => item.id === command.id);
       row.content = command.content; row.confirmed = command.confirmed; row.content_version++; current.revision++;
       data = { saved: true };
+    }
+    if (action === 'pin') {
+      const row = current.memories.find(item => item.id === command.id);
+      if (!row || command.expected.revision !== current.revision || command.expected.content_version !== row.content_version || command.expected.evidence_version !== row.evidence_version) {
+        await route.fulfill({ json: { code: 409, msg: 'stale pin' } }); return;
+      }
+      row.pinned = command.pinned; current.revision++; data = { saved: true, pinned: row.pinned };
     }
     if (action === 'delete') { current.memories = current.memories.filter(row => row.id !== command.id); current.revision++; data = { saved: true }; }
     if (action === 'merge') {
@@ -179,7 +186,7 @@ test('mobile cognition controls fit and all four dimensions remain editable', as
   await page.setViewportSize({ width: 390, height: 844 });
   await setup(page);
   await page.getByRole('tab', { name: '认知设置', exact: true }).click();
-  await expect(page.getByText('自动能量变化及回复策略尚未接入', { exact: false })).toBeVisible();
+  await expect(page.getByText('当前仍为旧引擎任务策略，自动能量尚未启用', { exact: false })).toBeVisible();
   for (const label of ['召回', '印象', '表达', '创造']) await expect(page.getByLabel(label + '基线', { exact: true })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true);
 });
@@ -297,4 +304,59 @@ test('missing cleanup status cannot turn known pending into complete', async ({ 
   await expect(page.getByText('缓存清理状态未确认，请稍后核对。', { exact: true })).toBeVisible();
   await expect(page.getByRole('region', { name: '缓存清理状态' }).getByRole('alert')).toContainText('搜索缓存待清理');
   expect(commands.filter(item => ['edit', 'delete'].includes(item.command.action))).toHaveLength(0);
+});
+
+
+test('pin uses current versions, preserves sources and excludes automatic merge selection', async ({ page }) => {
+  const { commands, states } = await setup(page);
+  await page.getByRole('button', { name: '查看来源与编辑' }).first().click();
+  await page.getByRole('button', { name: '固定此条记忆', exact: true }).click();
+  await page.locator('.el-message-box').getByRole('button', { name: '取消', exact: true }).click();
+  expect(commands.some(item => item.command.action === 'pin')).toBe(false);
+  await page.getByRole('button', { name: '固定此条记忆', exact: true }).click();
+  await page.locator('.el-message-box').getByRole('button', { name: '确认', exact: true }).click();
+  await expect(page.getByRole('button', { name: '取消固定', exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: '来源摘录（1）' })).toBeVisible();
+  await expect(page.getByText('选择合并', { exact: true })).toHaveCount(1);
+  const pins = commands.filter(item => item.command.action === 'pin');
+  expect(pins[0].command.expected).toEqual({ revision: 1, content_version: 1, evidence_version: 2 });
+  expect(pins[0].agent).toBe('first');
+  expect(states.first.memories[0].pinned).toBe(true);
+  await page.getByRole('button', { name: '取消固定', exact: true }).click();
+  await page.locator('.el-message-box').getByRole('button', { name: '确认', exact: true }).click();
+  await expect(page.getByRole('button', { name: '固定此条记忆', exact: true })).toBeVisible();
+  expect(commands.filter(item => item.command.action === 'pin')[1].command.expected.revision).toBe(2);
+});
+
+test('failed pin blocks stale writes and preserves original fact', async ({ page }) => {
+  const { backend, states, commands } = await setup(page);
+  await page.getByRole('button', { name: '查看来源与编辑' }).first().click();
+  backend.fail = 409;
+  await page.getByRole('button', { name: '固定此条记忆', exact: true }).click();
+  await page.locator('.el-message-box').getByRole('button', { name: '确认', exact: true }).click();
+  await expect(page.getByRole('button', { name: '固定此条记忆', exact: true })).toBeDisabled();
+  expect(states.first.memories[0].pinned).toBe(false);
+  expect(commands.filter(item => item.command.action === 'pin')).toHaveLength(1);
+  await expect(page.getByRole('heading', { name: '来源摘录（1）' })).toBeVisible();
+});
+
+test('pin is disabled while editing and unpin remains available for a pending pinned fact', async ({ page }) => {
+  const { states } = await setup(page);
+  await page.getByRole('button', { name: '查看来源与编辑' }).first().click();
+  await page.getByRole('textbox', { name: '记忆内容' }).fill('新的明确更正');
+  await expect(page.getByRole('button', { name: '固定此条记忆', exact: true })).toBeDisabled();
+  states.first.memories[0].pinned = true;
+  states.first.memories[0].confirmed = false;
+  states.first.memories[0].state = 'pending';
+  await page.reload();
+  await page.getByRole('button', { name: '查看来源与编辑' }).first().click();
+  await expect(page.getByRole('button', { name: '取消固定', exact: true })).toBeEnabled();
+});
+
+test('cognition shows bounded effective values separately from editable baselines', async ({ page }) => {
+  await setup(page);
+  await page.getByRole('tab', { name: '认知设置', exact: true }).click();
+  await expect(page.getByText('当前有效值 7', { exact: false })).toBeVisible();
+  await page.getByLabel('召回基线', { exact: true }).fill('9');
+  await expect(page.getByText('当前有效值 7', { exact: false })).toBeVisible();
 });

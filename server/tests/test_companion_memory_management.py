@@ -46,7 +46,7 @@ class MemoryManagementTests(unittest.IsolatedAsyncioTestCase):
         self.assertFalse(state['emotion_linkage']['enabled'])
         self.assertFalse(state['cognition']['enabled'])
         self.assertEqual(state['capabilities'], dict(engine='legacy', emotion_ranking='shadow_only',
-            automatic_cognition=False, automatic_candidate_execution=False, permanent_memories=False))
+            automatic_cognition=False, automatic_candidate_execution=False, permanent_memories=True))
         self.assertNotIn('owner', state['reflection'])
         self.assertEqual(len(self.calls), 2)
 
@@ -260,6 +260,18 @@ class MemoryManagementTests(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(response.status, 400)
         self.assertEqual((await self.data({'action': 'list'}))['total'], 1)
 
+
+    async def test_owner_pin_http_preserves_sources_and_rejects_stale_unpin(self):
+        identifier = self.fact()
+        detail = await self.data(dict(action='detail', id=identifier))
+        expected = dict(revision=detail['revision'], content_version=detail['memory']['content_version'],
+            evidence_version=detail['memory']['evidence_version'])
+        result = await self.data(dict(action='pin', id=identifier, pinned=True, expected=expected))
+        self.assertTrue(result['pinned'])
+        updated = await self.data(dict(action='detail', id=identifier))
+        self.assertIs(updated['memory']['pinned'], True)
+        self.assertEqual(updated['sources'], detail['sources'])
+        self.assertEqual((await self.call(dict(action='pin', id=identifier, pinned=False, expected=expected))).status, 409)
 
 class ArtifactManagementTests(unittest.IsolatedAsyncioTestCase):
     setUp = artifacts_fixture.ArtifactTests.setUp

@@ -15,7 +15,7 @@ from .context import ContextBuilder, ContextError, ContextLimits, packed
 from .embedding import DIMENSION, MODEL_KEY, REVISION, EmbeddingUnavailable, SemanticEncoder
 from .semantic import SemanticMemoryIndex
 from .memory_runtime import YoumiMemoryRuntime
-from .memory_emotion_context import YoumiEmotionContextBuilder
+from .cognitive_context import YoumiCognitiveContextBuilder
 from .model_requests import model_requests
 
 
@@ -155,7 +155,7 @@ def builder_for(store):
         return ContextBuilder(UnavailableIndex())
     with _lock:
         if store not in _builders:
-            _builders[store] = YoumiEmotionContextBuilder(YoumiMemoryRuntime(SemanticMemoryIndex(store, _encoder)))
+            _builders[store] = YoumiCognitiveContextBuilder(YoumiMemoryRuntime(SemanticMemoryIndex(store, _encoder)))
         return _builders[store]
 
 
@@ -343,9 +343,12 @@ def response(conn, functions, depth):
                     conn._youmi_affect_pending = (active, proposal)
             request = active.bundle.request()
             tools = request.get('tools')
+            generation = {'max_tokens': request['max_tokens']}
+            if 'temperature' in request:
+                generation['temperature'] = request['temperature']
             stream = (conn.llm.response_with_functions(conn.session_id, request['messages'], functions=tools,
-                max_tokens=request['max_tokens']) if tools else
-                conn.llm.response(conn.session_id, request['messages'], max_tokens=request['max_tokens']))
+                **generation) if tools else
+                conn.llm.response(conn.session_id, request['messages'], **generation))
             for delta in stream:
                 if getattr(conn, '_youmi_context_turn', None) is not active:
                     raise ContextError('context_turn_superseded')

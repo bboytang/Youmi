@@ -55,6 +55,11 @@ def validate_completion(store, job, structured):
 
 
 def commit_completion(store, job, structured):
+    cognitive_version = structured.get('_cognitive_policy_version')
+    if cognitive_version is not None:
+        from .memory_state import cognitive_status
+        if cognitive_status(store, job['owner'])['version'] != cognitive_version:
+            return
     if '_maintenance_signature' in structured:
         store.db.execute('UPDATE youmi_memory_reflection_settings SET last_maintenance_at=?,last_signature=? WHERE owner=?',
             (int(store.clock()), structured['_maintenance_signature'], job['owner']))

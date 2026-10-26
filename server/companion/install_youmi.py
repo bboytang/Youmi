@@ -289,7 +289,7 @@ def install(root, changes):
                      "astrbot_identity.py", "astrbot_turns.py", "astrbot_media.py",
                      "memory_repository.py", "memory_shadow.py", "memory_search.py", "memory_state.py", "memory_reflection.py", "schema-v11.sql", "schema-v12.sql", "memory_artifacts.py",
                      "schema-v13.sql", "memory_reflection_policy.py", "reflection_prompt.py",
-                     "schema-v14.sql", "memory_emotion.py", "memory_emotion_context.py", "memory_management.py", "memory_index_cache.py", "memory_cache_invalidations.py", "schema-v15.sql", "schema-v16.sql", "schema-v17.sql", "cognition.py", "memory_pins.py", "memory_cache_lifecycle.py", "memory_cache_cleanup.py",
+                     "schema-v14.sql", "memory_emotion.py", "memory_emotion_context.py", "memory_management.py", "memory_index_cache.py", "memory_cache_invalidations.py", "schema-v15.sql", "schema-v16.sql", "schema-v17.sql", "cognition.py", "cognitive_context.py", "memory_pins.py", "memory_cache_lifecycle.py", "memory_cache_cleanup.py",
                      "requirements-memory-shadow.txt", "YOUMI_MEMORY_NOTICE.md", "YOUMI_MEMORY_LICENSE"]:
             shutil.copy2(Path(__file__).parent / name, destination / name)
         for relative, (_, changed) in changes.items():

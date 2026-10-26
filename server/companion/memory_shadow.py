@@ -22,7 +22,7 @@ class YoumiMemoryShadow:
             self.managed_cache = YoumiManagedMemoryCache(self.database)
 
     @staticmethod
-    def _score(records, query, vector_scores, *, cache_path=None, managed_cache=None, corpus=None):
+    def _score(records, query, vector_scores, *, cache_path=None, managed_cache=None, corpus=None, limit=4):
         try:
             from .memory_search import YoumiBM25Search
         except ImportError:
@@ -33,25 +33,27 @@ class YoumiMemoryShadow:
             for row in records]
         try:
             if managed_cache is not None:
-                return managed_cache.search(corpus, rows, query, vector_scores)
+                return managed_cache.search(corpus, rows, query, vector_scores, limit=limit)
             if cache_path is not None:
                 from .memory_index_cache import search as cached_search
-                return cached_search(cache_path, rows, query, vector_scores)
+                return cached_search(cache_path, rows, query, vector_scores, limit=limit)
             search = YoumiBM25Search()
             search.rebuild(rows)
-            return search.search(query, vector_scores)
+            return search.search(query, vector_scores) if limit == 4 else search.search(query, vector_scores, limit=limit)
         except EmbeddingUnavailable:
             raise
         except Exception:
             raise EmbeddingUnavailable('memory_shadow_search_unavailable') from None
 
-    async def _search(self, records, query, vector_scores, *, corpus=None):
+    async def _search(self, records, query, vector_scores, *, corpus=None, limit=4):
         try:
             await asyncio.wait_for(self._slots.acquire(), timeout=0.4)
         except asyncio.TimeoutError:
             raise EmbeddingUnavailable('memory_shadow_busy') from None
         try:
             score = self._score
+            if limit != 4:
+                score = partial(score, limit=limit)
             if self.managed_cache is not None:
                 score = partial(score, managed_cache=self.managed_cache, corpus=corpus)
             elif self.cache_dir is not None:
@@ -78,6 +80,11 @@ class YoumiMemoryShadow:
                 or type(use_vectors) is not bool):
             raise ValueError('Invalid shadow query')
         corpus = await self.repository.capture(scope, authorization)
+        from .memory_state import cognitive_status
+        with self.index.store.lock:
+            cognition = cognitive_status(self.index.store, scope.owner)
+        cognitive_version = cognition['version'] if cognition['enabled'] else 0
+        limit = cognition['effective']['recall'] if cognition['enabled'] else 4
         vector_scores, vector_status = {}, 'not_requested'
         scores = []
         if corpus.enabled and corpus.records:
@@ -95,7 +102,7 @@ class YoumiMemoryShadow:
                         raise
                     vector_status = 'unavailable'
         if (corpus.enabled and corpus.records) or self.cache_dir is not None or self.managed_cache is not None:
-            scores = await self._search(corpus.records, query, vector_scores, corpus=corpus)
+            scores = await self._search(corpus.records, query, vector_scores, corpus=corpus, limit=limit)
         records = await self.repository.get_by_ids(scope, authorization, corpus, [row['id'] for row in scores])
         results = [dict(record, retrieval=score) for record, score in zip(records, scores)]
         from .memory_emotion import rerank
@@ -105,6 +112,10 @@ class YoumiMemoryShadow:
         except (sqlite3.Error, ValueError, KeyError, TypeError):
             pass  # Coupling failure keeps the original qualified search order.
         await self.repository.validate(scope, authorization, corpus)
+        with self.index.store.lock:
+            current = cognitive_status(self.index.store, scope.owner)
+        if (current['version'] if current['enabled'] else 0) != cognitive_version:
+            raise EmbeddingUnavailable('memory_changed')
         return {'shadow_only': True, 'engine': 'youmi_bm25_rrf',
                 'snapshot': {'revision': corpus.version[0], 'content_epoch': corpus.version[1]},
                 'memory_status': 'disabled' if not corpus.enabled else 'matched' if results else 'no_match',

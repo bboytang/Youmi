@@ -84,5 +84,17 @@ def validate_proposal(value, sources, context):
         if (referenced & changed or any(record['content'] == known[identifier]['content']
                 for record in result['memories'] for identifier in referenced)):
             raise ExtractionError('source_semantic', 'Batch changes its own artifact evidence')
+        cognition = getattr(context, 'cognition', None)
+        if cognition and cognition['enabled']:
+            # Validate every action first. Only optional automatic organization
+            # is capped; explicit facts/corrections and pinned sources survive.
+            limit, used, selected = cognition['effective']['impression'], 0, []
+            for item in derived:
+                protected = any(known[proof['id']].get('pinned') for proof in item['evidence'])
+                if protected or used < limit:
+                    selected.append(item)
+                    used += not protected
+            derived = selected
+            result['_cognitive_policy_version'] = cognition['version']
         result['artifacts'] = derived
     return result

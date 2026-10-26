@@ -27,7 +27,7 @@
               <p>{{ memory.content }}</p>
               <p>{{ memoryState(memory) }} · 内容版本 {{ memory.content_version }} · 证据版本 {{ memory.evidence_version }}</p>
               <el-button :disabled="busy" @click="openDetail(memory.id)">查看来源与编辑</el-button>
-              <el-checkbox v-if="memory.confirmed && memory.state === 'active'" :value="selected.includes(memory.id)"
+              <el-checkbox v-if="memory.confirmed && memory.state === 'active' && !memory.pinned" :value="selected.includes(memory.id)"
                 :disabled="busy" @change="choose(memory.id, $event)">选择合并</el-checkbox>
             </article>
             <div v-if="listing" class="actions">
@@ -44,7 +44,9 @@
               <div class="actions">
                 <el-button :disabled="busy || retired || !factDirty || factBlocked" @click="saveFact">保存记忆</el-button>
                 <el-button type="danger" plain :disabled="busy || factDirty || factBlocked" @click="deleteFact">删除此条记忆</el-button>
+                <el-button v-if="state.capabilities && state.capabilities.permanent_memories" :disabled="busy || factDirty || factBlocked || (!detail.memory.pinned && (retired || !detail.memory.confirmed))" @click="togglePin">{{ detail.memory.pinned ? '取消固定' : '固定此条记忆' }}</el-button>
               </div>
+              <p v-if="detail.memory.pinned">固定记忆不参与自动退役或合并，仍可明确更正或删除；不代表每轮无条件召回。</p>
               <h3>来源摘录（{{ detail.source_total }}）</h3>
               <article v-for="(source, index) in detail.sources" :key="index">
                 <p>{{ source.excerpt }}</p><small>{{ time(source.created_at) }} · 会话 {{ source.session_id }}</small>
@@ -82,7 +84,9 @@
             <el-button :disabled="busy || !changed('reflection') || blocked.reflection" @click="saveConfig('reflection')">保存反思设置</el-button>
           </el-tab-pane>
           <el-tab-pane label="认知设置" name="cognition">
-            <p>四维认知与情感分别管理。当前支持保存配置和手动能量调整，自动能量变化及回复策略尚未接入。</p>
+            <p>四维认知与情感分别管理。固定模式保持基线，动态模式按能量调整；表达和创造倾向在模型预算内进入共享回复上下文。</p>
+            <p v-if="!state.capabilities.automatic_cognition">当前仍为旧引擎任务策略，自动能量尚未启用；召回数量只在新引擎或影子检索中生效。</p>
+            <p v-if="!state.reflection.enabled">启用反思后，动态能量才能随成功反思建议更新。</p>
             <el-switch v-model="draft.cognition.enabled" aria-label="启用认知配置" active-text="启用认知配置" :disabled="busy" />
             <article v-for="(label, key) in cognitiveNames" :key="key">
               <h2>{{ label }}</h2>
@@ -94,7 +98,7 @@
                     :max="field === 'sensitivity' ? 3 : (key === 'recall' ? 20 : (key === 'impression' ? 10 : 1))" :step=".1" />
                 </label>
               </div>
-              <p>当前能量 {{ state.cognition.energy[key] }}（固定模式为0）</p>
+              <p>当前能量 {{ state.cognition.energy[key] }}（固定模式为0） · 当前有效值 {{ state.cognition.effective ? state.cognition.effective[key] : '服务器未提供' }}</p>
               <el-button :disabled="busy || changed('cognition') || blocked.cognition || state.cognition.dimensions[key].mode === 'fixed'" @click="adjustEnergy(key)">调整{{ label }}能量</el-button>
             </article>
             <el-button :disabled="busy || !changed('cognition') || blocked.cognition" @click="saveConfig('cognition')">保存认知设置</el-button>
@@ -311,6 +315,19 @@ export default {
         catch (error) { this.factBlocked = true; throw error; }
       });
     },
+    async togglePin() {
+      const id = this.detail.memory.id, expected = this.expected(), agent = this.agentId, pinned = !this.detail.memory.pinned;
+      try { await this.$confirm(pinned ? '固定后不自动退役或合并，仍可主动更正和删除；不保证每轮召回。' : '取消固定后可重新参与自动维护候选。', pinned ? '固定记忆' : '取消固定', { confirmButtonText: '确认', cancelButtonText: '取消' }); } catch (_) { return; }
+      if (agent !== this.agentId || !this.detail || this.detail.memory.id !== id) return;
+      await this.run(async () => {
+        try {
+          const result = await this.call({ action: 'pin', id, expected, pinned });
+          this.factReceipt(result);
+          if (result.pinned !== pinned) throw new Error('固定状态未确认，请刷新核对。');
+          await this.reloadFacts(); this.factNotice(pinned ? '记忆已固定' : '记忆已取消固定');
+        } catch (error) { this.factBlocked = true; throw error; }
+      });
+    },
     async removeArtifact(item) {
       const agent = this.agentId;
       try { await this.$confirm('只删除此整理条目，保留原始事实。', '删除整理条目'); } catch (_) { return; }
@@ -328,7 +345,7 @@ export default {
       if (agent !== this.agentId) return;
       await this.run(async () => { await this.call(command); await this.reloadFacts(); this.$message.success('记忆已合并'); });
     },
-    memoryState(row) { return row.state === 'superseded' ? '已合并退役' : row.confirmed && row.state === 'active' ? '已确认' : '待确认或不可用'; },
+    memoryState(row) { return row.state === 'superseded' ? '已合并退役' : row.confirmed && row.state === 'active' ? (row.pinned ? '已确认 · 固定记忆' : '已确认') : '待确认或不可用'; },
     time(value) { return value ? new Date(value * 1000).toLocaleString() : '尚无记录'; }
   }
 };

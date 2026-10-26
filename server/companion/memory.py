@@ -484,7 +484,13 @@ class MemoryStore:
                 from .memory_state import attach_job_sources
                 attach_job_sources(self, job, new_source_memories)
                 from .memory_artifacts import commit_in_transaction
-                artifacts = commit_in_transaction(self, job, structured.get('artifacts', []))
+                artifact_actions = structured.get('artifacts', [])
+                cognitive_policy_version = structured.get('_cognitive_policy_version')
+                if cognitive_policy_version is not None:
+                    from .memory_state import cognitive_status
+                    if cognitive_status(self, owner)['version'] != cognitive_policy_version:
+                        artifact_actions = []
+                artifacts = commit_in_transaction(self, job, artifact_actions)
                 if artifacts:
                     self.db.execute('UPDATE owners SET revision=revision+1 WHERE owner=?', (owner,))
                     self._cancel_jobs(owner, exclude=job_id)

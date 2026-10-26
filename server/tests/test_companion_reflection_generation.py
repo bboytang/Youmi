@@ -80,6 +80,52 @@ class ReflectionGenerationTests(unittest.IsolatedAsyncioTestCase):
         self.assertFalse(payload['maintenance_due'])
         self.assertNotIn('owner', payload)
 
+    async def test_cognitive_direction_uses_same_actual_sdk_request_and_checkpoint_once(self):
+        from server.companion import memory_state
+        state = memory_state.cognitive_status(self.store, self.scope.owner)
+        for item in state['dimensions'].values():
+            item['mode'] = 'dynamic'
+        memory_state._configure_cognition(self.store, self.scope.owner, dict(action='configure',
+            enabled=True, version=state['version'], dimensions=state['dimensions']))
+        await self.enable()
+        self.capture_request()
+        self.output = dict(reflection_version=1, memory_actions=[],
+            cognitive_adjustment=dict(code='1010', quote='今天继续练舞'))
+        job = await self.run_event(text='今天继续练舞')
+        self.assertEqual(self.row(job)['state'], 'committed')
+        self.assertEqual(len(self.http), 1)
+        self.assertEqual(self.requests(job)[0]['http_sends'], 1)
+        properties = self.bodies[0]['tools'][0]['function']['parameters']['properties']
+        self.assertIn('cognitive_adjustment', properties)
+        self.assertEqual(memory_state.cognitive_status(self.store, self.scope.owner)['energy'],
+            dict(recall=1, impression=-1, expression=1, creativity=-1))
+        self.assertFalse(await self.worker.run_once())
+        self.assertEqual(len(self.http), 1)
+
+    async def test_stale_impression_skips_artifacts_and_maintenance_clock_but_commits_fact(self):
+        from server.companion import memory_state
+        fact = self.seed()
+        state = memory_state.cognitive_status(self.store, self.scope.owner)
+        state = memory_state._configure_cognition(self.store, self.scope.owner, dict(action='configure',
+            enabled=True, version=state['version'], dimensions=state['dimensions']))
+        await self.enable()
+        self.output = self.note(fact)
+        self.output['memory_actions'].append(dict(action='remember', memory=dict(category='fact',
+            content='我喜欢绿茶', source_index=0, source_quote='我喜欢绿茶',
+            kind='explicit', subject='user', value='durable')))
+        def response(request):
+            current = memory_state.cognitive_status(self.store, self.scope.owner)
+            memory_state._configure_cognition(self.store, self.scope.owner, dict(action='configure',
+                enabled=False, version=current['version'], dimensions=current['dimensions']))
+            return sdk.sse(self.output)
+        self.response = response
+        job = await self.run_event(text='我喜欢绿茶')
+        self.assertEqual(self.row(job)['state'], 'committed')
+        self.assertEqual(len(self.http), 1)
+        self.assertEqual(await YoumiMemoryArtifacts(self.store).list(self.scope, self.policy), [])
+        self.assertIsNone(status(self.store, self.scope.owner)['last_maintenance_at'])
+        self.assertEqual(self.store.db.execute("SELECT COUNT(*) FROM memories WHERE content='我喜欢绿茶'").fetchone()[0], 1)
+
     async def test_due_maintenance_on_completed_greeting_uses_no_extra_request(self):
         fact = self.seed()
         await self.enable()

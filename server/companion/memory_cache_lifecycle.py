@@ -133,7 +133,7 @@ class YoumiManagedMemoryCache:
         pending = row[2] is None or row[2] != row[3] or row[0] or row[1] is not None
         return dict(state='pending' if pending else 'complete', error=row[1])
 
-    def search(self, corpus, rows, query, vector_scores):
+    def search(self, corpus, rows, query, vector_scores, *, limit=4):
         self.register(corpus)
         owner, path = corpus.owner, self.directory(corpus.owner)
         try:
@@ -151,7 +151,8 @@ class YoumiManagedMemoryCache:
                 # leaves recovery work even if no fact changed in the meantime.
                 with self._db() as db:
                     db.execute('UPDATE youmi_memory_cache_partitions SET writing=1 WHERE owner=?', (owner,))
-                result = _search_locked(path, rows, query, vector_scores)
+                result = (_search_locked(path, rows, query, vector_scores) if limit == 4 else
+                    _search_locked(path, rows, query, vector_scores, limit=limit))
                 with self._db() as db:
                     db.execute('BEGIN IMMEDIATE')
                     current = self._state(db, owner)

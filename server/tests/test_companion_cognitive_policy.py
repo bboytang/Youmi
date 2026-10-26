@@ -157,6 +157,44 @@ class CognitivePolicyTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(memory_state.cognitive_status(self.store, self.scope.owner), before)
         self.assertEqual(emotional_system.status(self.store, self.scope.owner), emotion)
 
+    async def test_impression_limits_ordinary_artifacts_but_preserves_pinned_notes(self):
+        self.store.apply_extraction(self.scope.owner, 'blue', 0, ['我喜欢蓝色'],
+            dict(memories=[dict(category='fact', content='我喜欢蓝色', source_index=0)]), 'blue')
+        tea = self.store.apply_extraction(self.scope.owner, 'tea', 0, ['我喜欢热茶'],
+            dict(memories=[dict(category='fact', content='我喜欢热茶', source_index=0)]), 'tea')['memories'][0]
+        with self.store.db:
+            self.store.db.execute('INSERT INTO youmi_memory_pins VALUES (?,?)', (tea, 100))
+        await self.enable()
+        current = memory_state.cognitive_status(self.store, self.scope.owner)
+        current['dimensions']['impression']['baseline'] = 1
+        memory_state._configure_cognition(self.store, self.scope.owner,
+            dict(action='configure', enabled=True, dimensions=current['dimensions'], version=current['version']))
+        from server.companion.extraction import context_for
+        context = context_for(self.store, self.scope.owner)
+        context.reflection = dict(maintenance_due=True)
+        blue = next(row for row in context if row['content'] == '我喜欢蓝色')
+        actions = [dict(action='note', key=key, title=title, evidence=[dict(id=identifier, quote=quote)])
+            for key, title, identifier, quote in [('blue1', '蓝色', blue['id'], blue['content']),
+                ('blue2', '喜欢', blue['id'], blue['content']), ('fixed-tea', '热茶', tea, '我喜欢热茶')]]
+        result = validate_proposal(dict(reflection_version=1, memory_actions=actions), ['我喜欢蓝色'], context)
+        self.assertEqual([item['key'] for item in result['artifacts']], ['blue1', 'fixed-tea'])
+        self.assertEqual(result['_cognitive_policy_version'], context.cognition['version'])
+
+    async def test_impression_does_not_truncate_sixteen_explicit_facts(self):
+        await self.enable()
+        current = memory_state.cognitive_status(self.store, self.scope.owner)
+        current['dimensions']['impression']['baseline'] = 1
+        memory_state._configure_cognition(self.store, self.scope.owner,
+            dict(action='configure', enabled=True, dimensions=current['dimensions'], version=current['version']))
+        from server.companion.extraction import context_for
+        context = context_for(self.store, self.scope.owner)
+        context.reflection = dict(maintenance_due=False)
+        clauses = [f'我喜欢颜色{index}' for index in range(16)]
+        memories = [dict(self.output['memories'][0], content=clause, source_quote=clause) for clause in clauses]
+        result = validate_proposal(dict(reflection_version=1,
+            memory_actions=[dict(action='remember', memory=item) for item in memories]), ['；'.join(clauses)], context)
+        self.assertEqual(len(result['memories']), 16)
+
 
 class MemoryPinTests(unittest.IsolatedAsyncioTestCase):
     setUp = fixture.JobTests.setUp

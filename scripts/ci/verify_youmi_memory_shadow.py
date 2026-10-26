@@ -255,6 +255,17 @@ async def verify(directory, report):
                 evidence_version=detail['memory']['evidence_version'])
             assert memory_management.manage(store, scope.owner, dict(action='pin', id=pinned_id, pinned=True, expected=expected))['pinned']
             assert memory_management.manage(store, scope.owner, dict(action='detail', id=pinned_id))['memory']['pinned'] is True
+            from youmi_companion.cognitive_context import YoumiCognitiveContextBuilder
+            from youmi_companion.context import ContextLimits, estimate
+            context_limits = ContextLimits('installed-synthetic', 65536, 1024, 'synthetic mechanism check', 32768)
+            context_builder = YoumiCognitiveContextBuilder(runtime)
+            bundle = await context_builder.build(scope, policy, 'cognitive-context', '你好', limits=context_limits)
+            request = bundle.request()
+            assert request['messages'][0]['content'].count('【认知表达策略】') == 1
+            assert request['temperature'] == cognitive['effective']['creativity']
+            assert request['max_tokens'] <= context_limits.response_tokens
+            assert estimate(request) + request['max_tokens'] <= context_limits.context_window
+            report['checks'].update(cognitive_installed_context=True)
             store.delete_memory(scope.owner, pinned_id)
             assert store.db.execute('SELECT COUNT(*) FROM youmi_memory_pins WHERE memory_id=?', (pinned_id,)).fetchone()[0] == 0
             report['checks'].update(cognitive_reflection_once=True, cognition_effective_bounded=True, pin_cas_retention=True)

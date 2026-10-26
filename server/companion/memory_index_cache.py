@@ -86,14 +86,14 @@ def _manifest(path):
         return None
 
 
-def search(path, rows, query, vector_scores):
+def search(path, rows, query, vector_scores, *, limit=4):
     """A complete authorized snapshot reconciles the partition before any search."""
     path = Path(path)
     with _locked(path):
-        return _search_locked(path, rows, query, vector_scores)
+        return _search_locked(path, rows, query, vector_scores, limit=limit)
 
 
-def _search_locked(path, rows, query, vector_scores):
+def _search_locked(path, rows, query, vector_scores, *, limit=4):
     """Caller must hold the stable partition writer.lock through search."""
     from .memory_search import YoumiBM25Search
     path = Path(path)
@@ -132,4 +132,4 @@ def _search_locked(path, rows, query, vector_scores):
         _sync_directory(path)
     else:
         engine._index.reload()
-    return engine.search(query, vector_scores)
+    return engine.search(query, vector_scores) if limit == 4 else engine.search(query, vector_scores, limit=limit)
