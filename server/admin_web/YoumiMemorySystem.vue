@@ -111,6 +111,14 @@
         </el-tabs>
       </template>
     </main>
+    <el-dialog title="未保存的修改" :visible.sync="discardOpen" class="memory-discard" width="min(92vw, 480px)"
+      :close-on-click-modal="false" @close="finishDiscard(false)">
+      <p>有未保存的修改，确定放弃草稿？</p>
+      <span slot="footer">
+        <el-button @click="finishDiscard(false)">取消</el-button>
+        <el-button type="primary" @click="finishDiscard(true)">确定</el-button>
+      </span>
+    </el-dialog>
   </div>
 </template>
 
@@ -126,7 +134,7 @@ export default {
   data() {
     return { agents: [], agentId: '', state: null, listing: null, artifacts: [], detail: null, edit: null,
       originalEdit: '', draft: {}, originals: {}, blocked: {}, factBlocked: false, selected: [],
-      busy: false, error: '', tab: 'memories', generation: 0,
+      busy: false, error: '', tab: 'memories', generation: 0, discardOpen: false, discardResolve: null,
       kinds: { profile: '画像', note: '笔记', retirement: '退役候选', merge: '合并候选' },
       cognitiveNames: { recall: '召回', impression: '印象', expression: '表达', creativity: '创造' },
       cognitiveFields: { minimum: '下限', baseline: '基线', maximum: '上限', sensitivity: '敏感度' } };
@@ -148,7 +156,7 @@ export default {
       if (id) await this.loadAgent(id, this.$route.query.memoryId);
     });
   },
-  beforeDestroy() { this.generation++; window.removeEventListener('beforeunload', this.beforeUnload); },
+  beforeDestroy() { this.generation++; this.finishDiscard(false); window.removeEventListener('beforeunload', this.beforeUnload); },
   beforeRouteLeave(to, from, next) { this.confirmDiscard().then(ok => next(ok)); },
   async beforeRouteUpdate(to, from, next) {
     if (!await this.confirmDiscard()) { next(false); return; }
@@ -161,7 +169,13 @@ export default {
     async confirmDiscard() {
       if (this.busy) return false;
       if (!this.dirty) return true;
-      try { await this.$confirm('有未保存的修改，确定放弃草稿？', '未保存的修改', { closeOnHashChange: false }); return true; } catch (_) { return false; }
+      if (this.discardResolve) return false;
+      return new Promise(resolve => { this.discardResolve = resolve; this.discardOpen = true; });
+    },
+    finishDiscard(accepted) {
+      const resolve = this.discardResolve;
+      this.discardResolve = null; this.discardOpen = false;
+      if (resolve) resolve(accepted);
     },
     request(path, command) {
       return new Promise((resolve, reject) => {

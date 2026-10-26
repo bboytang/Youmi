@@ -109,7 +109,7 @@ for (const code of [409, 500]) test('failed save retains draft and blocks stale 
   await expect(page.locator('.el-message--success')).toHaveCount(0);
   backend.fail = 0;
   await page.getByRole('button', { name: '刷新并核对服务器状态' }).click();
-  await page.locator('.el-message-box').getByRole('button', { name: '确定', exact: true }).click();
+  await page.locator('.memory-discard').getByRole('button', { name: '确定', exact: true }).click();
   await expect(page.getByText('有未保存的修改', { exact: true })).toHaveCount(0);
   await expect(page.getByRole('switch', { name: '启用记忆情感联动' }).locator('input[type="checkbox"]')).not.toBeChecked();
 });
@@ -120,13 +120,13 @@ test('switching agents or leaving the page protects unsaved drafts', async ({ pa
   await page.getByRole('switch', { name: '启用反思', exact: true }).click();
   await page.locator('.el-select').first().click();
   await page.getByText('智能体二', { exact: true }).last().click();
-  await page.locator('.el-message-box').getByRole('button', { name: '取消', exact: true }).click();
-  await expect(page.locator('.el-message-box__wrapper')).toBeHidden();
+  await page.locator('.memory-discard').getByRole('button', { name: '取消', exact: true }).click();
+  await expect(page.locator('.memory-discard')).toBeHidden();
   await expect(page).toHaveURL(/agentId=first/);
   await expect(page.getByText('正在管理：')).toContainText('智能体一');
   await expect(page.getByText('有未保存的修改', { exact: true })).toBeVisible();
   await page.evaluate(() => { location.hash = '#/affect-system?agentId=first'; });
-  await page.locator('.el-message-box').getByRole('button', { name: '取消', exact: true }).click();
+  await page.locator('.memory-discard').getByRole('button', { name: '取消', exact: true }).click();
   await expect(page.getByRole('heading', { name: '记忆系统', exact: true })).toBeVisible();
 });
 
