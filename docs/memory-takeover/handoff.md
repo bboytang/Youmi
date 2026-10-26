@@ -131,3 +131,10 @@
 7A候选已实现：V18/memory_engine.py为每owner唯一legacy/youmi选择，带版本/BEGIN IMMEDIATE、active job/未结束native/未过期QQ发送保护，成功推进owner revision；无记录仍legacy。Runtime按此选择正式受控混合检索，显式shadow接口保留。回退同包选择legacy，不降schema，升级后事实/来源/情感保留。新增9项引擎/迁移及1项HTTP，相关30项、本地完整矩阵425通过；实际安装新增激活/回退检查，精确CI尚待。V1–V17冻结，安装三入口和历史夹具/最新版断言同步18；未覆盖并行QQ/context文件。下一步7B页面切换按钮及草稿/失败/确认/手机验证，再真实模型质量与生产定制候选部署，不能提前完成目标。
 
 容量已核对准确adcf225df9b9c3ba129300b41a722444140f1459/40287057260：10/100/1000/10000、10001与8MiB gates全true，10000暖读p95 311.05ms/旧192.09ms，RSS309268KiB；新并不更快但在400ms门槛内。页面准确8d63f6d08ef98cacd12d6fa1493e8c4905a96b56/40286912421四浏览器200项及既有53项通过，后端40286912404通过。当前生产仍V10未部署、无新备份/外发消息。
+
+
+最新阻断与下一步：090bfe9b六组最终CI全部通过并建好两候选，但未部署。真实提供者探针attempt05发现自然“现在改周四，周二不练”任务empty；原输入是time_change，不应覆盖过去。按先写natural-time-change.md追加保守来源/旧新值/共同主题/唯一owner/版本分类，复用旧time_change提交保留历史；新增7项、相关80、本地完整432通过，等新SHA CI与真实模型复验。V18不再变、生产仍V10。不要因为090候选已构建就直接切换，也不要改标090质量结论为新代码。
+
+生产候选目录/操作脚本在/opt/xiaozhi-server/youmi-memory-takeover-090bfe9b；本地/tmp/youmi-memory-release-090bfe9b。source-manifest.json记录67文件和保留的两定制/九native，manager-proof显示1009条保持。source.tar.gz SHA77031bc05fa272f74b2f3c7fa3503509658f47edcc3c15cfd79f7caaef4623e3；后补离线轮子SHAaa7c4932e8fde1f09f2d46226060e827e197c2749abdc6129d73a752773adc38和Dockerfile已记录。原在线构建进程已精确终止，其他容器未动。prepare_compose.py已生成仅改两image的compose-command.json/compose-proof.json，无重启。初始JAR核查自动拒绝已用容器哈希/Docker内打包安全替代解决，不需要再询问SSH或审批。
+
+live_probe.py/run_live_probe.py仅读原配置/公证书/既有虚拟凭据，合成临时DB，不挂生产库；报告在live-probe-attempt-01..05。模块需在asyncio.run外预初始化，默认缓存配置单文件也需只读挂到应用data/.config.yaml；不能改成挂整个生产data。新时间变更后探针应验证旧ID仍在且superseded、原来源不变、新当前事实周四，而非期待同一当前ID覆盖。实际回复应走provider.response(session,messages)流，不能误用response_no_stream(system,user)签名。模型调用预算仍不增加。audit_db.py仅聚合只读hash/计数，尚未对停服前后生产运行。模型合格后继续新精确候选、真实V10→V18/owner引擎启用与兼容回退、健康/配置/人设/51维核对；不得备份DB/密钥或发送QQ测试。

@@ -182,6 +182,30 @@ def normalize(value):
     return unicodedata.normalize('NFKC', value).strip()
 
 
+def natural_time_change_parts(source):
+    actual = normalize(REMEMBER_PREFIX.sub('', source))
+    if (CORRECTION_MARKER.search(actual) or QUOTED.search(actual) or NONFACT.search(actual)
+            or TASK_REQUEST.search(actual) or re.search(r'不确定|记不清|可能|也许|或许|大概|似乎|好像|打算|准备|考虑|仅这一次|只是这一次|只限本周|临时|仅本次|就这次', actual)):
+        return None
+    match = re.fullmatch(r'我现在(?:改成|改为|换成|换为)(?P<new>[^,;。.!?！？\n]{2,160})[,;]'
+        r'(?P<old>[^,;。.!?！？\n]{2,80})(?:[,;][^。.!?！？\n]{1,160})?[。.!！]?', actual)
+    if match and not re.search(r'不|没|别|未|勿', match['new']) and re.search(r'不', match['old']):
+        return match['new'], match['old']
+    return None
+
+
+NATURAL_TIME_CHANGE_INSTRUCTIONS = '''
+本次核对本人明确改变现在的安排，不是过去口误。只针对唯一所属旧事实提出一条修订，不能按correction覆盖历史。
+保持本次完整user_excerpts[0]为content/source_quote/evidence，不拆逗号或分号；category沿用旧事实。
+reconciliation必须form=natural、kind=time_change、实际target_id、完整旧content作为old_quote，以及old_value/new_value/anchor。
+old_value须在旧事实及本次明确否定的旧安排中；new_value须在本次“我现在改成/改为/换成/换为”的肯定新安排中，不能已在旧事实中。
+anchor为新旧两句共同的连续主题；三者各2至32字，不拼接，不用值本身冒充主题。只能有一个旧事实同时含旧值及主题。
+旧值后的不再/不所否定的实际活动谓词必须也字面出现在旧事实与新安排；不取消、双重否定、打算、疑问、他人说法不能当作已改变。
+kind=explicit、subject=user、value=durable，保留全部否定；元数据仍只取本次字面短语，按原来源及隐私规则提供其他字段。
+不能证明时返回空提案；服务器负责保留旧ID/正文/证据为历史，不能自行删除旧事实、改人设或情感设置。
+'''
+
+
 def affirmative_importance_evidence(quote, evidence):
     """Do not turn a literal negation into support by trimming its prefix."""
     start = quote.find(evidence)
@@ -201,6 +225,8 @@ def explicit_self_importance(quote):
 
 def source_supported(source, quote, *, allow_transient=False):
     """Conservative provenance guard; quote=None checks for any eligible clause."""
+    if quote is not None and normalize(quote) == normalize(REMEMBER_PREFIX.sub('', source)) and natural_time_change_parts(source):
+        return True
     masked = QUOTED.sub(lambda match: ' ' * len(match[0]), normalize(source))
     for clause in re.findall(r'[^。！？!?\n;；]+[。！？!?;；]?', masked):
         factual = REMEMBER_PREFIX.sub('', clause.strip())
@@ -235,7 +261,7 @@ def natural_change_requested(source, context):
     context = list(context)
     actual = normalize(source)
     denied = re.findall(r'不是([^，,。；;！？!?]{2,32})', actual)
-    return bool(context and (NATURAL_CORRECTION_REQUEST.search(actual)
+    return bool(context and (natural_time_change_parts(source) or NATURAL_CORRECTION_REQUEST.search(actual)
         or any(term in fact['content'] for term in denied for fact in context)))
 
 
@@ -337,11 +363,20 @@ def reconciliation_for(proposed, source, quote, known, kind, subject, sensitive)
         uncertain = re.search(r'不确定|记不清|可能|也许|或许|大概|似乎|好像', actual)
         temporal = (re.search(r'以前|过去|曾经', actual) and re.search(r'现在|如今', actual)
                     and not CORRECTION_MARKER.search(actual))
-        if (mode != 'correction' or not isinstance(evidence, str) or normalize(evidence) != actual
+        parts = natural_time_change_parts(source) if mode == 'time_change' else None
+        changed_arrangement = False
+        if parts and new in parts[0] and old not in parts[0]:
+            negative = re.fullmatch(re.escape(old) + r'(?:不再|不)(?P<action>[^,;。.!?！？\n]{1,24})', parts[1])
+            if negative:
+                predicate = negative['action'].removesuffix('了')
+                old_negative = re.search(re.escape(old) + r'[^,;。.!?！？\n]{0,16}(?:不|没|未|别|勿)'
+                    + r'[^,;。.!?！？\n]{0,6}' + re.escape(predicate), normalize(target['content']))
+                changed_arrangement = bool(predicate and predicate in parts[0] and predicate in target['content'] and not old_negative)
+        intent = (mode == 'correction' and not uncertain and not temporal
+            and bool(CORRECTION_MARKER.search(actual) or denied)) or changed_arrangement
+        if (not intent or not isinstance(evidence, str) or normalize(evidence) != actual
                 or quote.rstrip('。!！') != actual.rstrip('。!！') or not source_supported(source, quote)
                 or QUOTED.search(actual) or NONFACT.search(source)
-                or uncertain or temporal
-                or not (CORRECTION_MARKER.search(actual) or denied)
                 or len(matching) != 1 or matching[0]['id'] != target_id
                 or old not in actual or new not in actual or anchor not in actual
                 or old == new or old in new or new in old or new in target['content']
@@ -614,10 +649,11 @@ class LLMMemoryExtractor:
                 entered = True
                 bind_sdk(provider, accounting)
             natural = len(sources) == 1 and natural_change_requested(sources[0], context)
+            natural_kind = 'time_change' if natural and natural_time_change_parts(sources[0]) else 'correction'
             growth = not natural and growth_eligible(context)
             has_importance = any(IMPORTANCE.search(source) for source in sources)
             significance = not natural and len(sources) == 1 and has_importance
-            base = (NATURAL_CHANGE_INSTRUCTIONS if natural else
+            base = (NATURAL_TIME_CHANGE_INSTRUCTIONS if natural_kind == 'time_change' else NATURAL_CHANGE_INSTRUCTIONS if natural else
                     FOCUSED_EXTRACTION_INSTRUCTIONS if growth or significance else INSTRUCTIONS)
             # Every branch shares the same model representation. Versions and
             # serialized index features stay in the original trusted context.
@@ -633,7 +669,7 @@ class LLMMemoryExtractor:
                 raise ExtractionError('tool_contract', 'Provider has no reviewed extraction contract')
             if function_capable:
                 from .proposal import instructions
-                base = instructions(natural=natural, growth=growth, significance=significance)
+                base = instructions(natural=natural, growth=growth, significance=significance, natural_kind=natural_kind)
             instruction = base + ('\nEmotion tracking is explicitly enabled. Also return observations: at most one '
                 '{"source_index":0,"source_quote":"complete real first-person sentence","subject":"user",'
                 '"source_kind":"self_report|inferred","tendency":"positive|negative|neutral|mixed","confidence":0.9}. '
@@ -701,7 +737,7 @@ class LLMMemoryExtractor:
                 required_importance = whole and explicit_self_importance(payload['user_excerpts'][0])
                 tool = tool_definition(context, sources=payload['user_excerpts'], natural=natural, growth=growth,
                     significance=bool(has_importance), tracking=bool(tracking['enabled']), feedback=feedback,
-                    whole_source=whole, require_importance=bool(required_importance))
+                    whole_source=whole, require_importance=bool(required_importance), natural_kind=natural_kind)
                 if reflection:
                     from .reflection_prompt import tool_definition as reflection_tool
                     tool = reflection_tool(tool, context, reflection['maintenance_due'])
