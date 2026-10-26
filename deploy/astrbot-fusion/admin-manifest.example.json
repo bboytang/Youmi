@@ -5,7 +5,7 @@
   "allow_internal_http": true,
   "targets": {
     "youmi": {
-      "base_url": "http://xiaozhi-esp32-server-web:8002/xiaozhi",
+      "base_url": "https://REPLACE_WITH_MANAGER_HOST/xiaozhi",
       "schema_path": "/v3/api-docs",
       "bridge_session": true
     },

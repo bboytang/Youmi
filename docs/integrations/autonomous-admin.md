@@ -37,3 +37,5 @@ bridge 的 `autonomous_admin_owners` 与 manager 的 `youmi.autonomous_admin.own
 2026-10-26 当前状态：尚未部署。63 项 Connector 本地测试通过；759 项后端测试完成且通过（57 项跳过），98 项 host tooling 及 39 项 CI 辅助测试通过；新 Java Controller 及授权测试编译通过，Java 运行验证尚待完成。首次直接后端测试因缺少固定版本夹具失败，补齐规范环境后通过；首次 host tooling 检查缺少 `python` 命令，按 CI 设置 PATH 后重跑。GitHub 推送被自动审批以缺少明确源码发布授权为由拒绝，已向所有者请求授权。现有未提交变更保留在原分支，单独验证分支将原部署基线与本次变更分为不同提交。
 
 部署前核对发现：当前生产 Connector 与已记录的分段回复基线完全相同，但生产 `astrbot_api.py` 与本地已有的输入预算修改基线不同。上线必须以生产原文件为基础仅应用本次管理授权补丁，并记录最终运行源码指纹；不能把当前工作树整份覆盖到生产。既有输入预算、health schema 等差异不在本次授权管理变更中处理。永久虚拟凭据、两端委托开关、实际 API 写入读回及主动 cron 任务尚未在生产配置。
+
+所有者随后明确授权推送验证分支并上线。`394afe34` 的 [GitHub 集成验证](https://github.com/bboytang/Youmi/actions/runs/40384902564) 五项全部通过：backend、connector、manager、manager-legacy、snowluma。首轮 `ebe7a81d` 保留失败记录：缺少 libopus、复制的 truststore 继承只读权限、公共 ECR 拉取限流；分别补原生依赖、仅修改隔离 truststore 为0600、使用官方 Docker Hub 同版本镜像后通过。生产 Manager 当前实际为 Youmi 类名，发布仅提取 CI 的当前类名 Controller；不把历史 Mia 类名补丁或整个新 JAR 覆盖现有定制。AstrBot 容器使用原生证书校验访问生产 Manager HTTPS 已返回200、151项 API 路径，无需关闭 TLS 验证。最小生产 API 补丁另通过授权/撤销/无记忆副作用专项。
