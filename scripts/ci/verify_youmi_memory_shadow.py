@@ -288,7 +288,13 @@ async def verify(directory, report):
             assert select_engine(store, scope.owner, dict(action='engine', engine='youmi', version=0))['version'] == 1
             active = await runtime.retrieve(scope, policy, '练舞轻音乐')
             assert active['shadow_only'] is False and active['results']
-            assert all(row['source'] is not None for row in active['results'])
+            for row in active['results']:
+                canonical = store.db.execute('SELECT m.content,x.content_version,x.evidence_version FROM memories m '
+                    'JOIN mia_memory_meta x ON x.memory_id=m.id WHERE m.id=? AND m.owner=?', (row['id'], scope.owner)).fetchone()
+                assert canonical is not None
+                assert (row['content'], row['content_version'], row['evidence_version']) == tuple(canonical)
+                if row['source'] is None:
+                    assert row['content_version'] > 1  # Explicit admin edit withdraws old source evidence.
             assert store.cache_cleanup_status(scope.owner)['state'] == 'complete'
             assert select_engine(store, scope.owner, dict(action='engine', engine='legacy', version=1))['version'] == 2
             restored = await runtime.retrieve(scope, policy, '练舞轻音乐')
