@@ -161,7 +161,7 @@ export default {
     async confirmDiscard() {
       if (this.busy) return false;
       if (!this.dirty) return true;
-      try { await this.$confirm('有未保存的修改，确定放弃草稿？', '未保存的修改'); return true; } catch (_) { return false; }
+      try { await this.$confirm('有未保存的修改，确定放弃草稿？', '未保存的修改', { closeOnHashChange: false }); return true; } catch (_) { return false; }
     },
     request(path, command) {
       return new Promise((resolve, reject) => {
