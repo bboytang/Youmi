@@ -346,3 +346,6 @@
 - 相关性7e3a321d第二轮报告/tmp/youmi-quality-second-results：两原负例集及新增8例均100%空召回、独立32正例完整/首条100%；回归完整与旧同97.92%，首条95.83%低于旧97.92%，门槛继续失败。唯一排序差距两条RRF逐位相等却按ID决定，而正确条目BM25证据更强；复算与修复契约已写quality-migration.md。新增交换ID的等分测试在原实现失败；候选仅等分时按BM25证据、再稳定ID，不改非等分/参数/阈值或冻结答案。许可修改说明已同步，等待原集及扩展集准确复验。
 
 - 前端第二轮7e3a321d/40285681860为196通过/有效值编辑场景4浏览器失败；真实input无disabled但aria-disabled仍true。核对固定ElementUI v2.15.14官方packages/input-number/src/input-number.vue：mounted设置aria-disabled，而updated只更新aria-valuenow，页面初次busy=true后解除禁用未同步ARIA。需在本页面数字控件componentUpdated同步实际input.disabled到aria-disabled，保留浏览器真实fill和ARIA断言，不能用force绕过。既有来源跳转已全部恢复通过。
+
+- 6C1最终f521e91b28ad273306e62f397b3a9ce604139632五组精确CI全通过：实际BGE/质量40286414638、双Python40286414631、完整后端40286414577、Manager40286414594。小型产物/tmp/youmi-quality-final-results核对准确SHA：质量/隔离/canonical全部true；独立32正例召回/首条100%、24负例空召回100%，回归48正例召回/首条与旧同97.92%、16负例空召回100%，保留前两轮失败。172次混合查询新p50 71.02/p95 175.94ms，旧61.81/89.64ms；仍为小语料，不声称容量或真实回答质量。新GUI修复另待四浏览器最终结果。
+- 6C2容量脚本已按先写门槛实现：实际安装/固定BGE/2CPU2GiB，10/100/1000/10000条旧基线、RAM、受控冷建/重开/暖读/改文重建/删除清理、10001和8MiB捕获边界。先用合成编码器完成全SQLite/缓存路径smoke，各规模及边界通过，不当实际BGE性能。初始夹具错误（误用index_memory名称、改文后来源应撤回、两条边界事实不得正文相同）已修正，保留来源契约与唯一约束，不改产品。实际BGE容量/400ms门槛等待精确CI。

@@ -54,6 +54,7 @@ on:
       - 'scripts/ci/verify_youmi_retrieval.py'
       - 'scripts/ci/verify_youmi_memory_shadow.py'
       - 'scripts/ci/verify_youmi_memory_quality.py'
+      - 'scripts/ci/verify_youmi_memory_capacity.py'
       - 'scripts/ci/verify_youmi_context.py'
       - 'scripts/ci/verify_youmi_reply.py'
       - 'scripts/ci/verify_youmi_extraction.py'
@@ -114,6 +115,7 @@ on:
       - 'scripts/ci/verify_youmi_retrieval.py'
       - 'scripts/ci/verify_youmi_memory_shadow.py'
       - 'scripts/ci/verify_youmi_memory_quality.py'
+      - 'scripts/ci/verify_youmi_memory_capacity.py'
       - 'scripts/ci/verify_youmi_context.py'
       - 'scripts/ci/verify_youmi_reply.py'
       - 'scripts/ci/verify_youmi_extraction.py'
@@ -197,6 +199,16 @@ jobs:
             -v "$RUNNER_TEMP/mia-vector-model:/model:ro" \
             -v "$RUNNER_TEMP/mia-vector-results:/results" \
             mia-vector-verification /experiment/scripts/ci/verify_youmi_memory_quality.py --model-dir /model --output /results/memory-quality-results.json
+      - name: Installed memory cache capacity, mutation, purge and snapshot bounds
+        if: ${{ !cancelled() && steps.runtime.outcome == 'success' }}
+        run: |
+          docker run --rm --cpus 2 --memory 2g --memory-swap 2g --network none --entrypoint python \
+            -e GITHUB_SHA="$GITHUB_SHA" -e PYTHONPATH=/installed \
+            -v "$GITHUB_WORKSPACE:/experiment:ro" \
+            -v "$GITHUB_WORKSPACE/upstream/main/xiaozhi-server:/installed:ro" \
+            -v "$RUNNER_TEMP/mia-vector-model:/model:ro" \
+            -v "$RUNNER_TEMP/mia-vector-results:/results" \
+            mia-vector-verification /experiment/scripts/ci/verify_youmi_memory_capacity.py --model-dir /model --output /results/memory-capacity-results.json
       - name: Installed context budget, immutable history and legal tool continuations
         if: ${{ !cancelled() && steps.runtime.outcome == 'success' }}
         run: |

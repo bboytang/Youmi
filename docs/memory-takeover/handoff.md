@@ -123,3 +123,6 @@
 
 
 最新6C1：方案quality-migration.md，首次真实对照d0026454/40284772244质量失败：两套16无关问题的新空召回0%，旧100%，正例/隔离/canonical通过。源因为向量空集回退宽松BM25及RRF加入未过语义门槛的条目。保留报告/tmp/youmi-quality-first-results；补8独立负例f21bb70c，再按已写契约收紧混合检索。两个新机制用例在原实现失败，修复后相关72项通过，精确BGE复验仍待核对。缺向量现在返回EmbeddingUnavailable，不再隐式词法降级；use_vectors=False只供显式词法研究。6B2首次页面两场景*4失败已修正（缺capabilities兼容、数字控件真实input），最终页面CI未确认。禁止切生产，继续质量/容量/迁移/统一引擎及部署。
+
+
+6C1最终准确f521e91b28ad273306e62f397b3a9ce604139632通过：原冻结回归/独立集及8新增负例的新指标与旧相同，质量/隔离/canonical gates全true，实际BGE40286414638、矩阵40286414631、后端40286414577、Manager40286414594。原失败保留在worklog及/tmp/youmi-quality-first-results、second-results；最终报告/tmp/youmi-quality-final-results。等分RRF仅BM25证据优先再ID。6C2完整V10→V17末期失败/中断两项已通过并加入CI；容量脚本已实现合成smoke，真实BGE容量仍待CI。页面最新8d63f6d0补ElementUI数字控件解除busy后的ARIA同步，仍须四浏览器通过。之后7按智能体统一引擎配置/兼容回退、生产定制包与真实授权验收；目标继续active，不能以6C1通过替代最终部署。
