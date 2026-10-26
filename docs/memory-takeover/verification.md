@@ -1,5 +1,23 @@
 # Youmi 记忆接管验证记录
 
+## 步骤 4：记忆与情感双向联动后端机制
+
+准确产品及测试提交：`43c15bde7db0ca94ea02bdb64d1021a51b1e8dc0`。后续文档提交不改变被测产品代码。
+
+| 检查 | 结果 | GitHub Actions |
+| --- | --- | --- |
+| Python 3.10 / 3.12 | 各 292 项通过，新增 24 项 | https://github.com/bboytang/Youmi/actions/runs/40258355178 |
+| 完整后端及人设传输 | 619 项通过，传输检查通过 | https://github.com/bboytang/Youmi/actions/runs/40258355188 |
+| 实际安装/真实 BGE/Tantivy/版本化联动/冷却/有界排序 | 所有阶段通过 | https://github.com/bboytang/Youmi/actions/runs/40258355198 |
+| 绑定授权 | Java 192 项通过，JAR 构建通过 | https://github.com/bboytang/Youmi/actions/runs/40258355253 |
+| Manager 基线 | 原有 150 项及基线 4 项通过 | https://github.com/bboytang/Youmi/actions/runs/40258355484 |
+
+新增用例覆盖全 51 维配置动态值、固定/锁定/禁用/限幅、当前原话与选中记忆证据分开、总计八维、跨 owner/设备、源与配置版本、冷却/重启/佐证、故障保存点、只读排序与未知状态、原生实际回复完成、QQ 本地 HTTP 成功/重试/失败及 V13 升级失败/进程中断。没有覆盖或提交用户已修改的 context.py/astrbot_api.py。
+
+已下载准确提交 artifact，memory-shadow-results.json 的 commit 一致且 passed=true，四个新增检查均 true：versioned_memory_emotion、cooldown_committed_once、emotion_ranking_bounded、legacy_recall_still_unchanged。初始只读阶段保留 51 维状态；随后合成联动案例预期 joy 从10变22、重复提交不再变化，旧默认召回前后相同。
+
+联动总开关默认关闭，排序只作用于显式影子检索，没有生产升级或切换。合成提案不证明真实模型情境判断、相关性或风格质量；真实 QQ/App/设备及物理硬件尚未验收，步骤 5–7 和认知自动策略仍待完成。
+
 ## 步骤 3C：反思生成与完成回合驱动维护
 
 产品提交 `299fc9947c9ec1d4e30f6adae98f46e2823e4449`；最终验证提交 `c0a4a288af38dfe7c1774f41052040f12faa633b`，包含 Python 3.10 测试夹具清理修正。后续文档提交不改变被测产品。首轮 Python 3.10 失败及中间缩进错误已如实记录在 worklog.md，不作为通过证据。

@@ -149,3 +149,11 @@
 - 情感仅对显式影子检索已有合格候选作至多 10% 加权，历史快照需匹配内容版本，未知保持未知。否定/纠错/时间查询不改顺序，原默认召回仍委派旧算法。
 - 新增 24 项及相关 294 项本地通过；最后补历史关联字段后新增 24 项再次通过。覆盖全 51 维可调、单次限幅、固定/锁定/关闭、主开关、冷却/重启/佐证、配置及来源变化、故障隔离、排序界限、原生完成及 QQ 成功/重试/失败、V13 迁移失败/进程中断。真实安装/BGE 验证脚本补充联动/冷却/排序及原召回不变的合成机制，待准确提交 CI。
 - 未部署、未升级生产库、未开启生产开关、未新增备份或真实消息，原始人设和已有用户修改保留。
+
+### 2026-10-26 — 步骤 4 后端机制验收完成与交接
+
+- 准确产品及验证提交 `43c15bde7db0ca94ea02bdb64d1021a51b1e8dc0`。[双 Python](https://github.com/bboytang/Youmi/actions/runs/40258355178) 各 292 项、[完整后端](https://github.com/bboytang/Youmi/actions/runs/40258355188) 619 项及人设传输通过。
+- [真实 BGE/安装链路](https://github.com/bboytang/Youmi/actions/runs/40258355198) 全部通过；下载结果文件并核对 SHA 与 passed=true，新增 versioned_memory_emotion/cooldown_committed_once/emotion_ranking_bounded/legacy_recall_still_unchanged 均 true。旧“51维保持”断言属于只读影子阶段，启用联动后的 joy=22 是预期受控变化，不是全流程数值不变。
+- [绑定授权](https://github.com/bboytang/Youmi/actions/runs/40258355253) Java 192 项及 JAR 构建通过；[Manager 基线](https://github.com/bboytang/Youmi/actions/runs/40258355484) 原有 150 项及基线 4 项通过。模型评价使用合成提案，没有真实模型质量或真实终端结论。
+- 最终 diff 已复核，V1–V13 未改，V14 冻结。原有 10 个用户修改和 YOUMI_ASTRBOT/ 保留未提交。未连接生产库、部署、备份或外发消息。
+- 下一步为 5 管理页/接口及审计展示；认知自动策略、索引恢复、质量影子对照与切换回退仍在剩余阶段，不提前启用生产或替换旧默认召回。
