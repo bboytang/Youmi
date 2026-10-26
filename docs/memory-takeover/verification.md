@@ -1,5 +1,25 @@
 # Youmi 记忆接管验证记录
 
+## 步骤 6A 第二段基础：V15 事务失效账本
+
+方案 `2916e7c7`，产品 `6459fe6dd8ee743e6cd811c971ea8d7207181407`，最终准确验证提交 **`879e62e2db089dcb75b2783c642da0d157c2a5f6`**（仅修正 Python3.10 故障注入后的授权器恢复）。以下结果全部对应最终 SHA。
+
+| 检查 | 结果 | GitHub Actions |
+| --- | --- | --- |
+| Python 3.10 / 3.12 | 各339项通过，新增12项真实SQLite/进程中断与迁移测试 | https://github.com/bboytang/Youmi/actions/runs/40268471662 |
+| 完整后端及人设传输 | 后端666项及传输检查通过 | https://github.com/bboytang/Youmi/actions/runs/40268471562 |
+| 实际安装/BGE/Tantivy/影子及旧链路 | 全阶段通过，原编码并发检查保持 | https://github.com/bboytang/Youmi/actions/runs/40268483056 |
+| 绑定授权与JAR | Java194项及JAR构建通过 | https://github.com/bboytang/Youmi/actions/runs/40268485851 |
+| Manager基线 | 原有Java150项及基线4项通过 | https://github.com/bboytang/Youmi/actions/runs/40268488555 |
+
+新增测试验证事实与失效代次同事务回滚/提交，独立进程提交/未提交后退出及重开、旧代次确认不能吞新写、各owner隔离、来源/状态/元数据/开关/空清空、读取边界与约束、V14值保持/幂等/失败与进程中断恢复、冻结V14 loader拒绝V15。确认函数只供未来内部清理器使用，当前没有运行时调用。三种安装载荷包含V15，原V1–V14未改。
+
+首轮本地143项的两个最新版本断言遗漏已修正，再次143项通过；相关新增/安装/整理38项也通过。首轮 [40268306912](https://github.com/bboytang/Youmi/actions/runs/40268306912) Python3.10在 set_authorizer(None) 恢复后 iterdump 报 not authorized；改为显式SQLITE_OK回调，保留迁移失败注入/完整dump/重试断言。未改变产品迁移校验或放宽测试。
+
+下载最终artifact `Youmi-actual-vectors-879e62e2db089dcb75b2783c642da0d157c2a5f6`（ID12627741860，109914字节）至 `/tmp/youmi-invalidation-final-results`，核对 vector-results.json.code_sha 和 memory-shadow-results.json.commit 均为最终SHA且 passed=true。20项影子机制检查全真，新增 invalidation_survives_reopen、invalidation_stale_ack_refused；原51维/默认召回/联动冷却/持久化影子恢复检查继续通过。
+
+**本轮只验收失效账本基础，未实现缓存目录注册、实际物理清理或启动清理器。** 闲置缓存即时遗忘和完整生产生命周期仍未验收，显式磁盘模式仍限合成评估。未部署、访问生产库、新增备份或外发消息；人设/情感权威和正常回复不改。V15冻结，后续schema从V16扩展。认知自动策略/固定条目、中文质量/性能/预算和切换回退、真实终端仍待后续。
+
 ## 步骤 6A 首段：合成评估磁盘索引机制
 
 方案提交 `ecb1cc70`，产品代码 **`514c19ee13615b80459407a3528f6edeb8225a98`**；最终验证提交 **`1a4e7277ad812c2467e4d057f2257744f55a36a6`** 仅增加独立安装检查的运行条件，失败仍保留失败状态。以下检查对应最终 SHA，全部通过。

@@ -239,3 +239,11 @@
 - 首轮相关143项中两项仍期待最新schema=14而失败；更新这两处最新版本断言为15，保留原冻结历史版本与迁移失败断言。再次相关143项全部通过；新增及安装/整理相关38项也通过。没有调整产品算法掩盖失败。
 - V1–V14内容保持不变；所有并行QQ/AstrBot文件保留。尚未注册目录、执行磁盘清理或接入启动恢复；不得据此宣称即时遗忘/生产生命周期已完成，生产未连接或切换。
 - 首轮准确提交 `6459fe6dd8ee743e6cd811c971ea8d7207181407` 的双 Python 工作流 40268306912 中，Python3.10 新增故障注入用例在恢复 `set_authorizer(None)` 后 iterdump 仍报 not authorized；这是旧 Python sqlite3 清除授权器的兼容问题。改用仓库其他迁移用例已使用的显式 SQLITE_OK 回调恢复，保留原故障注入、全量dump回滚及重试断言，不修改产品 SQL 或迁移校验。后续以修正准确提交重新验证。
+
+### 2026-10-26 — 6A 第二段 V15 账本基础验收与交接
+
+- 最终准确验证提交 `879e62e2db089dcb75b2783c642da0d157c2a5f6`，[双Python](https://github.com/bboytang/Youmi/actions/runs/40268471662) 各339项、[完整后端](https://github.com/bboytang/Youmi/actions/runs/40268471562) 666项及人设传输通过。
+- [实际安装/BGE/Tantivy](https://github.com/bboytang/Youmi/actions/runs/40268483056) 全部阶段通过；小型artifact109914字节已下载至 /tmp/youmi-invalidation-final-results，准确SHA及vector/shadow passed=true均核对，全部20项影子检查真，含新增失效重开保持和拒绝旧代次确认。
+- [Java绑定](https://github.com/bboytang/Youmi/actions/runs/40268485851)194项及JAR、[Manager基线](https://github.com/bboytang/Youmi/actions/runs/40268488555)150项及基线4项全部通过。首轮3.10授权器恢复失败已完整记录，最终没有放宽任何断言。
+- 最终diff已复核；V1–V14、人物原文/情感算法与并行QQ/AstrBot工作未改写或提交。V15冻结。没有生产访问、升级、新建生产缓存、备份或真实消息；目录注册仍未实现。无固件/前端修改，不重复无关构建，也无真机验收结论。
+- 更新方案、index-recovery、验证和交接。下一步继续6A受控目录注册及真正清理执行器、写入成功/清理失败的可见语义、跨进程搜索/删除锁序、启动恢复和失败重试；账本不代表立即遗忘或生产索引已完成。6B认知自动策略/固定条目、6C质量/性能/预算与迁移、7切换回退仍待后续。
