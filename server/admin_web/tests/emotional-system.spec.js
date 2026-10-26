@@ -72,3 +72,29 @@ test('mobile controls fit and reset requires confirmation', async ({ page }) => 
   await page.getByRole('button', { name: '取消', exact: true }).click();
   expect(commands.some(item => item.command.action === 'reset')).toBe(false);
 });
+
+test('memory linkage audit explains its reason and opens only the current agents source', async ({ page }) => {
+  const { states } = await setup(page);
+  await page.route('**/xiaozhi/agent/first/affect-system', async route => {
+    const command = route.request().postDataJSON();
+    await route.fulfill({ json: { code: 0, data: command.action === 'history' ? { records: [{
+      id: 2, kind: 'memory_link', created_at: 1700000000, changes: { interaction_history_id: 1,
+        decisions: [{ memory_id: 'deleted-source', dimension: 'joy', reason: 'cooldown' }] }
+    }] } : states.first } });
+  });
+  const requested = [];
+  await page.route('**/xiaozhi/agent/first/memory-system', async route => {
+    const command = route.request().postDataJSON(); requested.push(command);
+    const status = { features: { memory_recall: true }, reflection: { enabled: false, interval_seconds: 86400, version: 0 },
+      cognition: { enabled: false, dimensions: {}, energy: {}, version: 0 }, emotion_linkage: { enabled: false, version: 0 } };
+    const data = command.action === 'status' ? status : command.action === 'list' ? { memories: [], total: 0, offset: 0, page_size: 50 } : { artifacts: [] };
+    await route.fulfill({ json: command.action === 'detail' ? { code: 400 } : { code: 0, data } });
+  });
+  await page.getByRole('tab', { name: '变化记录', exact: true }).click();
+  await expect(page.getByText('同版本仍在冷却期', { exact: false })).toBeVisible();
+  await page.getByRole('button', { name: '查看记忆来源' }).click();
+  await expect(page).toHaveURL(/memory-system\?agentId=first&memoryId=deleted-source/);
+  await expect(page.getByRole('alert').filter({ hasText: '来源不可用' })).toBeVisible();
+  expect(requested.some(command => command.action === 'detail' && command.id === 'deleted-source')).toBe(true);
+  await expect(page.getByRole('textbox', { name: '记忆内容' })).toHaveCount(0);
+});

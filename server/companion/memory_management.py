@@ -87,6 +87,18 @@ def manage(store, owner, command):
     action = command['action']
     if action in {'status', 'list', 'detail'}:
         return _read(store, owner, command)
+    if action in {'edit', 'delete'}:
+        _fields(command, {'action', 'id', 'expected', 'content', 'confirmed'} if action == 'edit'
+            else {'action', 'id', 'expected'})
+        if not isinstance(command['expected'], dict):
+            raise MemoryError('invalid_input', 'Memory versions are required')
+        if action == 'edit':
+            if type(command['confirmed']) is not bool:
+                raise MemoryError('invalid_input', 'Confirmation is required')
+            store.edit_memory(owner, command['id'], command['content'], command['confirmed'], expected=command['expected'])
+        else:
+            store.delete_memory(owner, command['id'], expected=command['expected'])
+        return {'saved': True}
     if action in {'reflection', 'emotion_linkage', 'cognition'}:
         _fields(command, {'action', 'operation'})
         operation = command['operation']

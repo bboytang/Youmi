@@ -65,6 +65,13 @@
                 <template v-if="state.catalog[key]">{{ state.catalog[key].label }}：{{ change.before }} → {{ change.after }}</template>
               </p>
               <p v-if="record.changes.configuration_changed">配置已修改</p>
+              <template v-if="record.kind === 'memory_link'">
+                <p>关联互动记录 {{ record.changes.interaction_history_id }}；联动贡献与当轮变化合并后统一限幅，不代表该记忆单独造成全部变化。</p>
+                <p v-for="(decision, index) in record.changes.decisions" :key="index">
+                  {{ (state.catalog[decision.dimension] || {}).label || '情感维度' }}：{{ memoryReason(decision.reason) }}
+                  <el-button type="text" :disabled="busy" @click="$router.push({ path: '/memory-system', query: { agentId, memoryId: decision.memory_id } })">查看记忆来源</el-button>
+                </p>
+              </template>
             </article>
             <p v-if="!history.length">暂无变化记录</p>
             <el-button :disabled="busy || historyOffset === 0" @click="historyPage(-50)">上一页</el-button>
@@ -200,7 +207,12 @@ export default {
     },
     groupKeys(group) { return Object.keys(this.state.catalog).filter(key => this.state.catalog[key].group === group); },
     time(value) { return value ? new Date(value * 1000).toLocaleString() : '尚未保存'; },
-    kindLabel(kind) { return ({ configure: '配置修改', adjust: '手动调整', reset: '恢复基线', interaction: '互动变化' })[kind] || kind; },
+    kindLabel(kind) { return ({ configure: '配置修改', adjust: '手动调整', reset: '恢复基线', interaction: '互动变化', memory_link: '记忆联动记录' })[kind] || kind; },
+    memoryReason(reason) {
+      return ({ combined_before_limits: '已参与统一计算', cooldown: '同版本仍在冷却期', evidence_changed: '来源版本已变化',
+        disabled_or_configuration_changed: '联动关闭或配置已变化', not_selected_or_evidence_changed: '未选入本轮或证据已变化',
+        dimension_disabled_fixed_or_locked: '维度关闭、固定或锁定', zero_weight_or_delta: '权重或变化量为零' })[reason] || '本次未采用';
+    },
     async loadHistory() {
       if (this.tab !== 'history' || this.busy) return;
       this.busy = true; this.error = '';

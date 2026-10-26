@@ -475,13 +475,27 @@ class MemoryStore:
                         "AND state IN ('pending','extracting','validated','retry_wait') AND id IS NOT ?",
                         (int(self.clock()), owner, exclude))
 
-    def edit_memory(self, owner, memory_id, content, confirmed=None):
+    def _memory_cas(self, owner, memory_id, expected):
+        # The caller already holds BEGIN IMMEDIATE, including across processes.
+        if expected is None:
+            return
+        if (not isinstance(expected, dict) or set(expected) != {'revision', 'content_version', 'evidence_version'}
+                or any(type(v) is not int or v < (0 if k == 'revision' else 1) for k, v in expected.items())):
+            raise MemoryError('invalid_input', 'Invalid memory versions')
+        row = self.db.execute('SELECT o.revision,x.content_version,x.evidence_version FROM memories m '
+            'JOIN owners o ON o.owner=m.owner JOIN mia_memory_meta x ON x.memory_id=m.id '
+            "WHERE m.owner=? AND m.id=? AND x.persona_id='mia'", (owner, memory_id)).fetchone()
+        if row is None or dict(row) != expected:
+            raise MemoryError('conflict', 'Memory or evidence changed')
+
+    def edit_memory(self, owner, memory_id, content, confirmed=None, *, expected=None):
         content = _safe_text(content, 512, "content")
         memory_id = _text(memory_id, 64, "memory id")
         if confirmed is not None and type(confirmed) is not bool:
             raise MemoryError("invalid_input", "Invalid confirmation")
         with self.lock, self.db:
             self.db.execute("BEGIN IMMEDIATE")
+            self._memory_cas(owner, memory_id, expected)
             owner = self._owner(owner)
             row = self.db.execute("SELECT confirmed,content FROM memories WHERE owner=? AND id=?", (owner, memory_id)).fetchone()
             if row is None:
@@ -500,10 +514,11 @@ class MemoryStore:
         with self.lock:
             self._purge()
 
-    def delete_memory(self, owner, memory_id):
+    def delete_memory(self, owner, memory_id, *, expected=None):
         memory_id = _text(memory_id, 64, "memory id")
         with self.lock, self.db:
             self.db.execute("BEGIN IMMEDIATE")
+            self._memory_cas(owner, memory_id, expected)
             owner = self._owner(owner)
             if self.db.execute("SELECT 1 FROM memories WHERE owner=? AND id=?", (owner, memory_id)).fetchone() is None:
                 raise MemoryError("not_found", "Memory does not exist")

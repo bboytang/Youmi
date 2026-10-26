@@ -19,7 +19,9 @@ FOREIGN = 'user:2:agent:other'
 
 
 class MemoryManagementTests(unittest.IsolatedAsyncioTestCase):
-    asyncSetUp = fixture.ManagementRouteTests.asyncSetUp
+    async def asyncSetUp(self):
+        await fixture.ManagementRouteTests.asyncSetUp(self)
+        self.store.clock = lambda: 1800000000
     asyncTearDown = fixture.ManagementRouteTests.asyncTearDown
     post = fixture.ManagementRouteTests.post
 
@@ -193,6 +195,70 @@ class MemoryManagementTests(unittest.IsolatedAsyncioTestCase):
             response = await self.call({'action': 'list'})
         self.assertEqual(response.status, 409)
         self.assertNotIn('data', await response.json())
+
+    async def test_fact_edit_requires_versions_and_removes_old_sources_without_replacing_id(self):
+        identifier = self.fact()
+        detail = await self.data({'action': 'detail', 'id': identifier})
+        expected = dict(revision=detail['revision'], content_version=detail['memory']['content_version'],
+            evidence_version=detail['memory']['evidence_version'])
+        command = dict(action='edit', id=identifier, expected=expected, content='我现在不喜欢蓝色', confirmed=True)
+        self.assertEqual(await self.data(command), {'saved': True})
+        after = await self.data({'action': 'detail', 'id': identifier})
+        self.assertEqual(after['memory']['id'], identifier)
+        self.assertEqual(after['memory']['content'], '我现在不喜欢蓝色')
+        self.assertEqual(after['sources'], [])
+        self.assertGreater(after['memory']['content_version'], expected['content_version'])
+        self.assertEqual((await self.call(command)).status, 409)
+
+    async def test_fact_writes_reject_new_evidence_and_cross_process_or_owner_changes(self):
+        from server.companion.memory import MemoryStore
+        identifier = self.fact()
+        detail = await self.data({'action': 'detail', 'id': identifier})
+        expected = dict(revision=detail['revision'], content_version=detail['memory']['content_version'],
+            evidence_version=detail['memory']['evidence_version'])
+        self.fact(session='new-evidence')
+        for action in ('edit', 'delete'):
+            command = dict(action=action, id=identifier, expected=expected)
+            if action == 'edit':
+                command.update(content='旧页面覆盖', confirmed=True)
+            self.assertEqual((await self.call(command)).status, 409)
+        other = MemoryStore(self.temp.name + '/db.sqlite3')
+        try:
+            other.edit_memory(OWNER, identifier, '另一进程已修改')
+        finally:
+            other.close()
+        self.assertEqual((await self.call(dict(action='delete', id=identifier, expected=expected))).status, 409)
+        foreign = self.fact('他人的记忆', FOREIGN, 'foreign')
+        self.assertEqual((await self.call(dict(action='delete', id=foreign, expected=expected))).status, 409)
+        self.assertEqual((await self.data({'action': 'detail', 'id': identifier}))['memory']['content'], '另一进程已修改')
+
+    async def test_fact_version_check_runs_under_write_transaction_and_delete_cascades_sources(self):
+        import sqlite3
+        identifier = self.fact()
+        detail = await self.data({'action': 'detail', 'id': identifier})
+        expected = dict(revision=detail['revision'], content_version=detail['memory']['content_version'],
+            evidence_version=detail['memory']['evidence_version'])
+        original = self.store._memory_cas
+        def verify(owner, memory_id, versions):
+            self.assertTrue(self.store.db.in_transaction)
+            contender = sqlite3.connect(self.temp.name + '/db.sqlite3', timeout=0)
+            try:
+                with self.assertRaises(sqlite3.OperationalError):
+                    contender.execute('BEGIN IMMEDIATE')
+            finally:
+                contender.close()
+            return original(owner, memory_id, versions)
+        with patch.object(self.store, '_memory_cas', side_effect=verify):
+            self.assertEqual(await self.data(dict(action='delete', id=identifier, expected=expected)), {'saved': True})
+        self.assertEqual((await self.data({'action': 'list'}))['total'], 0)
+        self.assertEqual(self.store.db.execute('SELECT COUNT(*) FROM sources').fetchone()[0], 0)
+
+    async def test_fact_writes_cannot_omit_versions_or_use_boolean_versions(self):
+        identifier = self.fact()
+        for expected in (None, {}, {'revision': True, 'content_version': 1, 'evidence_version': 2}):
+            response = await self.call(dict(action='delete', id=identifier, expected=expected))
+            self.assertEqual(response.status, 400)
+        self.assertEqual((await self.data({'action': 'list'}))['total'], 1)
 
 
 class ArtifactManagementTests(unittest.IsolatedAsyncioTestCase):
