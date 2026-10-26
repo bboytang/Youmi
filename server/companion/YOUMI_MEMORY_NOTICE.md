@@ -43,3 +43,11 @@ idempotency. It uses zero as the energy regression center, separates fixed
 configuration from dynamic energy, and does not copy upstream in-memory storage,
 public scope or emotional authority. Mathematical concepts are not a relicensing
 of unrelated Youmi code; the copied search implementation keeps its GPL notice.
+
+
+2026-10-26 relevance review: hybrid retrieval requires the existing qualified
+semantic candidate set before BM25/RRF fusion; an empty qualified set is not
+lexical fallback. Explicit lexical-only evaluation remains available. Equal RRF
+scores prefer stronger normalized BM25 evidence, then stable ID; all non-equal
+fusion scores, thresholds and formula remain unchanged. See the preserved frozen
+quality failures and follow-up checks in docs/memory-takeover/quality-migration.md.

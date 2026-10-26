@@ -249,7 +249,7 @@ class YoumiBM25Search:
                 "score_kind": "rrf",
             })
 
-        fused.sort(key=lambda x: (x["final_score"], x["id"]), reverse=True)
+        fused.sort(key=lambda x: (x["final_score"], x["bm25_normalized_score"], x["id"]), reverse=True)
         if min_final_score is None and threshold > 0.0 and fused:
             top_score = float(fused[0].get("final_score", 0.0) or 0.0)
             if top_score > 0.0:

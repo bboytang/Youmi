@@ -165,6 +165,15 @@ class ShadowRetrievalTests(unittest.IsolatedAsyncioTestCase):
         results = engine.search('热茶', {'semantic': .6})
         self.assertEqual([row['id'] for row in results], ['semantic'])
 
+    async def test_equal_rrf_uses_lexical_evidence_before_arbitrary_ids(self):
+        from server.companion.memory_search import YoumiBM25Search
+        for stronger, weaker in [('a', 'z'), ('z', 'a')]:
+            rows = [dict(item_id=stronger, bm25_score=20, bm25_normalized_score=1),
+                dict(item_id=weaker, bm25_score=11, bm25_normalized_score=.55)]
+            results = YoumiBM25Search._rrf_fuse(rows, {weaker: .50, stronger: .47}, threshold=.5, limit=4)
+            self.assertEqual(results[0]['final_score'], results[1]['final_score'])
+            self.assertEqual(results[0]['id'], stronger)
+
     async def test_missing_vectors_are_unavailable_and_explicit_lexical_evaluation_remains_separate(self):
         tea = self.fact('喜欢热茶')  # Intentionally no vector index yet.
         runtime = YoumiMemoryRuntime(self.index)
