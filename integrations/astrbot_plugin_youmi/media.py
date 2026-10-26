@@ -1,6 +1,7 @@
 """Provenance and bounded temporary WAV files; AstrBot owns image/STT/OneBot conversion."""
 
 import io
+import os
 from pathlib import Path
 import tempfile
 import time
@@ -48,6 +49,22 @@ def compress_image(source):
             image.convert('RGB').save(output, format='JPEG', quality=80, optimize=True)
         result = output.getvalue()
         return result if len(result) < source.stat().st_size else None
+
+
+def compress_selected_image(path):
+    """Replace only an owned temporary copy, atomically."""
+    data = compress_image(path)
+    if not data:
+        return
+    temporary = None
+    try:
+        with tempfile.NamedTemporaryFile(prefix='youmi-meme-', dir=Path(path).parent, delete=False) as file:
+            temporary = Path(file.name)
+            file.write(data)
+        os.replace(temporary, path)
+    finally:
+        if temporary:
+            temporary.unlink(missing_ok=True)
 
 
 def save_wav(audio, directory):

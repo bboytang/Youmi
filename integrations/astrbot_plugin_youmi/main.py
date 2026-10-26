@@ -18,7 +18,7 @@ from astrbot.core.star.star_handler import EventType
 
 from .client import BridgeClient, BridgeError
 from .admin import AdminClient, ADMIN_INSTRUCTION
-from .media import compress_image, original_text, prune_media, save_wav, selected_image_file, source_kind
+from .media import compress_image, compress_selected_image, original_text, prune_media, save_wav, selected_image_file, source_kind
 from .turn_state import CompletionOutbox, CONTEXT_MARKER, TurnState, merge_system
 
 
@@ -414,10 +414,13 @@ class YoumiConnector(Star):
                         if attach:
                             for image in prepared['images']:
                                 from astrbot.core.utils.astrbot_path import get_astrbot_temp_path
-                                image = await self.compress_outgoing(image)
                                 path = await asyncio.to_thread(selected_image_file, await image.convert_to_file_path(),
                                                                get_astrbot_temp_path())
                                 owned.append(str(path))
+                                try:
+                                    await asyncio.to_thread(compress_selected_image, path)
+                                except Exception:
+                                    logger.warning('Youmi image compression unavailable; sending original')
                                 updated.append({'type': 'image', 'path': str(path)})
                     parts = tool_args['messages'] = updated
                 plain = [part for part in parts if part.get('type') == 'plain']

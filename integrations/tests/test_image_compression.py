@@ -2,7 +2,7 @@ import io
 
 from PIL import Image
 
-from integrations.astrbot_plugin_youmi.media import compress_image
+from integrations.astrbot_plugin_youmi.media import compress_image, compress_selected_image
 
 
 def test_large_static_image_is_smaller_and_limited_without_changing_source(tmp_path):
@@ -32,3 +32,14 @@ def test_transparent_image_keeps_alpha(tmp_path):
     assert compressed
     with Image.open(io.BytesIO(compressed)) as result:
         assert 'A' in result.getbands() and max(result.size) == 1280
+
+
+def test_owned_tool_copy_is_compressed_and_temporary_file_removed(tmp_path):
+    path = tmp_path / 'youmi-meme-image.png'
+    Image.effect_noise((1800, 1400), 80).convert('RGB').save(path)
+    original_size = path.stat().st_size
+    compress_selected_image(path)
+    assert path.stat().st_size < original_size
+    with Image.open(path) as result:
+        assert max(result.size) == 1280
+    assert list(tmp_path.iterdir()) == [path]
