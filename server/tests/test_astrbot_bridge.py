@@ -84,6 +84,30 @@ class ExistingWorkerFixture:
 
 
 class BridgeHTTPTests(unittest.IsolatedAsyncioTestCase):
+    async def test_admin_session_requires_explicit_owner_and_live_scope_and_never_writes_memory(self):
+        payload = {'bot_uin': '12345', 'sender_uin': '67890', 'conversation_key': 'qq:private:67890'}
+        rejected = await self.client.post('/internal/astrbot/admin-session', json=dict(payload, protocol_version=1),
+            headers={'Authorization': 'Bearer ' + 's' * 43})
+        self.assertEqual(rejected.status, 403)
+        self.handler.bridge['autonomous_admin_owners'] = [self.scope.owner]
+        original = self.auth._request
+        async def manager(endpoint, snapshot):
+            if endpoint == '/config/youmi-auth/admin-session':
+                await self.auth.restore(snapshot)
+                return {'token': 'native-admin-session', 'expires_in': 43200}
+            return await original(endpoint, snapshot)
+        with patch.object(self.auth, '_request', manager):
+            accepted = await self.client.post('/internal/astrbot/admin-session', json=dict(payload, protocol_version=1),
+                headers={'Authorization': 'Bearer ' + 's' * 43})
+            self.assertEqual(accepted.status, 200)
+            self.assertEqual((await accepted.json())['token'], 'native-admin-session')
+            self.auth.active = False
+            revoked = await self.client.post('/internal/astrbot/admin-session', json=dict(payload, protocol_version=1),
+                headers={'Authorization': 'Bearer ' + 's' * 43})
+            self.assertEqual(revoked.status, 403)
+        self.assertEqual(self.store.db.execute('SELECT COUNT(*) FROM mia_jobs').fetchone()[0], 0)
+        self.assertEqual(self.store.db.execute('SELECT COUNT(*) FROM mia_astrbot_turns').fetchone()[0], 0)
+
     async def asyncSetUp(self):
         self.temp = tempfile.TemporaryDirectory()
         self.root = Path(self.temp.name)

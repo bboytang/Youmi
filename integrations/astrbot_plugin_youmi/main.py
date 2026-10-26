@@ -17,6 +17,7 @@ from astrbot.core.provider.entities import ProviderRequest
 from astrbot.core.star.star_handler import EventType
 
 from .client import BridgeClient, BridgeError
+from .admin import AdminClient, ADMIN_INSTRUCTION
 from .media import original_text, prune_media, save_wav, selected_image_file, source_kind
 from .turn_state import CompletionOutbox, CONTEXT_MARKER, TurnState, merge_system
 
@@ -31,6 +32,7 @@ class YoumiConnector(Star):
         self.directory.mkdir(parents=True, exist_ok=True, mode=0o700)
         self.outbox = CompletionOutbox(self.directory / 'completion-outbox')
         self.retry_task = None
+        self.admin = None
 
     async def initialize(self):
         self.retry_task = asyncio.create_task(self.retry_completions())
@@ -40,6 +42,100 @@ class YoumiConnector(Star):
             self.retry_task.cancel()
             await asyncio.gather(self.retry_task, return_exceptions=True)
         await self.client.close()
+        if self.admin is not None:
+            await self.admin.close()
+
+    def _admin_client(self):
+        manifest = self.config.get('admin_manifest_file', '')
+        if not manifest:
+            raise BridgeError('admin_not_enabled', 403)
+        if getattr(self, 'admin', None) is None:
+            self.admin = AdminClient(manifest, self.directory)
+        return self.admin
+
+    def _admin_identity(self, event):
+        if not self.supports(event):
+            raise BridgeError('admin_not_authorized', 403)
+        bot = (self.config['scheduled_bot_uin'] if event.get_platform_name() == 'cron'
+               else str(event.message_obj.self_id))
+        peer = str(event.get_sender_id())
+        return bot, peer
+
+    def _admin_instruction(self, event):
+        try:
+            self._admin_client().manifest(*self._admin_identity(event))
+            return ADMIN_INSTRUCTION
+        except BridgeError:
+            return ''
+
+    async def _admin_access(self, event):
+        admin = self._admin_client()
+        bot, peer = self._admin_identity(event)
+        manifest = admin.manifest(bot, peer)
+        # A local grant does not replace the currently bound manager Scope.
+        session = await self.client.call('admin-session', {'bot_uin': bot, 'sender_uin': peer,
+            'conversation_key': 'qq:private:' + peer})
+        if manifest['targets'].get('youmi', {}).get('bridge_session'):
+            manifest['targets']['youmi']['_authorization'] = 'Bearer ' + session['token']
+        if manifest['targets'].get('astrbot', {}).get('native_delegation'):
+            # The explicit local delegation and live manager proof authenticate this
+            # service path; interactive dashboard login/TOTP remain unchanged.
+            from astrbot.core import db_helper
+            from astrbot.dashboard.services.auth_service import AuthService
+            config = self.context.get_config()
+            token = AuthService(db_helper, config).generate_jwt(
+                config['dashboard']['username'], auth_source='youmi_delegation')
+            manifest['targets']['astrbot']['_authorization'] = 'Bearer ' + token
+        return admin, manifest
+
+    @filter.llm_tool(name='youmi_admin_catalog')
+    async def admin_catalog(self, event: AstrMessageEvent, target: str, search: str = '',
+                            path: str = '', offset: int = 0):
+        """Discover native Youmi/AstrBot management APIs and their actual request schemas.
+
+        Args:
+            target(string): youmi or astrbot.
+            search(string): Filter endpoint names/descriptions; empty lists all endpoints.
+            path(string): Exact API template path to inspect parameters and body schema.
+            offset(number): Pagination offset, starting at zero.
+        """
+        try:
+            if type(offset) is not int or offset < 0:
+                raise BridgeError('invalid_admin_offset', 400)
+            admin, manifest = await self._admin_access(event)
+            result = await admin.catalog(manifest, target, search, path, offset)
+            return json.dumps(result, ensure_ascii=False)
+        except BridgeError as error:
+            return json.dumps({'error': error.code, 'status': error.status})
+
+    @filter.llm_tool(name='youmi_admin_request')
+    async def admin_request(self, event: AstrMessageEvent, target: str, method: str, path: str,
+                            query_json: str = '{}', body_json: str = 'null'):
+        """Autonomously administer all settings exposed by the native Youmi/AstrBot APIs.
+
+        Inspect youmi_admin_catalog first. Preserve secret handles when saving full
+        configurations. Read back after writes and apply native reload if needed.
+        HTTP success alone does not prove settings took effect. Never retry an
+        uncertain write without checking its actual outcome. Also usable in cron.
+
+        Args:
+            target(string): youmi or astrbot.
+            method(string): GET, POST, PUT, PATCH or DELETE.
+            path(string): Relative native API path, excluding query parameters.
+            query_json(string): JSON object containing query parameters.
+            body_json(string): JSON request body, or null for no body.
+        """
+        try:
+            query, body = json.loads(query_json), json.loads(body_json)
+            if not isinstance(query, dict):
+                raise ValueError()
+            admin, manifest = await self._admin_access(event)
+            result = await admin.request(manifest, target, method, path, query, body)
+            return json.dumps(result, ensure_ascii=False)
+        except BridgeError as error:
+            return json.dumps({'error': error.code, 'status': error.status})
+        except (ValueError, TypeError):
+            return json.dumps({'error': 'invalid_admin_json', 'status': 400})
 
     def _segmented_reply(self, text, event):
         try:
@@ -216,7 +312,8 @@ class YoumiConnector(Star):
                 event.stop_event()
                 event.clear_result()
                 return
-            req.system_prompt = merge_system(req.system_prompt, state.prepared['system_prompt'])
+            req.system_prompt = merge_system(req.system_prompt,
+                state.prepared['system_prompt'] + self._admin_instruction(event))
             req.extra_user_content_parts[:] = [part for part in req.extra_user_content_parts
                 if not (isinstance(part, TextPart) and part.text.startswith(CONTEXT_MARKER))]
             dynamic = CONTEXT_MARKER + json.dumps({'youmi_context': state.prepared['dynamic_context']}, ensure_ascii=False)
@@ -258,7 +355,7 @@ class YoumiConnector(Star):
             prepared = await self.prepare(event, provider.get_model(), event.message_str[:4096] or '定时主动联系',
                                           budget, 'scheduled', 'scheduled')
             event.set_extra('youmi_turn', TurnState(prepared, 'scheduled'))
-            system = Message(role='system', content=prepared['system_prompt'])
+            system = Message(role='system', content=prepared['system_prompt'] + self._admin_instruction(event))
             system._no_save = True
             run_context.messages.insert(0, system)
             part = TextPart(text=CONTEXT_MARKER + json.dumps({'youmi_context': prepared['dynamic_context']},

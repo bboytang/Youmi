@@ -102,6 +102,47 @@ class YoumiPrivateAuthorizationTest {
     }
 
     @Test
+    void autonomousAdministrationIsExplicitPermanentDelegationWithCurrentNativeAuthority() throws Exception {
+        JsonNode created = post("/device/mia-auth/virtual", Map.of("agent_id", AGENT_B, "bot_uin", "12345"), userToken(USER_B));
+        String device = created.path("data").path("device_id").asText();
+        String server = params.getValue("server.secret", false);
+        String setting = "youmi.autonomous_admin.owners";
+        try {
+            JsonNode exchanged = exchange(device, "astrbot:12345",
+                created.path("data").path("authorization").path("authorization_code").asText());
+            JsonNode verified = verify(device, "astrbot:12345", exchanged.path("data").path("private_credential").asText());
+            Map<String, Object> snapshot = new java.util.HashMap<>();
+            for (String key : List.of("owner", "operator_id", "device_id", "client_id", "binding_version", "credential_version")) {
+                snapshot.put(key, verified.path("data").path(key).asText());
+            }
+            assertNotEquals(0, post("/config/mia-auth/admin-session", snapshot, server).path("code").asInt());
+            db.update("INSERT INTO sys_params(id,param_code,param_value,param_type) VALUES (?,?,?,1)",
+                930000099L, setting, mapper.writeValueAsString(List.of(snapshot.get("owner"))));
+            assertNotEquals(0, post("/config/mia-auth/admin-session", snapshot, server).path("code").asInt());
+            db.update("UPDATE sys_user SET super_admin=1 WHERE id=?", USER_B);
+            assertNotEquals(0, post("/config/mia-auth/admin-session", snapshot, userToken(USER_B)).path("code").asInt());
+            db.update("UPDATE sys_user_token SET expire_date=DATE_SUB(NOW(),INTERVAL 1 DAY) WHERE user_id=?", USER_B);
+            JsonNode session = post("/config/mia-auth/admin-session", snapshot, server);
+            assertEquals(0, session.path("code").asInt());
+            assertFalse(session.path("data").path("token").asText().isBlank());
+            assertEquals(43200, session.path("data").path("expires_in").asInt());
+            assertTrue(db.queryForObject("SELECT expire_date>NOW() FROM sys_user_token WHERE user_id=?", Boolean.class, USER_B));
+            db.update("UPDATE sys_params SET param_value='[]' WHERE param_code=?", setting);
+            assertNotEquals(0, post("/config/mia-auth/admin-session", snapshot, server).path("code").asInt());
+            db.update("UPDATE sys_params SET param_value=? WHERE param_code=?", mapper.writeValueAsString(List.of(snapshot.get("owner"))), setting);
+            db.update("UPDATE sys_user SET status=0 WHERE id=?", USER_B);
+            assertNotEquals(0, post("/config/mia-auth/admin-session", snapshot, server).path("code").asInt());
+            db.update("UPDATE sys_user SET status=1 WHERE id=?", USER_B);
+            post("/device/mia-auth/revoke", Map.of("device_id", device), userToken(USER_B));
+            assertNotEquals(0, post("/config/mia-auth/admin-session", snapshot, server).path("code").asInt());
+        } finally {
+            db.update("DELETE FROM sys_params WHERE param_code=?", setting);
+            db.update("DELETE FROM ai_mia_device_authorization WHERE device_id=?", device);
+            db.update("DELETE FROM ai_device WHERE id=?", device);
+        }
+    }
+
+    @Test
     void virtualBridgeUsesIndependentDeviceGrantAndRejectsOtherOwner() throws Exception {
         assertNotEquals(0, post("/device/mia-auth/virtual", Map.of("agent_id", AGENT_B, "bot_uin", "12345"), null).path("code").asInt());
         assertNotEquals(0, post("/device/mia-auth/virtual", Map.of("agent_id", AGENT_B, "bot_uin", "12345"), userToken(USER_A)).path("code").asInt());

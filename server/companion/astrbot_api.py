@@ -69,7 +69,7 @@ class AstrBotHandler:
                 schema_version = self.store.db.execute('SELECT MAX(version) FROM mia_schema_migrations').fetchone()[0]
                 return web.json_response({'protocol_version': 1, 'schema': schema_version,
                     'worker_available': bool(self.worker and not self.worker.closing)})
-            if request.method != 'POST' or action not in {'prepare', 'check', 'claim', 'complete', 'tts', 'manage', 'status', 'transcribe'}:
+            if request.method != 'POST' or action not in {'prepare', 'check', 'claim', 'complete', 'tts', 'manage', 'status', 'transcribe', 'admin-session'}:
                 raise TurnConflict('invalid_request', 400)
             raw = bytearray()
             async for chunk in request.content.iter_chunked(4096):
@@ -79,13 +79,13 @@ class AstrBotHandler:
             data = json.loads(raw)
             if not isinstance(data, dict) or type(data.get('protocol_version')) is not int or data['protocol_version'] != 1:
                 raise ValueError()
-            if action in {'manage', 'transcribe'}:
+            if action in {'manage', 'transcribe', 'admin-session'}:
                 key = digest([data.get('bot_uin'), data.get('conversation_key')])
             elif action == 'prepare':
                 key = self.prepare_key(data)
             else:
                 key = identifier(data.get('turn_token'))
-            trace = key if action in {'prepare', 'manage', 'transcribe'} else ledger.by_token(key, allow_expired=True)['turn_key']
+            trace = key if action in {'prepare', 'manage', 'transcribe', 'admin-session'} else ledger.by_token(key, allow_expired=True)['turn_key']
             async with self._lock(key):
                 timeout = 30 if action in {'tts', 'transcribe'} else 15 if action == 'prepare' else 10
                 result = await asyncio.wait_for(self.dispatch(action, data, ledger), timeout)
@@ -135,6 +135,19 @@ class AstrBotHandler:
 
     async def dispatch(self, action, data, ledger):
         identity = BridgeIdentity(ledger.authorization, self.bridge['bindings'])
+        if action == 'admin-session':
+            if set(data) != {'protocol_version', 'bot_uin', 'sender_uin', 'conversation_key'}:
+                raise ValueError()
+            scope = await identity.resolve(data)
+            await ledger.authorization.require(scope, 'memory:manage')
+            if scope.owner not in self.bridge.get('autonomous_admin_owners', []):
+                raise PrivateAuthorizationRequired()
+            session = await ledger.authorization._request('/config/youmi-auth/admin-session', scope.snapshot())
+            await ledger.authorization.require(scope, 'memory:manage')
+            if (not isinstance(session, dict) or not isinstance(session.get('token'), str)
+                    or not session['token'] or type(session.get('expires_in')) is not int):
+                raise ValueError()
+            return web.json_response(session)
         if action == 'transcribe':
             if set(data) != {'protocol_version', 'bot_uin', 'sender_uin', 'conversation_key',
                              'source_message_id', 'audio_wav_base64'}:

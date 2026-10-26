@@ -1,5 +1,8 @@
 name: Verify Youmi AstrBot fusion
-on: workflow_dispatch
+on:
+  workflow_dispatch:
+  push:
+    branches: [codex/autonomous-admin]
 permissions:
   contents: read
 jobs:
@@ -118,6 +121,12 @@ jobs:
       - run: |
           cd "${YOUMI_REPO_ROOT:-$GITHUB_WORKSPACE}"
           python scripts/ci/verify_astrbot_fusion.py manager-legacy
+      - uses: actions/upload-artifact@v4
+        if: ${{ !env.ACT }}
+        with:
+          name: autonomous-admin-manager-legacy
+          path: ${{ runner.temp }}/youmi-fusion-sources/manager-legacy-candidate/astrbot-manager-patch.zip
+          if-no-files-found: error
 
   snowluma:
     runs-on: ubuntu-latest

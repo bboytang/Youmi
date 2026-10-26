@@ -1,6 +1,7 @@
 package xiaozhi.modules.device.controller;
 
 import java.util.Map;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.apache.shiro.authz.annotation.RequiresPermissions;
 import org.springframework.beans.factory.annotation.Value;
@@ -16,12 +17,19 @@ import xiaozhi.common.exception.RenException;
 import xiaozhi.common.utils.Result;
 import xiaozhi.modules.config.service.ConfigService;
 import xiaozhi.modules.device.service.impl.YoumiDeviceAuthorizationService;
+import xiaozhi.modules.security.service.SysUserTokenService;
+import xiaozhi.modules.sys.service.SysParamsService;
+import xiaozhi.modules.sys.service.SysUserService;
 
 @RestController
 @RequiredArgsConstructor
 public class YoumiDeviceAuthorizationController {
     private final YoumiDeviceAuthorizationService grants;
     private final ConfigService configService;
+    private final SysUserTokenService tokens;
+    private final SysParamsService params;
+    private final SysUserService users;
+    private final ObjectMapper mapper;
     @Value("${youmi.private-auth.allow-insecure-test-http:${mia.private-auth.allow-insecure-test-http:false}}")
     private boolean allowInsecureTestHttp;
 
@@ -95,6 +103,34 @@ public class YoumiDeviceAuthorizationController {
         allowed.put("mia_scope", scope);
         allowed.put("youmi_scope", scope);
         return result(allowed);
+    }
+
+    /** A revocable, non-expiring delegation issues ordinary short-lived native sessions. */
+    @PostMapping({"/config/youmi-auth/admin-session", "/config/mia-auth/admin-session"})
+    @Transactional(rollbackFor = Exception.class)
+    public Result<Map<String, Object>> adminSession(@RequestBody Map<String, Object> snapshot) {
+        Map<String, Object> scope = grants.requireSnapshot(snapshot, true);
+        grants.requireVirtual(scope);
+        try {
+            String configured = params.getValue("youmi.autonomous_admin.owners", false);
+            var owners = mapper.readTree(configured == null ? "[]" : configured);
+            boolean delegated = false;
+            if (owners != null && owners.isArray()) {
+                for (var owner : owners) {
+                    if (owner.isTextual() && owner.asText().equals(scope.get("owner"))) delegated = true;
+                }
+            }
+            long operator = ((Number) scope.get("operator_id")).longValue();
+            var user = users.getByUserId(operator);
+            if (!delegated || user == null || !Integer.valueOf(1).equals(user.getStatus())
+                    || !Integer.valueOf(1).equals(user.getSuperAdmin())) {
+                throw new RenException(ErrorCode.NO_PERMISSION);
+            }
+            var session = tokens.createToken(operator).getData();
+            return result(Map.of("token", session.getToken(), "expires_in", session.getExpire()));
+        } catch (java.io.IOException invalid) {
+            throw new RenException(ErrorCode.NO_PERMISSION);
+        }
     }
 
     @PostMapping({"/device/youmi-auth/renew", "/device/mia-auth/renew"})

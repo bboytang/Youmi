@@ -1,4 +1,5 @@
 {
+  "admin_manifest_file": {"description": "Local full-administration grant manifest path; enables owner-authorized autonomous settings tools", "type": "string", "default": ""},
   "youmi_base_url": {"description": "Existing Youmi HTTP service URL", "type": "string", "default": ""},
   "service_credential_file": {"description": "Mounted independent service credential path; never paste a token here", "type": "string", "default": "/run/secrets/youmi_bridge_token"},
   "allow_internal_http": {"description": "Explicitly allow trusted isolated Docker HTTP transport", "type": "bool", "default": false},

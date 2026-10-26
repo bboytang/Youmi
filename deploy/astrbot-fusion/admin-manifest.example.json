@@ -1,0 +1,18 @@
+{
+  "enabled": true,
+  "bot_uin": "REPLACE_WITH_BOT_UIN",
+  "conversation_key": "qq:private:REPLACE_WITH_OWNER_QQ",
+  "allow_internal_http": true,
+  "targets": {
+    "youmi": {
+      "base_url": "http://xiaozhi-esp32-server-web:8002/xiaozhi",
+      "schema_path": "/v3/api-docs",
+      "bridge_session": true
+    },
+    "astrbot": {
+      "base_url": "http://127.0.0.1:6185",
+      "schema_path": "/api/v1/openapi.json",
+      "native_delegation": true
+    }
+  }
+}
