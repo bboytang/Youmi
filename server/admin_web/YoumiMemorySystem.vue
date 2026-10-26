@@ -15,6 +15,11 @@
         <p>正在管理：<strong>{{ agentName }}</strong></p>
         <el-button :disabled="busy" @click="refresh">刷新并核对服务器状态</el-button>
         <p v-if="dirty">有未保存的修改</p>
+        <section v-if="state.engine" aria-label="记忆引擎">
+          <p>当前记忆引擎：{{ state.engine.engine === 'youmi' ? 'Youmi 混合检索' : '旧算法' }} · 设置版本 {{ state.engine.version }}</p>
+          <p>切换对该智能体的 App、设备和 QQ 一起生效；已有记忆、人设及情感设置保留。</p>
+          <el-button :disabled="busy || dirty || engineBlocked" @click="switchEngine">{{ state.engine.engine === 'youmi' ? '切回旧算法' : '切换到 Youmi 记忆' }}</el-button>
+        </section>
         <section v-if="cleanup && cleanup.state !== 'not_registered'" aria-label="缓存清理状态">
           <p v-if="cleanup.state === 'pending'" role="alert">搜索缓存待清理。记忆变更已提交，清理尚未完成；服务运行时会定期重试，持续故障可能延后。{{ cleanupReason }}</p>
           <p v-else-if="cleanup.state === 'complete'" role="status">搜索缓存清理已完成。</p>
@@ -153,7 +158,7 @@ export default {
   data() {
     return { agents: [], agentId: '', state: null, listing: null, artifacts: [], detail: null, edit: null,
       originalEdit: '', draft: {}, originals: {}, blocked: {}, factBlocked: false, selected: [],
-      busy: false, error: '', tab: 'memories', generation: 0, discardOpen: false, discardResolve: null,
+      busy: false, engineBlocked: false, error: '', tab: 'memories', generation: 0, discardOpen: false, discardResolve: null,
       kinds: { profile: '画像', note: '笔记', retirement: '退役候选', merge: '合并候选' },
       cognitiveNames: { recall: '召回', impression: '印象', expression: '表达', creativity: '创造' },
       cognitiveFields: { minimum: '下限', baseline: '基线', maximum: '上限', sensitivity: '敏感度' } };
@@ -235,7 +240,7 @@ export default {
     },
     async loadAgent(id, memoryId) {
       this.state = null; this.listing = null; this.detail = null; this.edit = null;
-      this.draft = {}; this.originals = {}; this.artifacts = []; this.selected = []; this.factBlocked = false;
+      this.draft = {}; this.originals = {}; this.artifacts = []; this.selected = []; this.factBlocked = false; this.engineBlocked = false;
       if (!this.agents.some(agent => agent.id === id)) throw new Error('该智能体不可管理，请重新选择。');
       this.agentId = id;
       const state = await this.call({ action: 'status' });
@@ -249,6 +254,22 @@ export default {
     acceptCleanup(value) {
       if (!value || !['not_registered', 'pending', 'complete'].includes(value.state)) throw new Error('缓存清理状态未确认，请稍后核对。');
       this.$set(this.state, 'cache_cleanup', value);
+    },
+    async switchEngine() {
+      const agent = this.agentId, version = this.state.engine.version;
+      const engine = this.state.engine.engine === 'youmi' ? 'legacy' : 'youmi';
+      try { await this.$confirm('切换“' + this.agentName + '”的记忆引擎？该智能体的 App、设备和 QQ 将一起生效。已有记忆、人设及情感设置保留；有正在处理的对话或任务时会拒绝切换。', '切换记忆引擎', { confirmButtonText: '确认切换', cancelButtonText: '取消', dangerouslyUseHTMLString: false }); } catch (_) { return; }
+      if (agent !== this.agentId || this.busy || this.dirty) return;
+      await this.run(async () => {
+        try {
+          const result = await this.call({ action: 'engine', engine, version });
+          const state = await this.call({ action: 'status' });
+          if (!result || !state.engine || result.engine !== engine || result.version !== version + 1
+              || state.engine.engine !== engine || state.engine.version !== result.version) throw new Error('引擎状态未确认，请刷新核对。');
+          this.state = state; groups.forEach(key => this.accept(key, state[key]));
+          await this.reloadFacts(); this.$message.success('记忆引擎已切换');
+        } catch (error) { this.engineBlocked = true; throw error; }
+      });
     },
     async checkCleanup() {
       await this.run(async () => { const result = await this.call({ action: 'status' }); this.acceptCleanup(result.cache_cleanup); });

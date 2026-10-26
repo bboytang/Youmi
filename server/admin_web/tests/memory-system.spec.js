@@ -15,7 +15,7 @@ async function setup(page, query = 'agentId=first', cleanup = null) {
   const backend = { fail: 0, unavailable: false, cleanup: null, statusFail: 0 };
   function state(agent) {
     return states[agent] ||= {
-      revision: 1, cache_cleanup: agent === 'first' && cleanup ? clone(cleanup) : { state: 'not_registered', error: null }, features: { memory_recall: true },
+      revision: 1, engine: { engine: 'legacy', version: 0 }, cache_cleanup: agent === 'first' && cleanup ? clone(cleanup) : { state: 'not_registered', error: null }, features: { memory_recall: true },
       reflection: { enabled: false, version: 0, interval_seconds: 86400, last_maintenance_at: null },
       emotion_linkage: { enabled: false, version: 0, memory_to_emotion: true, emotion_to_memory: true,
         stimulus_weight: .25, ranking_limit: .1, cooldown_seconds: 86400 },
@@ -42,7 +42,7 @@ async function setup(page, query = 'agentId=first', cleanup = null) {
     commands.push({ agent, command, authorization: route.request().headers()['authorization'] });
     let data;
     const action = command.action;
-    if (backend.fail && (command.operation || ['edit', 'delete', 'merge', 'pin'].includes(action))) {
+    if (backend.fail && (command.operation || ['edit', 'delete', 'merge', 'pin', 'engine'].includes(action))) {
       await route.fulfill({ json: { code: backend.fail, msg: 'synthetic failure' } }); return;
     }
     if (action === 'status' && backend.statusFail) { await route.fulfill({ json: { code: backend.statusFail, msg: 'status unavailable' } }); return; }
@@ -63,6 +63,13 @@ async function setup(page, query = 'agentId=first', cleanup = null) {
       if (operation.version !== current[action].version) { await route.fulfill({ json: { code: 409 } }); return; }
       Object.assign(current[action], operation); delete current[action].action;
       current[action].version++; current.revision++; data = current[action];
+    }
+    if (action === 'engine') {
+      if (command.version !== current.engine.version) { await route.fulfill({ json: { code: 409 } }); return; }
+      current.engine = { engine: command.engine, version: current.engine.version + 1 };
+      current.capabilities.engine = command.engine;
+      current.capabilities.emotion_ranking = command.engine === 'youmi' ? 'active' : 'shadow_only';
+      current.revision++; data = current.engine;
     }
     if (action === 'edit') {
       const row = current.memories.find(item => item.id === command.id);
@@ -361,4 +368,43 @@ test('cognition shows bounded effective values separately from editable baseline
   await expect(baseline).toHaveAttribute('aria-disabled', 'false');
   await baseline.fill('9');
   await expect(page.getByText('当前有效值 7', { exact: false })).toBeVisible();
+});
+
+
+test('engine confirmation and rollback affect only the selected agents endpoints', async ({ page }) => {
+  const { states, commands } = await setup(page);
+  await page.getByRole('button', { name: '切换到 Youmi 记忆', exact: true }).click();
+  await page.locator('.el-message-box').getByRole('button', { name: '取消', exact: true }).click();
+  expect(commands.some(item => item.command.action === 'engine')).toBe(false);
+  await page.getByRole('button', { name: '切换到 Youmi 记忆', exact: true }).click();
+  await page.locator('.el-message-box').getByRole('button', { name: '确认切换', exact: true }).click();
+  await expect(page.getByText('当前记忆引擎：Youmi 混合检索', { exact: false })).toBeVisible();
+  expect(states.first.engine).toEqual({ engine: 'youmi', version: 1 });
+  await page.getByRole('button', { name: '切回旧算法', exact: true }).click();
+  await page.locator('.el-message-box').getByRole('button', { name: '确认切换', exact: true }).click();
+  await expect(page.getByText('当前记忆引擎：旧算法', { exact: false })).toBeVisible();
+  expect(commands.filter(item => item.command.action === 'engine').map(item => [item.agent, item.command.version])).toEqual([['first', 0], ['first', 1]]);
+  await page.locator('.el-select').first().click();
+  await page.getByText('智能体二', { exact: true }).last().click();
+  await expect(page.getByText('正在管理：')).toContainText('智能体二');
+  expect(states.second.engine).toEqual({ engine: 'legacy', version: 0 });
+});
+
+test('failed engine switch retains selection and blocks silent stale retry', async ({ page }) => {
+  const { backend, commands, states } = await setup(page);
+  backend.fail = 409;
+  await page.getByRole('button', { name: '切换到 Youmi 记忆', exact: true }).click();
+  await page.locator('.el-message-box').getByRole('button', { name: '确认切换', exact: true }).click();
+  await expect(page.getByRole('button', { name: '切换到 Youmi 记忆', exact: true })).toBeDisabled();
+  await expect(page.getByText('当前记忆引擎：旧算法', { exact: false })).toBeVisible();
+  expect(states.first.engine).toEqual({ engine: 'legacy', version: 0 });
+  expect(commands.filter(item => item.command.action === 'engine')).toHaveLength(1);
+});
+
+test('unsaved configuration disables agent engine switching', async ({ page }) => {
+  const { commands } = await setup(page);
+  await page.getByRole('tab', { name: '认知设置', exact: true }).click();
+  await page.getByRole('switch', { name: '启用认知配置', exact: true }).click();
+  await expect(page.getByRole('button', { name: '切换到 Youmi 记忆', exact: true })).toBeDisabled();
+  expect(commands.some(item => item.command.action === 'engine')).toBe(false);
 });
