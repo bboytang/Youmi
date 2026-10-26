@@ -190,6 +190,29 @@ async def test_real_meme_order_gif_image_only_and_no_second_send(setup, hooks, t
 
 
 @pytest.mark.asyncio
+@pytest.mark.parametrize('mixed', [True, False])
+async def test_meme_static_image_is_compressed_before_actual_send(setup, hooks, tmp_path, mixed):
+    connector, meme, event, bot, sent = setup
+    meme.enable_mixed_message = mixed
+    image_dir = tmp_path / 'memes' / 'happy'
+    for path in image_dir.iterdir():
+        path.unlink()
+    path = image_dir / 'large.png'
+    PillowImage.effect_noise((1800, 1400), 80).convert('RGB').save(path)
+    original_size = path.stat().st_size
+    event.set_extra('youmi_turn', TurnState(connector.client.prepared, 'text'))
+    await final_reply(setup, '你好 &&happy&&')
+    images = [part for call in sent for part in call['message'] if part['type'] == 'image']
+    assert len(images) == 1
+    import io
+    content = base64.b64decode(images[0]['data']['file'].split('://', 1)[1])
+    assert len(content) < original_size
+    with PillowImage.open(io.BytesIO(content)) as result:
+        assert max(result.size) == 1280
+    assert path.stat().st_size == original_size
+
+
+@pytest.mark.asyncio
 async def test_voice_and_text_native_onebot_serialization_and_cleanup(setup, hooks):
     connector, meme, event, bot, sent = setup
     connector.config['text_voice_policy'] = 'text_and_voice'

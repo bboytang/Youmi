@@ -29,6 +29,27 @@ def original_text(raw):
                    if isinstance(item, dict) and item.get('type') == 'text').strip()
 
 
+def compress_image(source):
+    """Produce a smaller static image without modifying the original asset."""
+    from PIL import Image, ImageOps
+    source = Path(source)
+    if source.stat().st_size > 20 * 1024 * 1024:
+        return None
+    with Image.open(source) as image:
+        if image.format == 'GIF' or getattr(image, 'is_animated', False):
+            return None
+        image = ImageOps.exif_transpose(image)
+        image.thumbnail((1280, 1280), Image.Resampling.LANCZOS)
+        alpha = 'A' in image.getbands() or 'transparency' in image.info
+        output = io.BytesIO()
+        if alpha:
+            image.convert('RGBA').save(output, format='PNG', optimize=True)
+        else:
+            image.convert('RGB').save(output, format='JPEG', quality=80, optimize=True)
+        result = output.getvalue()
+        return result if len(result) < source.stat().st_size else None
+
+
 def save_wav(audio, directory):
     if not isinstance(audio, bytes) or len(audio) > 3 * 1024 * 1024:
         raise ValueError('audio_too_large')

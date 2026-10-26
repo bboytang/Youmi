@@ -10,7 +10,7 @@ from astrbot.api import logger
 from astrbot.api.event import AstrMessageEvent, filter
 from astrbot.api.star import Context, Star
 from astrbot.core.agent.message import Message, TextPart
-from astrbot.core.message.components import Plain, Record
+from astrbot.core.message.components import Image, Plain, Record
 from astrbot.core.message.message_event_result import MessageChain
 from astrbot.core.pipeline.context_utils import call_event_hook
 from astrbot.core.provider.entities import ProviderRequest
@@ -18,7 +18,7 @@ from astrbot.core.star.star_handler import EventType
 
 from .client import BridgeClient, BridgeError
 from .admin import AdminClient, ADMIN_INSTRUCTION
-from .media import original_text, prune_media, save_wav, selected_image_file, source_kind
+from .media import compress_image, original_text, prune_media, save_wav, selected_image_file, source_kind
 from .turn_state import CompletionOutbox, CONTEXT_MARKER, TurnState, merge_system
 
 
@@ -169,6 +169,18 @@ class YoumiConnector(Star):
     def supports(self, event):
         return (event.get_platform_id() == self.config['qq_platform_id']
                 and not event.get_group_id() and event.get_platform_name() in {'aiocqhttp', 'cron'})
+
+    async def compress_outgoing(self, image):
+        try:
+            ref = image.path or image.file or ''
+            if not isinstance(ref, str) or ref.startswith(('http://', 'https://', 'base64://', 'data:')):
+                return image
+            path = await image.convert_to_file_path()
+            compressed = await asyncio.to_thread(compress_image, path)
+            return Image.fromBytes(compressed) if compressed else image
+        except Exception:
+            logger.warning('Youmi image compression unavailable; sending original')
+            return image
 
     @filter.event_message_type(filter.EventMessageType.ALL, priority=100000)
     async def message(self, event: AstrMessageEvent):
@@ -402,6 +414,7 @@ class YoumiConnector(Star):
                         if attach:
                             for image in prepared['images']:
                                 from astrbot.core.utils.astrbot_path import get_astrbot_temp_path
+                                image = await self.compress_outgoing(image)
                                 path = await asyncio.to_thread(selected_image_file, await image.convert_to_file_path(),
                                                                get_astrbot_temp_path())
                                 owned.append(str(path))
@@ -522,7 +535,8 @@ class YoumiConnector(Star):
             # own final dispatch because RespondStage swallows send exceptions.
             # Record is sent separately just as in that pinned native stage.
             records = [part for part in result.chain if isinstance(part, Record)]
-            remaining = [part for part in result.chain if not isinstance(part, Record)]
+            remaining = [await self.compress_outgoing(part) if isinstance(part, Image) else part
+                         for part in result.chain if not isinstance(part, Record)]
             already = event.get_extra('_send_message_to_user_current_session_plain_texts', [])
             for record in records:
                 await event.send(MessageChain([record]))
@@ -540,6 +554,11 @@ class YoumiConnector(Star):
                     await event.send(MessageChain(other_parts))
             state.sent = True
             # Preserve Meme pending image delivery and other native after hooks.
+            pending = event.get_extra('meme_manager_pending_images')
+            if pending:
+                event.set_extra('meme_manager_pending_images',
+                                [await self.compress_outgoing(part) if isinstance(part, Image) else part
+                                 for part in pending])
             await call_event_hook(event, EventType.OnAfterMessageSentEvent)
             await self.complete(state)
         except Exception as error:
