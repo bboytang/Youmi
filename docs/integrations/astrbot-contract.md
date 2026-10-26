@@ -46,6 +46,9 @@ STT失败不伪造ASR原话：Connector以media来源prepare，再check/claim发
 
 `POST /internal/astrbot/manage` 只接受 `protocol_version,bot_uin,sender_uin,conversation_key,request`。重新映射 Scope 并要求 `memory:manage`，不从调用者接受 owner。request.action 仅 `list,update,delete,pause,resume,feature_settings,events,emotion_status`；除 resume 外字段/结果沿用原 `MemoryStore.handle`：update 需 id/content/confirmed，delete 需 id，pause 需 paused(bool)。不允许此接口编辑角色。pause 作用于同 owner 全部客户端。
 
+`POST /internal/astrbot/admin-session` 接受且仅接受 `protocol_version,bot_uin,sender_uin,conversation_key`，不接受客户端传入 owner。验证独立服务 Bearer、当前虚拟设备 Scope 和 `memory:manage`，再核对 bridge 的 `autonomous_admin_owners`，经原 manager server-secret 客户端调用 `/config/youmi-auth/admin-session`。Manager 再次验证快照、虚拟设备、当前启用的超级管理员及 `youmi.autonomous_admin.owners` 显式委托，返回原生 `{token,expires_in}`；Connector 仅在内存使用，不交给模型。委托不自动到期，短期会话每次可重新签发；清空委托、撤销/解绑/禁用仍拒绝下一次操作。此接口不创建聊天回合、记忆或情绪副作用。AstrBot 自身委托签发、工具调用能力及实际部署见[自主管理](autonomous-admin.md)。
+
+
 用户明确“这段别记”时，当前 QQ session 的 memory_suppressed 跨重启持续；不提炼新事实、不提交情绪/事件，不删除已有事实，不改变 App 的全局 paused。`request:{"action":"resume"}` 仅清该 QQ 标志，返回 `{"qq_memory_suppressed":false}`；如果全局仍暂停，需另外 pause off。含糊“忘掉这件事”不删除；明确主题必须唯一匹配才调用现有删除，否则提示用户选择。该隐私开关是事实提炼开关，不等于 AstrBot 原生短会话历史清空。
 
 `POST /internal/astrbot/status`：`protocol_version,turn_token`；仍要求当前有效 Scope，允许查询 expired。返回 `turn_key,status,completion,memory_job`。memory_job 是原 mia_jobs 的 id/state/error_category，未创建则 `{"state":"not_submitted"}`；没有原文/来源载荷。completed 与 job committed 是不同状态。不会因已完成回合而绕过撤销检查。

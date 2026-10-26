@@ -1,0 +1,85 @@
+{
+  "source_sha": "5ad2a240dfe405fe7c43074eb2fdf0413eed85a3",
+  "release_workflow": "https://github.com/bboytang/Youmi/actions/runs/40386166049",
+  "controller_sha256": "3b4fcec653729e67d55afed2bf38a8a3d5fe5b9f915d742e3a97d34051b44c71",
+  "active_handler_path": "/opt/xiaozhi-esp32-server/youmi_companion/astrbot_api.py",
+  "active_handler_sha256": "b9dec04f3082814f3f4debf742b3e0c34508fba488b8784f3dd1ccff92e18613",
+  "images": {
+    "manager": "sha256:f5cdc8392429313657135d7536f8294d703eb3bca4d1cedafa16239ba4b22054",
+    "voice": "sha256:4ad892d76ceecead20973de95748cf2aaf6d6afa682749be6e69a3b1969d5b65"
+  },
+  "jar_entries_verified": 1010,
+  "jar_entries_replaced": 1,
+  "delegation": {
+    "automatic_expiration": false,
+    "revocable": true,
+    "virtual_credential_valid_until": "9999-12-31",
+    "interactive_captcha_used": false
+  },
+  "live_checks": {
+    "youmi_write_read_back": true,
+    "astrbot_write_read_back": true,
+    "temporary_probes_cleaned": true,
+    "owner_only_https_management": true,
+    "actual_agent_called_both_backends": true,
+    "actual_agent_status": "completed",
+    "restart_persistence": true,
+    "interactive_login_needed_after_restart": false,
+    "authoritative_data_unchanged_at_cutover": true,
+    "authoritative_data_unchanged_after_checks": true
+  },
+  "task": {
+    "enabled": true,
+    "cron_expression": "0 * * * *",
+    "has_next_run": true,
+    "real_agent_verified": true
+  },
+  "provider": {
+    "tool_use_enabled": true,
+    "other_settings_unchanged": true
+  },
+  "https_status": {
+    "manager": 200,
+    "astrbot": 200
+  },
+  "service_health": {
+    "xiaozhi-esp32-server": {
+      "running": true,
+      "oom_killed": false,
+      "restart_count": 0
+    },
+    "xiaozhi-esp32-server-web": {
+      "running": true,
+      "oom_killed": false,
+      "restart_count": 0
+    },
+    "youmi-astrbot-fusion-astrbot-1": {
+      "running": true,
+      "oom_killed": false,
+      "restart_count": 0
+    },
+    "youmi-astrbot-fusion-snowluma-1": {
+      "running": true,
+      "oom_killed": false,
+      "restart_count": 0
+    }
+  },
+  "physical_device_validation": "not performed; firmware and hardware configuration not changed",
+  "verification_commit": "0bfdc4dd1d58e6dcb0fcff607a69cd298d14f190",
+  "final_fusion_workflow": "https://github.com/bboytang/Youmi/actions/runs/40388102194",
+  "final_binding_workflow": "https://github.com/bboytang/Youmi/actions/runs/40388102367",
+  "independent_regression": {
+    "vector_capacity": {
+      "passed": false,
+      "failed_size": 10000,
+      "other_sizes_passed": [
+        10,
+        100,
+        1000
+      ],
+      "count_and_bytes_bounded": true,
+      "run_url": "https://github.com/bboytang/Youmi/actions/runs/40384382066",
+      "note": "Synthetic memory capacity gate; memory implementation was not changed in this task. Failure retained, not represented as passed."
+    }
+  }
+}

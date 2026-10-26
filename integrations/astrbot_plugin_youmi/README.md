@@ -1,5 +1,7 @@
 # Youmi Connector
 
+Full owner-authorized autonomous administration is available through `youmi_admin_catalog` and `youmi_admin_request`; configure the local `admin_manifest_file` and both server-side delegation gates following [the administration guide](../../docs/integrations/autonomous-admin.md). The selected chat provider must include `tool_use` in its nonempty `modalities` list; otherwise native AstrBot removes the tools even when they are registered and active. Delegated service sessions avoid interactive dashboard login/captcha, and remain revocable.
+
 For AstrBot v4.29.3 built-in Agent; deployment and scope registration:
 [setup](../../deploy/astrbot-fusion/setup.md). No owner/QQ whitelist/model key/voice setting is accepted by this plugin.
 
