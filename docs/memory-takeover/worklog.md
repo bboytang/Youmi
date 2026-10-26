@@ -130,3 +130,4 @@
 
 - 产品提交 `299fc9947c9ec1d4e30f6adae98f46e2823e4449` 的完整后端 595 项及人设传输通过；双版本中 3.12 的 268 项通过，3.10 在新纳入矩阵的既有 V2 故障测试中失败。
 - `test_reservation_transaction_failure_does_not_call_sdk` 使用 set_authorizer(None) 清理注入，Python 3.10 后续读仍报 not authorized；按其他夹具已有方式改用返回 SQLITE_OK 的回调。保留故障注入、原断言及计量边界，不跳过测试，不修改产品代码或迁移 SQL。待修正提交完整相关 CI 验证。
+- 首个夹具修正提交 `0eb4e066` 的 finally 内缩进漏写，本地单测已报语法错，但串联命令仍继续提交；立即补正缩进，独立确认单测通过后再提交。该提交不能作为验证通过证据。
