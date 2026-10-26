@@ -79,7 +79,7 @@
           <el-tab-pane label="反思设置" name="reflection">
             <el-switch v-model="draft.reflection.enabled" aria-label="启用反思" active-text="启用反思" :disabled="busy" />
             <p>成功对话触发提取，到期后在下一次成功对话整理；没有新对话时不会额外请求模型。</p>
-            <label>整理间隔（秒）<el-input-number v-model="draft.reflection.interval_seconds" aria-label="整理间隔（秒）" :min="60" :max="604800" :disabled="busy" /></label>
+            <label>整理间隔（秒）<el-input-number v-number-aria v-model="draft.reflection.interval_seconds" aria-label="整理间隔（秒）" :min="60" :max="604800" :disabled="busy" /></label>
             <p>最近成功整理：{{ time(state.reflection.last_maintenance_at) }}</p>
             <el-button :disabled="busy || !changed('reflection') || blocked.reflection" @click="saveConfig('reflection')">保存反思设置</el-button>
           </el-tab-pane>
@@ -94,7 +94,7 @@
               <div class="controls">
                 <label>模式<el-select v-model="draft.cognition.dimensions[key].mode" :disabled="busy"><el-option label="固定" value="fixed" /><el-option label="动态" value="dynamic" /></el-select></label>
                 <label v-for="(name, field) in cognitiveFields" :key="field">{{ name }}
-                  <el-input-number v-model="draft.cognition.dimensions[key][field]" :aria-label="label + name" :disabled="busy"
+                  <el-input-number v-number-aria v-model="draft.cognition.dimensions[key][field]" :aria-label="label + name" :disabled="busy"
                     :min="field === 'sensitivity' ? 0 : (key === 'recall' || key === 'impression' ? 1 : 0)"
                     :max="field === 'sensitivity' ? 3 : (key === 'recall' ? 20 : (key === 'impression' ? 10 : 1))" :step=".1" />
                 </label>
@@ -110,9 +110,9 @@
             <div class="controls">
               <el-checkbox v-model="draft.emotion_linkage.memory_to_emotion" :disabled="busy">记忆影响情感</el-checkbox>
               <el-checkbox v-model="draft.emotion_linkage.emotion_to_memory" :disabled="busy">情感影响召回</el-checkbox>
-              <label>记忆刺激权重<el-input-number v-model="draft.emotion_linkage.stimulus_weight" aria-label="记忆刺激权重" :min="0" :max="1" :step=".05" :disabled="busy" /></label>
-              <label>情感排序影响上限<el-input-number v-model="draft.emotion_linkage.ranking_limit" aria-label="情感排序影响上限" :min="0" :max=".1" :step=".01" :disabled="busy" /></label>
-              <label>刺激冷却（秒）<el-input-number v-model="draft.emotion_linkage.cooldown_seconds" aria-label="刺激冷却（秒）" :min="0" :max="2592000" :disabled="busy" /></label>
+              <label>记忆刺激权重<el-input-number v-number-aria v-model="draft.emotion_linkage.stimulus_weight" aria-label="记忆刺激权重" :min="0" :max="1" :step=".05" :disabled="busy" /></label>
+              <label>情感排序影响上限<el-input-number v-number-aria v-model="draft.emotion_linkage.ranking_limit" aria-label="情感排序影响上限" :min="0" :max=".1" :step=".01" :disabled="busy" /></label>
+              <label>刺激冷却（秒）<el-input-number v-number-aria v-model="draft.emotion_linkage.cooldown_seconds" aria-label="刺激冷却（秒）" :min="0" :max="2592000" :disabled="busy" /></label>
             </div>
             <p>当前默认召回保持原算法，情感排序调整仅用于影子检索。保存联动设置不会切换记忆引擎。</p>
             <el-button :disabled="busy || !changed('emotion_linkage') || blocked.emotion_linkage" @click="saveConfig('emotion_linkage')">保存联动设置</el-button>
@@ -141,6 +141,15 @@ const copy = value => JSON.parse(JSON.stringify(value));
 const groups = ['reflection', 'cognition', 'emotion_linkage'];
 export default {
   name: 'YoumiMemorySystem', components: { HeaderBar },
+  directives: {
+    numberAria: {
+      componentUpdated(element) {
+        // ElementUI 2 sets this only on mount, including an initial busy state.
+        const input = element.querySelector('input');
+        if (input) input.setAttribute('aria-disabled', String(input.disabled));
+      }
+    }
+  },
   data() {
     return { agents: [], agentId: '', state: null, listing: null, artifacts: [], detail: null, edit: null,
       originalEdit: '', draft: {}, originals: {}, blocked: {}, factBlocked: false, selected: [],

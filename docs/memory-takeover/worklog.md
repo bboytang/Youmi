@@ -344,3 +344,5 @@
 - 7e3a321d完整后端40285681877的736项中，既有QQ联动重复提交用例在墙钟跨秒时joy投影恢复为21.9992而非精确22，其他735项通过。此用例验证成功幂等而非时间恢复，原测试未固定store.clock；仅在本QQ联动夹具设置稳定合成时钟，保留精确值/单次冷却/失败不写断言，不改生产情感恢复逻辑或放宽精度。
 
 - 相关性7e3a321d第二轮报告/tmp/youmi-quality-second-results：两原负例集及新增8例均100%空召回、独立32正例完整/首条100%；回归完整与旧同97.92%，首条95.83%低于旧97.92%，门槛继续失败。唯一排序差距两条RRF逐位相等却按ID决定，而正确条目BM25证据更强；复算与修复契约已写quality-migration.md。新增交换ID的等分测试在原实现失败；候选仅等分时按BM25证据、再稳定ID，不改非等分/参数/阈值或冻结答案。许可修改说明已同步，等待原集及扩展集准确复验。
+
+- 前端第二轮7e3a321d/40285681860为196通过/有效值编辑场景4浏览器失败；真实input无disabled但aria-disabled仍true。核对固定ElementUI v2.15.14官方packages/input-number/src/input-number.vue：mounted设置aria-disabled，而updated只更新aria-valuenow，页面初次busy=true后解除禁用未同步ARIA。需在本页面数字控件componentUpdated同步实际input.disabled到aria-disabled，保留浏览器真实fill和ARIA断言，不能用force绕过。既有来源跳转已全部恢复通过。

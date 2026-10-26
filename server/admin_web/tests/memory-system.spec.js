@@ -357,6 +357,8 @@ test('cognition shows bounded effective values separately from editable baseline
   await setup(page);
   await page.getByRole('tab', { name: '认知设置', exact: true }).click();
   await expect(page.getByText('当前有效值 7', { exact: false })).toBeVisible();
-  await page.getByLabel('召回基线', { exact: true }).locator('input').fill('9');
+  const baseline = page.getByLabel('召回基线', { exact: true }).locator('input');
+  await expect(baseline).toHaveAttribute('aria-disabled', 'false');
+  await baseline.fill('9');
   await expect(page.getByText('当前有效值 7', { exact: false })).toBeVisible();
 });
