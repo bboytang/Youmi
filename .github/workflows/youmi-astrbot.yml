@@ -86,6 +86,12 @@ jobs:
       - run: |
           cd "${YOUMI_REPO_ROOT:-$GITHUB_WORKSPACE}"
           python scripts/ci/verify_astrbot_fusion.py manager
+      - uses: actions/upload-artifact@v4
+        if: ${{ !env.ACT }}
+        with:
+          name: autonomous-admin-manager-current
+          path: ${{ runner.temp }}/youmi-fusion-sources/manager-candidate/main/manager-api/target/classes/xiaozhi/modules/device/controller/YoumiDeviceAuthorizationController.class
+          if-no-files-found: error
 
   manager-legacy:
     runs-on: ubuntu-latest
