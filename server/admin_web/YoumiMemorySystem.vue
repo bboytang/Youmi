@@ -70,9 +70,11 @@
           </el-tab-pane>
           <el-tab-pane label="画像与笔记" name="artifacts">
             <p>整理内容来自当前有效的完整事实原句；合并、退役候选只供核对，不会自动执行。</p>
+            <p>以下是内容分类，标题无需点击。条目由成功对话后的反思自动整理，满足整理条件时才可能生成；此页可查看证据或删除条目。</p>
             <p v-if="!state.features.memory_recall">回复时使用记忆已关闭，整理视图暂时隐藏，原数据保留。</p>
             <section v-for="(label, kind) in kinds" :key="kind">
               <h2>{{ label }}</h2>
+              <p v-if="state.features.memory_recall && !artifacts.some(row => row.kind === kind)">暂无{{ label }}条目。</p>
               <article v-for="item in artifacts.filter(row => row.kind === kind)" :key="item.id">
                 <h3>{{ item.title }}</h3><p>{{ item.body }}</p>
                 <p v-if="item.preview_only">仅候选，尚未执行</p>
