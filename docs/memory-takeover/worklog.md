@@ -326,3 +326,8 @@
 - 最终本地完整兼容410项通过（53.952秒），页面测试JS语法和git diff --check通过；实际四浏览器与精确安装验证须以本次提交GitHub结果为准。
 
 - 6B2精确5c5d3726：双Python410项通过；完整后端40284348097的734项中，既有test_outer_timeout_retains_slot_until_actual_model_call_finishes失败（active=0）。该用例从native线程启动前计30ms，却断言模型已经进入；负载下准备/授权阶段先超时，断言前置条件不成立。修复测试为明确等待合成SDK入口后再启动其30ms等待，继续运行真实NativeLane/worker超时、名额保留与关闭断言，不改变产品超时/请求预算。原失败保留，不盲目重跑。
+
+
+## 2026-10-26：6C1冻结对照实现
+
+先提交quality-migration.md（9cbd967a），再新增verify_youmi_memory_quality.py。沿用已冻结V5事实/P13独立查询、原旧引擎及BGE参数，实际安装包同库顺序对照旧/新4条检索。记录逐例ID、canonical不变、owner/active/原句/快照/上限、质量三指标、耗时/峰值内存和精确SHA；新质量不得低于旧基线及原最低门槛，失败保留报告并使CI失败。未改查询/答案、不访问生产或增加模型调用。新脚本已语法检查，真实BGE评估待准确CI，不能把新增检查当通过。
