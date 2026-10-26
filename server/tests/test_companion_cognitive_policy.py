@@ -36,7 +36,7 @@ class CognitivePolicyTests(unittest.IsolatedAsyncioTestCase):
             dict(action='configure', enabled=True, dimensions=current['dimensions'], version=current['version']))
         await YoumiReflectionPolicy(self.store).manage(self.scope, self.policy,
             dict(action='configure', enabled=True, interval_seconds=60, version=0))
-        self.jobs = JobStore(self.store, policy_version=2)
+        self.jobs = JobStore(self.store)
         self.proposal = dict(reflection_version=1, memory_actions=[], cognitive_adjustment=dict(code='1100', quote='我喜欢蓝色'))
         async def resolve(scope):
             def propose(sources, context):

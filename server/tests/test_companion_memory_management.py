@@ -46,7 +46,7 @@ class MemoryManagementTests(unittest.IsolatedAsyncioTestCase):
         self.assertFalse(state['emotion_linkage']['enabled'])
         self.assertFalse(state['cognition']['enabled'])
         self.assertEqual(state['capabilities'], dict(engine='legacy', emotion_ranking='shadow_only',
-            automatic_cognition=False, automatic_candidate_execution=False, permanent_memories=True))
+            automatic_cognition=True, automatic_candidate_execution=False, permanent_memories=True))
         self.assertNotIn('owner', state['reflection'])
         self.assertEqual(len(self.calls), 2)
 
@@ -132,7 +132,7 @@ class MemoryManagementTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual((await self.call({'action': 'emotion_linkage', 'operation': command})).status, 409)
         self.assertEqual(emotional_system.status(self.store, OWNER), original)
         self.assertEqual(status(self.store, OWNER), persona)
-        self.assertFalse((await self.data({'action': 'status'}))['capabilities']['automatic_cognition'])
+        self.assertTrue((await self.data({'action': 'status'}))['capabilities']['automatic_cognition'])
 
     async def test_cognition_configuration_and_energy_adjustment_use_separate_versions(self):
         state = await self.data({'action': 'cognition', 'operation': {'action': 'status'}})

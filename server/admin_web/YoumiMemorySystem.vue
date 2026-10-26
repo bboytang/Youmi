@@ -85,7 +85,8 @@
           </el-tab-pane>
           <el-tab-pane label="认知设置" name="cognition">
             <p>四维认知与情感分别管理。固定模式保持基线，动态模式按能量调整；表达和创造倾向在模型预算内进入共享回复上下文。</p>
-            <p v-if="!state.capabilities.automatic_cognition">当前仍为旧引擎任务策略，自动能量尚未启用；召回数量只在新引擎或影子检索中生效。</p>
+            <p v-if="!state.capabilities.automatic_cognition">当前后端未提供自动认知能力。</p>
+            <p v-if="state.capabilities.engine === 'legacy'">当前召回仍使用旧引擎；认知召回数量只在新引擎或影子检索中生效。</p>
             <p v-if="!state.reflection.enabled">启用反思后，动态能量才能随成功反思建议更新。</p>
             <el-switch v-model="draft.cognition.enabled" aria-label="启用认知配置" active-text="启用认知配置" :disabled="busy" />
             <article v-for="(label, key) in cognitiveNames" :key="key">

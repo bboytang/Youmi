@@ -20,7 +20,7 @@ async function setup(page, query = 'agentId=first', cleanup = null) {
       emotion_linkage: { enabled: false, version: 0, memory_to_emotion: true, emotion_to_memory: true,
         stimulus_weight: .25, ranking_limit: .1, cooldown_seconds: 86400 },
       cognition: { enabled: false, version: 0, dimensions: clone(dimensions), energy: { recall: 0, impression: 0, expression: 0, creativity: 0 }, effective: { recall: 7, impression: 3, expression: .5, creativity: .5 } },
-      capabilities: { engine: 'legacy', automatic_cognition: false, permanent_memories: true },
+      capabilities: { engine: 'legacy', automatic_cognition: true, permanent_memories: true },
       memories: [
         { id: agent + '-blue', content: agent + ' 我喜欢蓝色 <script>unsafe</script>', confirmed: true, pinned: false, state: 'active', content_version: 1, evidence_version: 2 },
         { id: agent + '-green', content: agent + ' 我喜欢绿色', confirmed: true, pinned: false, state: 'active', content_version: 1, evidence_version: 2 }
@@ -186,7 +186,7 @@ test('mobile cognition controls fit and all four dimensions remain editable', as
   await page.setViewportSize({ width: 390, height: 844 });
   await setup(page);
   await page.getByRole('tab', { name: '认知设置', exact: true }).click();
-  await expect(page.getByText('当前仍为旧引擎任务策略，自动能量尚未启用', { exact: false })).toBeVisible();
+  await expect(page.getByText('当前召回仍使用旧引擎', { exact: false })).toBeVisible();
   for (const label of ['召回', '印象', '表达', '创造']) await expect(page.getByLabel(label + '基线', { exact: true })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true);
 });

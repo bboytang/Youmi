@@ -331,3 +331,5 @@
 ## 2026-10-26：6C1冻结对照实现
 
 先提交quality-migration.md（9cbd967a），再新增verify_youmi_memory_quality.py。沿用已冻结V5事实/P13独立查询、原旧引擎及BGE参数，实际安装包同库顺序对照旧/新4条检索。记录逐例ID、canonical不变、owner/active/原句/快照/上限、质量三指标、耗时/峰值内存和精确SHA；新质量不得低于旧基线及原最低门槛，失败保留报告并使CI失败。未改查询/答案、不访问生产或增加模型调用。新脚本已语法检查，真实BGE评估待准确CI，不能把新增检查当通过。
+
+- 对照真实start_worker入口发现上一条“旧引擎任务策略使自动认知未启用”的判断不准确：JobStore默认policy_version=2，原生/QQ共用start_worker均使用默认构造；已通过同一次实际SDK认知验证。因此capabilities.automatic_cognition应为true，是否运行仍由该智能体认知/反思开关和成功任务决定；旧召回引擎只限制recall的正式行为，不阻止自动能量。改为默认JobStore构造回归并修正页面说明，未改变既有任务策略或自动打开生产开关。

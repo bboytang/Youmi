@@ -52,7 +52,7 @@ def _read(store, owner, command):
                 reflection=reflection, emotion_linkage=linkage_settings(store, owner),
                 cognition=cognitive_status(store, owner),
                 capabilities=dict(engine='legacy', emotion_ranking='shadow_only',
-                    automatic_cognition=False, automatic_candidate_execution=False, permanent_memories=True))
+                    automatic_cognition=True, automatic_candidate_execution=False, permanent_memories=True))
         _fields(command, {'action', 'id'} if action == 'detail' else {'action'}, {'offset'})
         offset = _offset(command)
         base = ('SELECT m.id,m.category,m.content,m.confirmed,m.created_at,m.updated_at,'
