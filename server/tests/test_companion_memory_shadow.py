@@ -264,7 +264,7 @@ class ShadowRetrievalTests(unittest.IsolatedAsyncioTestCase):
         installed.mkdir(parents=True)
         install(root, {})
         package = installed / 'youmi_companion'
-        for name in ['memory_repository.py', 'memory_shadow.py', 'memory_search.py',
+        for name in ['memory_repository.py', 'memory_shadow.py', 'memory_search.py', 'memory_index_cache.py',
                      'YOUMI_MEMORY_LICENSE', 'YOUMI_MEMORY_NOTICE.md', 'requirements-memory-shadow.txt']:
             self.assertTrue((package / name).is_file(), name)
         self.assertIn('GNU GENERAL PUBLIC LICENSE', (package / 'YOUMI_MEMORY_LICENSE').read_text())

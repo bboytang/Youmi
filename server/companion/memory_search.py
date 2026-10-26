@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: GPL-3.0-only
 # Adapted from astrbot_plugin_angel_memory by kawayiYokami and contributors.
 # Modified for Youmi, 2026-10-25. See YOUMI_MEMORY_NOTICE.md and YOUMI_MEMORY_LICENSE.
-"""Angel Memory CJK/BM25/RRF core adapted for an ephemeral Youmi shadow index."""
+"""Angel Memory CJK/BM25/RRF core for RAM or explicit shadow disk evaluation."""
 
 from __future__ import annotations
 
@@ -114,25 +114,34 @@ def _build_any_terms_query(terms: List[str]) -> str:
 
 
 class YoumiBM25Search:
-    """One in-memory index, rebuilt from a single authorized owner snapshot."""
+    """One owner snapshot; disk callers serialize all access through the cache."""
 
-    def __init__(self):
+    def __init__(self, path=None):
         builder = tantivy.SchemaBuilder()
         builder.add_text_field("item_id", stored=True, tokenizer_name="raw")
         builder.add_text_field("tags_text", stored=False)
         builder.add_text_field("judgment_text", stored=False)
         self._schema = builder.build()
-        self._index = tantivy.Index(self._schema)
+        self._index = tantivy.Index(self._schema, path=str(path)) if path is not None else tantivy.Index(self._schema)
+
+    @staticmethod
+    def _document(row):
+        return tantivy.Document(item_id=[row['id']],
+            tags_text=[tokenize_for_index(' '.join(row['tags']))],
+            judgment_text=[tokenize_for_index(row['judgment'])])
+
+    def append(self, rows):
+        writer = self._index.writer(heap_size=15_000_000, num_threads=1)
+        for row in rows:
+            writer.add_document(self._document(row))
+        writer.commit()
+        self._index.reload()
 
     def rebuild(self, rows):
         writer = self._index.writer(heap_size=15_000_000, num_threads=1)
         writer.delete_all_documents()
         for row in rows:
-            writer.add_document(tantivy.Document(
-                item_id=[row["id"]],
-                tags_text=[tokenize_for_index(" ".join(row["tags"]))],
-                judgment_text=[tokenize_for_index(row["judgment"])],
-            ))
+            writer.add_document(self._document(row))
         writer.commit()
         # A committed writer alone did not make a new reader immediately visible
         # in the pinned upstream experiment.

@@ -26,3 +26,10 @@ Modifications by Youmi contributors, 2026-10-25:
 - Expose no original SQLite writer, public scope fallback, external reranker or model provider.
 
 The copied/adapted code in `memory_search.py` is supplied under GPL version 3; the complete upstream license is included as `YOUMI_MEMORY_LICENSE`. This notice does not relicense that code as MIT. Preserve this notice, the license and source when distributing it. Confirm the applicable combined-work and distribution obligations before a release; shadow support is not production enablement.
+
+Additional modifications, 2026-10-26: optional caller-selected disk index path and
+append operation reuse the same schema/tokenization/scoring. The separate Youmi
+cache coordinator reconciles authorized canonical snapshots and crash markers;
+it does not restore the upstream database, public scope, or directory management.
+Disk support is explicit synthetic-data shadow evaluation only, with no default
+production path or default reply activation. See docs/memory-takeover/index-recovery.md.

@@ -146,6 +146,23 @@ async def verify(directory, report):
             assert await runtime.retrieve(scope, policy, query) == default_before
             report['checks'].update(versioned_memory_emotion=True, cooldown_committed_once=True,
                 emotion_ranking_bounded=True, legacy_recall_still_unchanged=True)
+            # Explicit synthetic-only disk mode; the normal reply factory has
+            # no cache directory and remains on the original engine.
+            from youmi_companion.memory_index_cache import partition
+            disk_root = Path(folder) / 'shadow-evaluation'
+            disk = YoumiMemoryRuntime(index, shadow_cache_dir=disk_root)
+            before_disk = list(store.db.iterdump())
+            initial = await disk.shadow_retrieve(scope, policy, '练舞轻音乐')
+            restarted = YoumiMemoryRuntime(index, shadow_cache_dir=disk_root)
+            assert await restarted.shadow_retrieve(scope, policy, '练舞轻音乐') == initial
+            cache_path = partition(disk_root, Path(folder) / 'canonical.sqlite3', scope.owner, scope.persona_id)
+            (cache_path / 'dirty.json').write_text('{}')
+            assert await restarted.shadow_retrieve(scope, policy, '练舞轻音乐') == initial
+            assert not (cache_path / 'dirty.json').exists()
+            assert list(store.db.iterdump()) == before_disk
+            assert await runtime.retrieve(scope, policy, query) == default_before
+            report['checks'].update(persistent_shadow_reopen=True, persistent_shadow_dirty_recovery=True,
+                persistent_shadow_canonical_unchanged=True)
         finally:
             store.close()
 
