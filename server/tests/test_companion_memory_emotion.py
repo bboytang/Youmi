@@ -440,7 +440,10 @@ class NativeLinkCompletionTests(unittest.IsolatedAsyncioTestCase):
 
 
 class QQLinkCompletionTests(unittest.IsolatedAsyncioTestCase):
-    asyncSetUp = bridge_fixture.BridgeHTTPTests.asyncSetUp
+    async def asyncSetUp(self):
+        await bridge_fixture.BridgeHTTPTests.asyncSetUp(self)
+        # Completion idempotency uses one instant; recovery has separate tests.
+        self.store.clock = lambda: 1800000000
     asyncTearDown = bridge_fixture.BridgeHTTPTests.asyncTearDown
     post = bridge_fixture.BridgeHTTPTests.post
     prepare = bridge_fixture.BridgeHTTPTests.prepare
