@@ -202,6 +202,41 @@ async def test_voice_and_text_native_onebot_serialization_and_cleanup(setup, hoo
 
 
 @pytest.mark.asyncio
+async def test_voice_input_reply_to_voice_sends_voice_without_duplicate_text(setup, hooks):
+    connector, meme, event, bot, sent = setup
+    connector.config['text_voice_policy'] = 'reply_to_voice'
+    event.set_extra('youmi_turn', TurnState(connector.client.prepared, 'asr'))
+    await final_reply(setup, '你好')
+    segments = [part for call in sent for part in call['message']]
+    assert [part['type'] for part in segments] == ['record']
+    assert len([call for call in connector.client.calls if call[0] == 'complete']) == 1
+    assert not list(connector.directory.glob('youmi-*.wav'))
+
+
+@pytest.mark.asyncio
+async def test_segmented_reply_sends_each_sentence_as_a_separate_message(setup, hooks):
+    connector, meme, event, bot, sent = setup
+    connector.context.get_config = lambda *args, **kwargs: {'platform_settings': {'segmented_reply': {
+        'enable': True, 'words_count_threshold': 150, 'regex': r'.*?[。？！~…]+|.+$'}}}
+    event.set_extra('youmi_turn', TurnState(connector.client.prepared, 'text'))
+    await final_reply(setup, '第一句。第二句！第三句？')
+    assert [[part['text'] for part in call['message']] for call in sent] == [
+        ['第一句。'], ['第二句！'], ['第三句？']]
+    assert len([call for call in connector.client.calls if call[0] == 'complete']) == 1
+
+
+@pytest.mark.asyncio
+async def test_segmented_reply_splits_newline_separated_sentences(setup, hooks):
+    connector, meme, event, bot, sent = setup
+    connector.context.get_config = lambda *args, **kwargs: {'platform_settings': {'segmented_reply': {
+        'enable': True, 'words_count_threshold': 150, 'regex': r'.*?[。？！~…]+|.+$'}}}
+    event.set_extra('youmi_turn', TurnState(connector.client.prepared, 'text'))
+    await final_reply(setup, '第一句\n第二句\n第三句')
+    assert [[part['text'] for part in call['message']] for call in sent] == [
+        ['第一句'], ['第二句'], ['第三句']]
+
+
+@pytest.mark.asyncio
 async def test_send_exception_is_failed_and_never_successful_completion(setup, hooks):
     connector, meme, event, bot, sent = setup
     bot.send_private_msg.side_effect = RuntimeError('fixture QQ offline')

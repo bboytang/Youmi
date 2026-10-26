@@ -3,6 +3,7 @@
 import asyncio
 import json
 from pathlib import Path
+import re
 import uuid
 
 from astrbot.api import logger
@@ -39,6 +40,34 @@ class YoumiConnector(Star):
             self.retry_task.cancel()
             await asyncio.gather(self.retry_task, return_exceptions=True)
         await self.client.close()
+
+    def _segmented_reply(self, text, event):
+        try:
+            config = self.context.get_config(event.unified_msg_origin)
+        except (AttributeError, TypeError, ValueError):
+            config = self.context.get_config()
+        settings = config.get('platform_settings', {}).get('segmented_reply', {})
+        if not settings.get('enable'):
+            return [text]
+        threshold = settings.get('words_count_threshold', 150)
+        if isinstance(threshold, int) and threshold > 0 and len(text) >= threshold:
+            return [text]
+        default_pattern = r'.*?[。？！~…]+|.+$'
+        pattern = settings.get('regex') or default_pattern
+        if pattern == default_pattern:
+            pattern = r'.*?(?:[。？！~…]+|\n+)|.+$'
+        try:
+            segments = re.findall(pattern, text)
+        except re.error:
+            logger.warning('Invalid AstrBot segmented reply regex; using the default')
+            segments = re.findall(r'.*?(?:[。？！~…]+|\n+)|.+$', text)
+        cleanup = settings.get('content_cleanup_rule', '')
+        if cleanup:
+            try:
+                segments = [re.sub(cleanup, '', segment) for segment in segments]
+            except re.error:
+                logger.warning('Invalid AstrBot segmented reply cleanup rule; keeping punctuation')
+        return [segment for segment in segments if segment]
 
     def supports(self, event):
         return (event.get_platform_id() == self.config['qq_platform_id']
@@ -383,6 +412,8 @@ class YoumiConnector(Star):
                     audio = await self.client.call('tts', {'turn_token': state.prepared['turn_token'], 'text': visible})
                     audio_path = save_wav(audio, self.directory)
                     result.chain.append(Record.fromFileSystem(str(audio_path)))
+                    if policy == 'reply_to_voice' and state.source_kind == 'asr':
+                        result.chain[:] = [part for part in result.chain if not isinstance(part, Plain)]
                 except Exception:
                     logger.warning('Youmi TTS unavailable; using checked text')
             state.components = list(dict.fromkeys(str(part.type.value).lower() for part in result.chain))
@@ -398,7 +429,17 @@ class YoumiConnector(Star):
             for record in records:
                 await event.send(MessageChain([record]))
             if remaining and not (visible.strip() in already and all(isinstance(part, Plain) for part in remaining)):
-                await event.send(MessageChain(remaining))
+                plain_text = ''.join(part.text for part in remaining if isinstance(part, Plain))
+                segments = self._segmented_reply(plain_text, event) if plain_text else [plain_text]
+                if len(segments) == 1:
+                    await event.send(MessageChain(remaining))
+                else:
+                    other_parts = [part for part in remaining if not isinstance(part, Plain)]
+                    for index, segment in enumerate(segments):
+                        parts = [Plain(segment)]
+                        if index == len(segments) - 1:
+                            parts.extend(other_parts)
+                        await event.send(MessageChain(parts))
             state.sent = True
             # Preserve Meme pending image delivery and other native after hooks.
             await call_event_hook(event, EventType.OnAfterMessageSentEvent)
