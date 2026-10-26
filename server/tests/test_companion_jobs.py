@@ -115,8 +115,9 @@ class JobTests(unittest.IsolatedAsyncioTestCase):
     async def test_outer_timeout_retains_slot_until_actual_model_call_finishes(self):
         from server.companion.model_requests import ModelRequestGate
         gate = ModelRequestGate()
-        release = threading.Event()
+        release, entered = threading.Event(), threading.Event()
         def response(*args):
+            entered.set()
             release.wait(2)
             return '{"memories":[]}'
         provider = SimpleNamespace(response_no_stream=response, client=SimpleNamespace(close=Mock()))
@@ -124,7 +125,18 @@ class JobTests(unittest.IsolatedAsyncioTestCase):
             return LLMMemoryExtractor(lambda: provider)
         self.worker.resolve = resolve
         self.worker.extraction_timeout = .03
-        with patch('server.companion.extraction.model_requests', gate):
+        original_wait_for = asyncio.wait_for
+        async def wait_after_sdk_entry(future, timeout):
+            if timeout == self.worker.extraction_timeout:
+                # This case exercises timeout after SDK entry, not a deadline
+                # that may expire while a loaded runner prepares the request.
+                deadline = time.monotonic() + 1
+                while not entered.is_set():
+                    self.assertLess(time.monotonic(), deadline, 'Synthetic SDK did not start')
+                    await asyncio.sleep(.001)
+            return await original_wait_for(future, timeout)
+        with patch('server.companion.extraction.model_requests', gate), patch(
+                'server.companion.jobs.asyncio.wait_for', side_effect=wait_after_sdk_entry):
             try:
                 admitted = await self.worker.submit(self.event())
                 await self.worker.run_once()
