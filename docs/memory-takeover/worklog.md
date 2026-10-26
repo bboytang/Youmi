@@ -75,3 +75,11 @@
 
 - 产品提交 `39fb95b871dd74a051afbfa26863f41edd3a4b3a` 已推送；[双版本检查](https://github.com/bboytang/Youmi/actions/runs/40247944101) 各 177 项通过；[真实向量链路](https://github.com/bboytang/Youmi/actions/runs/40247944077)、绑定授权和 Manager 基线通过。
 - [完整后端](https://github.com/bboytang/Youmi/actions/runs/40247944996) 跑到 533 项，其中一个既有 V6 人物迁移夹具未移除 V11 表，模拟旧库后再次迁移时重复建表。补用相同历史夹具清理函数，并将人物测试加入双版本矩阵；生产迁移 SQL 不修改、不放宽。
+
+### 2026-10-26 — 步骤 2B 验收完成与交接
+
+- 最终验证提交 `e2d6627528dde37e3d704cc72604068b9946c73a`，包含产品代码 `39fb95b8` 及历史夹具修正；准确链接与验证范围见 verification.md。
+- [双版本矩阵](https://github.com/bboytang/Youmi/actions/runs/40248324979) Python 3.10/3.12 各 189 项通过；[完整后端](https://github.com/bboytang/Youmi/actions/runs/40248324921) 533 项及人设传输通过。
+- [实际安装与真实向量链路](https://github.com/bboytang/Youmi/actions/runs/40248335094)、[绑定授权](https://github.com/bboytang/Youmi/actions/runs/40248334937)、[Manager 基线](https://github.com/bboytang/Youmi/actions/runs/40248335099) 全部通过。
+- V1–V10 SQL 原文未改；最终 diff 已检查，原有 10 个用户修改文件及 YOUMI_ASTRBOT/ 保留未提交。V11 仅在合成测试/CI 候选中运行，生产数据库未升级、引擎未切换，没有新增生产备份或真实消息。
+- 步骤 2 存储与检索适配阶段验收完成，不等于完整记忆系统接管完成。下一步 3：受来源/版本/授权约束的反思提案、画像、笔记和维护编排。保持写入仅在完成回合后，认知调整不能直接改写 51 维情感或人设。
