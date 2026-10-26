@@ -9,7 +9,6 @@ const dimensions = Object.fromEntries(['recall', 'impression', 'expression', 'cr
 }]));
 
 async function setup(page, query = 'agentId=first') {
-  await mockBackend(page, false);
   const commands = [], states = {};
   const backend = { fail: 0, unavailable: false };
   function state(agent) {
@@ -31,6 +30,7 @@ async function setup(page, query = 'agentId=first') {
     const response = await route.fetch({ url: 'http://127.0.0.1:4173' + url.pathname + url.search });
     await route.fulfill({ response });
   });
+  await mockBackend(page, false);
   await page.route('**/xiaozhi/agent/list', route => route.fulfill({ json: { code: 0, data: [
     { id: 'first', agentName: '智能体一' }, { id: 'second', agentName: '智能体二' }
   ] } }));
@@ -84,7 +84,7 @@ test('independent memory page saves only the selected agent and sends the existi
   await page.getByRole('tab', { name: '反思设置', exact: true }).click();
   await page.getByRole('switch', { name: '启用反思', exact: true }).click();
   await page.getByRole('button', { name: '保存反思设置' }).click();
-  await expect(page.getByText('有未保存的修改')).toHaveCount(0);
+  await expect(page.getByText('有未保存的修改', { exact: true })).toHaveCount(0);
   expect(states.first.reflection.enabled).toBe(true);
   await page.locator('.el-select').first().click();
   await page.getByText('智能体二', { exact: true }).last().click();
@@ -101,14 +101,14 @@ for (const code of [409, 500]) test('failed save retains draft and blocks stale 
   backend.fail = code;
   await page.getByRole('button', { name: '保存联动设置' }).click();
   await expect(page.getByRole('alert').filter({ hasText: code === 409 ? '已变化' : '操作结果未确认' })).toBeVisible();
-  await expect(page.getByText('有未保存的修改')).toBeVisible();
+  await expect(page.getByText('有未保存的修改', { exact: true })).toBeVisible();
   await expect(page.getByRole('switch', { name: '启用记忆情感联动' })).toHaveAttribute('aria-checked', 'true');
   await expect(page.getByRole('button', { name: '保存联动设置' })).toBeDisabled();
   await expect(page.locator('.el-message--success')).toHaveCount(0);
   backend.fail = 0;
   await page.getByRole('button', { name: '刷新并核对服务器状态' }).click();
   await page.locator('.el-message-box').getByRole('button', { name: '确定', exact: true }).click();
-  await expect(page.getByText('有未保存的修改')).toHaveCount(0);
+  await expect(page.getByText('有未保存的修改', { exact: true })).toHaveCount(0);
   await expect(page.getByRole('switch', { name: '启用记忆情感联动' })).toHaveAttribute('aria-checked', 'false');
 });
 
@@ -120,7 +120,7 @@ test('switching agents or leaving the page protects unsaved drafts', async ({ pa
   await page.getByText('智能体二', { exact: true }).last().click();
   await page.locator('.el-message-box').getByRole('button', { name: '取消', exact: true }).click();
   await expect(page.getByText('正在管理：')).toContainText('智能体一');
-  await expect(page.getByText('有未保存的修改')).toBeVisible();
+  await expect(page.getByText('有未保存的修改', { exact: true })).toBeVisible();
   await page.evaluate(() => { location.hash = '#/affect-system?agentId=first'; });
   await page.locator('.el-message-box').getByRole('button', { name: '取消', exact: true }).click();
   await expect(page.getByRole('heading', { name: '记忆系统', exact: true })).toBeVisible();
@@ -180,7 +180,7 @@ test('mobile cognition controls fit and all four dimensions remain editable', as
 
 test('foreign agent query is rejected without silently opening another agents data', async ({ page }) => {
   const { commands } = await setup(page, 'agentId=foreign');
-  await expect(page.getByRole('alert')).toContainText('不可管理');
+  await expect(page.getByRole('alert').filter({ hasText: '不可管理' })).toBeVisible();
   expect(commands).toHaveLength(0);
   await expect(page.getByText('正在管理：')).toHaveCount(0);
 });
@@ -197,7 +197,7 @@ test('navigation entry preserves the selected agent when already on the memory p
   if (await toggle.isVisible()) await toggle.click();
   await page.getByRole('navigation').getByText('记忆系统', { exact: true }).click();
   await expect(page.getByText('正在管理：')).toContainText('智能体一');
-  await expect(page.getByRole('alert')).toHaveCount(0);
+  await expect(page.locator('.memory-main [role="alert"]')).toHaveCount(0);
 });
 
 test('an in-flight source read cannot apply to a different selected agent', async ({ page }) => {

@@ -34,7 +34,7 @@
               <h2>记忆详情</h2>
               <p>{{ memoryState(detail.memory) }} · {{ detail.memory.id }}</p>
               <p>修改原句会撤回旧来源和相关整理记录；角色人设在原人设页独立编辑。</p>
-              <el-input v-model="edit.content" type="textarea" :rows="4" aria-label="记忆内容" :disabled="busy || retired" />
+              <el-input v-model="edit.content" type="textarea" :rows="4" label="记忆内容" :disabled="busy || retired" />
               <el-checkbox v-model="edit.confirmed" :disabled="busy || retired">已确认</el-checkbox>
               <div class="actions">
                 <el-button :disabled="busy || retired || !factDirty || factBlocked" @click="saveFact">保存记忆</el-button>
