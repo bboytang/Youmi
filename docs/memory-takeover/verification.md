@@ -1,5 +1,25 @@
 # Youmi 记忆接管验证记录
 
+## 步骤 6A 首段：合成评估磁盘索引机制
+
+方案提交 `ecb1cc70`，产品代码 **`514c19ee13615b80459407a3528f6edeb8225a98`**；最终验证提交 **`1a4e7277ad812c2467e4d057f2257744f55a36a6`** 仅增加独立安装检查的运行条件，失败仍保留失败状态。以下检查对应最终 SHA，全部通过。
+
+| 检查 | 结果 | GitHub Actions |
+| --- | --- | --- |
+| Python 3.10 / 3.12 | 各 327 项通过，新增 16 项真实 SQLite/Tantivy 磁盘机制测试 | https://github.com/bboytang/Youmi/actions/runs/40266267768 |
+| 完整后端及人设传输 | 654 项及传输检查通过 | https://github.com/bboytang/Youmi/actions/runs/40266272350 |
+| 实际安装/BGE/Tantivy/索引恢复及旧链路 | 所有阶段通过，原并发编码检查也通过 | https://github.com/bboytang/Youmi/actions/runs/40266257468 |
+| 绑定授权及 JAR | Java 194 项及 JAR 构建通过 | https://github.com/bboytang/Youmi/actions/runs/40266277315 |
+| Manager 基线 | 原有 150 项及基线 4 项通过 | https://github.com/bboytang/Youmi/actions/runs/40266281717 |
+
+新增 16 项覆盖：不变语料重开不建 writer、新增增量追加与新佐证复用、正文/检索标签修正重建、删除/待确认/合并/清空/关闭后空对账、不同 owner/数据库分区、坏清单/坏索引/错误文档数恢复、真实子进程提交后 os._exit、真实跨进程有界锁、取消后原生槽位保持、并发删除与撤权拒绝返回、磁盘故障不影响默认召回/51 维情感、默认或未授权不建缓存。安装包独立测试加入新增模块；本地新增及相关 105 项通过。
+
+首次安装检查 [40265772529](https://github.com/bboytang/Youmi/actions/runs/40265772529) 及同 SHA 原样重跑均在旧短句并发编码 case 3 发生 embedding_busy，未执行新增路径。没有修改 embedding.py、verify_youmi_vectors.py、断言、并发/资源/超时限制。为保证取证，最终 CI 使安装成功后的独立检查即使前项失败也继续，但不使用 continue-on-error。最终提交本次原编码检查全部通过：短句 9 例/18 次、长句 2 例/4 次，所有结果 bitwise_equal。两次先前失败保留在工作记录中，当前通过不等于根因已修复，容量评估须继续核对。
+
+最终小型结果 artifact 109881 字节已下载：memory-shadow-results.json 的 commit 和 vector-results.json 的 code_sha 均为最终 SHA，二者 passed=true。影子检查全部 18 项为 true，新增 persistent_shadow_reopen、persistent_shadow_dirty_recovery、persistent_shadow_canonical_unchanged；原有 default_engine_unchanged/all_51_emotions_preserved/cooldown_committed_once 等仍通过。
+
+本次不改 schema、正式回复工厂、人设或情感算法，不部署、不访问生产、不新增生产备份或真实消息。磁盘模式仅显式合成数据离线评估：仍全快照对账、闲置分区没有即时遗忘清理/启动生命周期，**生产持久化索引尚未验收**。认知自动策略、固定条目、质量/性能对照、迁移与切换回退及真实终端验收仍待完成。前端未改，本轮没有重复其浏览器构建；最近前端准确证据仍为下节 5B。
+
 ## 步骤 5B：独立记忆系统页面与版本化事实管理
 
 准确最终产品及验证提交：**`088033fe827b102baac61076da713911752f503c`**。首轮 `f6329ed3`，后续浏览器修正逐次记录于 worklog.md；以下全部针对最终 SHA，后续文档提交不改变被测产品。

@@ -203,3 +203,24 @@
 - [实际安装/BGE 链路](https://github.com/bboytang/Youmi/actions/runs/40263580515) 全部通过；下载 109995 字节结果 artifact，核对准确 SHA、passed=true 与全部 15 项检查为 true。该合成用例不是新引擎质量或生产性能证明。
 - 最终 diff 已检查；V1–V14 未改，人设、51 维情感计算与原完成协议未改，原有用户修改均未覆盖或提交。期间出现的用户并行新文件 `.github/workflows/youmi-qq-reply.yml` 及 YOUMI_ASTRBOT/ 同样保留未提交。未连接生产、部署、备份或外发真实消息。
 - 步骤 5A–5B 机制和页面验收完成。下一步 6：在不改变旧唯一写入/默认召回的前提下，补持久化索引恢复与增量同步、认知自动策略及尚缺的固定条目契约，准备可重复迁移和冻结中文影子质量/预算对照。不能把 UI 可调认知当作自动策略已实现，也不能在质量与回退验收前切换生产。真实手机与真实 QQ/App/设备、模型质量仍待后续获授权验收。
+
+### 2026-10-26 — 步骤 6A 方案读取、实施与本地验证
+
+- 按用户要求重新读取最新 plan.md、worklog.md、handoff.md，并核对 AGENTS.md、当前分支和未提交文件。保持 `feature/emotional-system`，原有并行 QQ/AstrBot 修改、新 workflow 与 YOUMI_ASTRBOT/ 不覆盖或提交。先新增 index-recovery.md，计划提交 `ecb1cc70`。
+- 产品提交 `514c19ee13615b80459407a3528f6edeb8225a98`：YoumiMemoryRuntime 新增仅内部可传的 shadow_cache_dir，默认 None 保持 RAM 影子与旧默认回复。显式合成数据评估按数据库绝对路径/owner/persona 哈希隔离私有目录，同步/搜索持有跨进程锁；新增记录增量追加，改文/元数据变化/删除/待确认/退役重建分区以丢弃旧段文件。
+- 每次仍完整捕获并核验有界 canonical 快照，清单只存 ID/文本指纹；新佐证不改检索文本时复用索引，来源和版本当场从 canonical 读取。选择全快照对账而非新增 outbox/schema，减少对旧写入路径侵入，保留每次全语料扫描的性能限制。V1–V14 不改。
+- dirty 标记在提交前 fsync，Tantivy commit/reload 后原子清单/目录 fsync，再清 dirty。缺失/坏清单、坏索引、异常文档数和进程中断从当前事实重建；磁盘错误明确 unavailable。禁用/空语料的显式影子查询同步空索引；默认调用和鉴权失败不建目录。正常情感、认知、人设和完成协议不变。
+- 新增 16 项真实 SQLite/Tantivy 测试及相关 105 项本地通过；包含真实子进程 commit 后 os._exit、真实跨进程锁、未变时不建 writer、追加/佐证、修正/标签/删除/待确认/合并/清空/关闭、损坏恢复、磁盘错误、撤权/查询中删除、原生取消后槽位保持。增加安装包模块和实际 BGE 验证脚本的重开/dirty恢复/canonical不变检查，准确提交 CI 运行中。
+- 本轮沙箱更新将 .git 设为只读且限制网络；Git 提交/推送、固定依赖下载及 GitHub 只读检查通过工具自动审批后执行。受限沙箱内 asyncio.to_thread 完成后不能正常唤醒事件循环，12 秒 faulthandler 显示工作线程已空闲、主线程仍在 selector；相同合成用例在获准的沙箱外运行全部通过，未为了本地环境修改产品异步流程。没有生产访问或真实模型请求。
+- 重要限制：闲置缓存只在下一次显式影子调用时对账，不会在 canonical 遗忘完成瞬间清理。因此该磁盘模式只限合成数据离线评估，不得接到生产私有数据或默认工厂。后续必须补即时失效/清理、启动生命周期，再做质量/性能和切换验收；不能将本阶段标成生产持久化索引完成。
+- 首轮 GitHub 双 Python 各 327 项、完整后端 654 项及人设传输已通过。实际安装工作流 40265772529 首次在旧 verify_youmi_vectors.py 的并发短句编码中失败，尚未执行本轮新增磁盘检查；下载 3031 字节合成报告，18 次短句任务中 1 次为 EmbeddingUnavailable/embedding_busy，其余成功结果全部 bitwise_equal，长句并发也全部一致。没有修改编码器、并发槽位或超时，也没有删除断言；对同一准确提交和原限制手动重跑失败作业，等待结果。不把初次失败写作通过。
+- 同 SHA 的第二次安装验证仍在短句 case 3 出现 embedding_busy，不能再称为已证实的单次瞬时故障。代码比较确认本轮未修改 embedding.py 或 verify_youmi_vectors.py；根因/当前 runner 负载影响尚未完整归因，作为切换前必须核对的未解决项记录。
+- 为避免一个独立检查的失败遮住新增路径证据，CI 提交 `1a4e7277ad812c2467e4d057f2257744f55a36a6` 给安装步骤标记 runtime，后续五个互相独立的安装检查在安装成功且任务未取消时继续执行。没有 continue-on-error，没有修改任何原断言、并发/资源/超时限制，原检查失败仍让工作流失败。该最终提交已补触发双 Python、完整后端、Java 绑定及 Manager 基线，等待实际结果；产品机制代码仍为 `514c19ee`。
+
+### 2026-10-26 — 步骤 6A 合成评估机制验收与交接
+
+- 最终准确验证提交 `1a4e7277ad812c2467e4d057f2257744f55a36a6`，产品机制仍为 `514c19ee`。[双 Python](https://github.com/bboytang/Youmi/actions/runs/40266267768) 各 327 项、[完整后端](https://github.com/bboytang/Youmi/actions/runs/40266272350) 654 项及人设传输通过。
+- [实际安装/BGE](https://github.com/bboytang/Youmi/actions/runs/40266257468) 全部阶段通过，本次原并发编码检查也通过，未修改编码器代码/阈值。下载 109881 字节合成结果，准确 SHA 一致、vector 与 shadow 的 passed=true，全部 18 项影子检查为 true；短句 18 次及长句 4 次编码全部 bitwise_equal。之前两次 embedding_busy 不被抹去，未声称其根因已修复，保留给后续容量评估。
+- [Java 绑定](https://github.com/bboytang/Youmi/actions/runs/40266277315) 194 项及 JAR，[Manager 基线](https://github.com/bboytang/Youmi/actions/runs/40266281717) 150 项及基线 4 项通过。前端未改，没有重跑浏览器构建；本轮不涉及固件或物理硬件修改。
+- 最终 diff 复核通过，V1–V14 未改，未覆盖/提交并行 QQ/AstrBot 文件。生产未连接、部署或新建缓存，没有新增备份或外发消息。普通工厂依然不设置 shadow_cache_dir；默认召回继续旧算法。
+- 该成果只验收 6A 的显式合成评估缓存首段。下一步应先补生产生命周期契约与实现：缓存目录的注册/授权、canonical 完成写事务的失效/遗忘/清空清理、启动/跨进程恢复及失败可追溯性，再判断是否需要 V15 outbox。闲置缓存读时对账不能冒充立即遗忘。然后继续 6B 认知自动策略/固定条目和 6C 中文质量、预算、性能、可重复迁移；步骤 6 和最终切换仍未完成。

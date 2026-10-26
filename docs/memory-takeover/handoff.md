@@ -1,6 +1,6 @@
 # Youmi 记忆接管工作交接
 
-最后更新：2026-10-26（步骤 5A–5B 管理接口与页面验收完成）。目标和完整验收见 `plan.md`；每步实测结果见 `worklog.md`。
+最后更新：2026-10-26（步骤 6A 首段合成评估索引机制验收完成，生产生命周期未验收）。目标和完整验收见 `plan.md`；每步实测结果见 `worklog.md`。
 
 ## 当前进度
 
@@ -14,6 +14,7 @@
 - 步骤 4 后端机制验收完成：`43c15bde7db0ca94ea02bdb64d1021a51b1e8dc0`。GitHub 双 Python 各 292 项、后端 619 项及人设传输、实际 BGE/安装/联动和排序、绑定授权及 Manager 基线全部通过。新增 24 项；V14 已冻结。默认联动关闭、排序仅影子检索，生产和旧默认召回未切换；真实模型质量/终端尚未验收。
 - 步骤 5A 管理接口验收完成：最终 `8d0e7209215a128d888c142aebca612c125f5c4b`。新增 15 项 Python 和 2 项 Java 测试，GitHub 双 Python 各 307 项、完整后端 634 项及人设传输、Java 194 项及 JAR、Manager 基线、实际 BGE/安装链路全部通过。首轮冲突响应错误及修正如实记录。没有新增 schema 或部署，5B 页面仍未实现，整个步骤 5 未完成。
 - 步骤 5B 验收完成：最终 `088033fe827b102baac61076da713911752f503c`。独立页面/导航/卡片、版本化事实编辑确认删除、来源/整理/配置/能量/手动合并、情感审计跳转已实现；新增 4 项后端测试和 13 个四浏览器交互场景。GitHub 双 Python 各 311 项、后端 638 项、Java 194 项及 JAR、Manager 基线、实际安装链路，以及前端原有 9/53/13 项和四浏览器 164 项全部通过。先前浏览器失败和修正完整保留记录，不作为通过证据。V14 未改，未部署或切换。
+- 步骤 6A 首段已验收：产品 `514c19ee13615b80459407a3528f6edeb8225a98`，最终准确验证提交 `1a4e7277ad812c2467e4d057f2257744f55a36a6`。新增 16 项，本地相关 105 项；GitHub 双 Python 各 327 项、后端 654 项、Java 194 项/JAR、Manager 基线及实际安装全部通过。合成评估磁盘重开/追加/变更重建/dirty恢复/跨进程锁已实现；默认仍 RAM 影子和旧回复，生产缓存生命周期仍缺，整个步骤 6 未完成。
 
 ## 实施约束
 
@@ -33,7 +34,11 @@
 
 步骤 4 后端机制及准确提交 CI 已通过，契约见 emotion-linkage.md。新增 24 项、相关 294 项本地通过；共用 builder_for 使用 YoumiEmotionContextBuilder，QQ/App/设备后续入口须复用此工厂。原始 user_text 与记忆完整原句、ID/内容/证据版本分开；两组最多八个不同维度，合并原始 delta 后一次执行原有 transition，成功完成后才消费内容版本冷却（新增佐证不重置）。联动新表故障保存点回退本轮变化，不得阻断原情感；授权及上下文变更错误仍传播。
 
-下一任务为步骤 6，先写分阶段计划再实施。优先检查 memory_shadow.py/memory_search.py/memory_repository.py 与既有 SemanticMemoryIndex 的恢复/增量同步路径，补可重建持久化索引、删除/修正后的失效与跨进程一致性、崩溃/重试恢复；SQLite canonical 仍为唯一权威，旧引擎继续唯一写入/默认回复，新引擎只做显式影子评估。认知自动能量/策略映射和永久固定条目也还未实现，需另立具体契约及验收，再更新管理页能力提示。随后准备可重复迁移、冻结中文独立对照集与模型/预算/性能对照，不能直接用生产数据备份或切换来试。
+下一任务先做 6A 的生产生命周期第二段，先写具体契约再实现：注册/授权派生缓存目录、canonical 完成写事务的失效/遗忘/清空清理、启动及跨进程失败恢复、清理结果可核对；评估是否需要 V15 outbox。不能将读时全快照对账当作闲置缓存的即时物理删除，当前磁盘模式不得用于生产私有数据。随后继续 6B 认知自动能量/行为策略与永久固定条目契约、6C 可重复迁移/冻结中文质量与预算/性能对照。SQLite canonical 仍为唯一权威，旧引擎继续唯一写入/默认回复；不得直接取生产库备份、启用新引擎或切换。
+
+6A 当前代码入口：memory_index_cache.py 原创协调器（私有目录、fcntl 文件锁等待 0.4 秒、dirty/fsync/原子清单、恢复/全重建/追加），memory_search.py 保留 GPLv3 归属，新增 path/append 复用原分词和排序。YoumiMemoryRuntime(index, shadow_cache_dir=...) 只有显式合成评估使用；普通 builder_for 没有传路径。每次仍捕获最多 10000 条/8 MiB canonical 快照；新增增量写，改文/检索元数据变化/删除/待确认/退役重建，佐证变化不重写 BM25，但返回仍重新读取当前来源/版本。无有效记录或关闭后的显式查询清空该分区，未查询的闲置目录不会自动清理。
+
+方案与限制见 index-recovery.md，新增测试在 test_companion_memory_index_cache.py（16 项），实际安装脚本 verify_youmi_memory_shadow.py 新增 persistent_shadow_reopen/dirty_recovery/canonical_unchanged，最终 artifact 18 项全真，准确链接见 verification.md。最终完整安装工作流 40266257468 全通过；早期 40265772529 两次旧编码并发 case 3 为 embedding_busy，结果文件保存在 /tmp/youmi-index-first-results 和 /tmp/youmi-index-second-results。最终同算法短句18次/长句4次全部一致，但未定位根因；容量评估需保留这个观察，不说编码器问题已修复。CI 独立安装检查在 runtime 成功且未取消时继续，即使前项失败仍产出结果；无 continue-on-error，原失败保留。
 
 5A 已公开 `/agent/{agentId}/memory-system`，经原管理代理的 `memory_system` 动作，只使用服务端 owner 证明；契约见 management.md。status/list/detail 提供版本、来源分页和最多 50 条合并关系；reflection/emotion_linkage/cognition 复用完整配置 CAS；artifacts/delete_artifact/merge 复用证据、版本及幂等。5B edit/delete 强制传 expected（revision/content_version/evidence_version），底层在 BEGIN IMMEDIATE 内校验；旧方法不传 expected 仍保持原行为，不能用事务外读版本冒充 CAS。内部运行时设备接口的 read/manage 权限保持不变，console 所有者证明拥有该智能体完整管理权，不应构造虚假设备 scope。Java 冲突使用 Result.error(409,msg)，不要用查询翻译词条的 RenException(int,String...)。
 
@@ -57,6 +62,8 @@
 
 云运行环境技能已读；当前未提供 environment_status 工具，且网络策略快照不存在，不能据此宣称凭据或网络已就绪。正常使用现有工具并以实际返回结果为准，不读取或输出密钥。
 
+本轮沙箱将 .git 设为只读且限制网络；提交、推送、GitHub API 和固定 Tantivy 下载已通过工具自动审批执行，无人工确认问题。受限沙箱内 asyncio 线程唤醒挂起，faulthandler 显示工作线程空闲/主线程 selector；获准在沙箱外运行相同合成测试通过。Tantivy 0.25.1 本地临时依赖在 `/tmp/youmi-memory-index-deps`，测试 Python 仍为 `/root/tmp/youmi-astrbot-venv/bin/python`；最终小型安装结果 `/tmp/youmi-index-final-results` 已核对。不要为沙箱限制修改产品事件循环或请求超时，也不要输出凭据。
+
 ## 切换前未完成项
 
-持久化索引恢复、认知自动策略、永久固定条目契约、真实模型反思/联动/召回质量影子对照、真实数据迁移、线上故障回退演练、真实手机和真实 QQ/App/设备验收。管理页虽已通过模拟测试，尚未发布生产。维护为完成回合驱动，画像/笔记是有证据原句的整理视图，不是上游全部自由文件笔记或空闲夜间唤醒；兼容旧算法测试也不是未来切换回退的完整演练。不得提前切换。
+生产派生索引即时失效/删除/清空及启动生命周期、认知自动策略、永久固定条目契约、真实模型反思/联动/召回质量影子对照、真实数据迁移、线上故障回退演练、真实手机和真实 QQ/App/设备验收。合成评估索引恢复已通过，不等于生产持久化索引验收；管理页虽已通过模拟测试，尚未发布生产。维护为完成回合驱动，画像/笔记是有证据原句的整理视图，不是上游全部自由文件笔记或空闲夜间唤醒；兼容旧算法测试也不是未来切换回退的完整演练。不得提前切换。
