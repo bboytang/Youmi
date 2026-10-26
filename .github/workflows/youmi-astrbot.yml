@@ -18,6 +18,9 @@ jobs:
         if: ${{ !env.ACT }}
         with:
           python-version: '3.12'
+      - name: Install native audio dependency
+        if: ${{ !env.ACT }}
+        run: sudo apt-get update && sudo apt-get install -y libopus0
       - run: |
           cd "${YOUMI_REPO_ROOT:-$GITHUB_WORKSPACE}"
           python -m pip install -r integrations/requirements-test.txt
@@ -49,7 +52,7 @@ jobs:
       SPRING_DATA_REDIS_HOST: 127.0.0.1
     services:
       mysql:
-        image: public.ecr.aws/docker/library/mysql:8.4
+        image: mysql:8.4
         env:
           MYSQL_ROOT_PASSWORD: youmi-ci-only
           MYSQL_DATABASE: youmi_esp32_server
@@ -59,7 +62,7 @@ jobs:
           --health-cmd="mysqladmin ping -h 127.0.0.1 -pyoumi-ci-only"
           --health-interval=10s --health-timeout=5s --health-retries=12
       redis:
-        image: public.ecr.aws/docker/library/redis:8
+        image: redis:8
         ports: ["6379:6379"]
         options: --health-cmd="redis-cli ping" --health-interval=5s --health-timeout=3s --health-retries=12
     steps:
@@ -74,6 +77,9 @@ jobs:
         with:
           distribution: temurin
           java-version: '21'
+      - name: Install native audio dependency
+        if: ${{ !env.ACT }}
+        run: sudo apt-get update && sudo apt-get install -y libopus0
       - run: |
           cd "${YOUMI_REPO_ROOT:-$GITHUB_WORKSPACE}"
           python -m pip install -r integrations/requirements-test.txt
@@ -90,7 +96,7 @@ jobs:
       SPRING_DATA_REDIS_HOST: 127.0.0.1
     services:
       mysql:
-        image: public.ecr.aws/docker/library/mysql:8.4
+        image: mysql:8.4
         env:
           MYSQL_ROOT_PASSWORD: youmi-ci-only
           MYSQL_DATABASE: youmi_esp32_server
@@ -100,7 +106,7 @@ jobs:
           --health-cmd="mysqladmin ping -h 127.0.0.1 -pyoumi-ci-only"
           --health-interval=10s --health-timeout=5s --health-retries=12
       redis:
-        image: public.ecr.aws/docker/library/redis:8
+        image: redis:8
         ports: ["6379:6379"]
         options: --health-cmd="redis-cli ping" --health-interval=5s --health-timeout=3s --health-retries=12
     steps:
@@ -115,6 +121,9 @@ jobs:
         with:
           distribution: temurin
           java-version: '21'
+      - name: Install native audio dependency
+        if: ${{ !env.ACT }}
+        run: sudo apt-get update && sudo apt-get install -y libopus0
       - run: |
           cd "${YOUMI_REPO_ROOT:-$GITHUB_WORKSPACE}"
           python -m pip install -r integrations/requirements-test.txt

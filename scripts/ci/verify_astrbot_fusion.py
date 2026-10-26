@@ -139,6 +139,7 @@ def manager(cache, *, legacy=False):
     java_home = Path(subprocess.check_output(['java', '-XshowSettings:properties', '-version'],
         stderr=subprocess.STDOUT, text=True).split('java.home = ', 1)[1].splitlines()[0].strip())
     shutil.copy2(java_home / 'lib/security/cacerts', tls / 'truststore')
+    os.chmod(tls / 'truststore', 0o600)
     run('keytool', '-importcert', '-noprompt', '-alias', 'youmi-act-ci', '-file', ca,
         '-keystore', tls / 'truststore', '-storepass', 'changeit')
     import certifi
