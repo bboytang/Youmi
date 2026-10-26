@@ -28,7 +28,7 @@ def _revision(store, owner):
 
 
 def _record(row):
-    return dict(row, confirmed=bool(row['confirmed']))
+    return dict(row, confirmed=bool(row['confirmed']), pinned=bool(row['pinned']))
 
 
 def _read(store, owner, command):
@@ -56,7 +56,7 @@ def _read(store, owner, command):
         _fields(command, {'action', 'id'} if action == 'detail' else {'action'}, {'offset'})
         offset = _offset(command)
         base = ('SELECT m.id,m.category,m.content,m.confirmed,m.created_at,m.updated_at,'
-                'x.content_version,x.evidence_version,x.state FROM memories m '
+                'x.content_version,x.evidence_version,x.state,EXISTS(SELECT 1 FROM youmi_memory_pins p WHERE p.memory_id=m.id) AS pinned FROM memories m '
                 "JOIN mia_memory_meta x ON x.memory_id=m.id WHERE m.owner=? AND x.persona_id='mia'")
         if action == 'list':
             total = store.db.execute("SELECT COUNT(*) FROM memories m JOIN mia_memory_meta x ON x.memory_id=m.id "
@@ -89,6 +89,9 @@ def manage(store, owner, command):
     action = command['action']
     if action in {'status', 'list', 'detail'}:
         return _read(store, owner, command)
+    if action == 'pin':
+        from .memory_pins import configure
+        return configure(store, owner, command)
     if action in {'edit', 'delete'}:
         _fields(command, {'action', 'id', 'expected', 'content', 'confirmed'} if action == 'edit'
             else {'action', 'id', 'expected'})

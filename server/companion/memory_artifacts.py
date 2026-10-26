@@ -43,6 +43,8 @@ def validate_actions(actions, context):
                 raise ExtractionError('field_schema', 'Invalid artifact evidence')
             identifier = proof['id']
             fact = known.get(identifier) if isinstance(identifier, str) else None
+            if fact and fact.get('pinned') and kind in {'retirement', 'merge'}:
+                raise ExtractionError('source_semantic', 'Pinned memories cannot be maintenance candidates')
             if (fact is None or identifier in identifiers or not fact.get('evidence')
                     or proof['quote'] != fact['content']):
                 raise ExtractionError('source_semantic', 'Artifact requires complete owned factual evidence')
@@ -70,6 +72,8 @@ def commit_in_transaction(store, job, actions):
         if (previous['version'] if previous else 0) != item['version']:
             raise MemoryError('evidence_changed', 'Artifact changed')
         for proof in item['evidence']:
+            if item['kind'] in {'retirement', 'merge'} and db.execute('SELECT 1 FROM youmi_memory_pins WHERE memory_id=?', (proof['id'],)).fetchone():
+                raise MemoryError('evidence_changed', 'Pinned memory cannot be retired or merged')
             target = db.execute('SELECT x.content_version,x.evidence_version FROM memories m '
                 'JOIN mia_memory_meta x ON x.memory_id=m.id WHERE m.owner=? AND m.id=? '
                 "AND m.confirmed=1 AND x.state='active' AND EXISTS (SELECT 1 FROM sources s WHERE s.memory_id=m.id)",

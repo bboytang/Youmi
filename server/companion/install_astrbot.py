@@ -13,7 +13,7 @@ EXPECTED = {
     'mia_companion/schema.py': '3e6ee813382608bfe611ceb4248151dfde006d5a25bf4ef780a40804dfc24a32',
 }
 PAYLOADS = ('astrbot_api.py', 'astrbot_identity.py', 'astrbot_turns.py', 'astrbot_media.py', 'schema-v8.sql',
-            'schema-v9.sql', 'schema-v10.sql', 'schema-v11.sql', 'schema-v12.sql', 'schema-v13.sql', 'schema-v14.sql', 'schema-v15.sql', 'schema-v16.sql',
+            'schema-v9.sql', 'schema-v10.sql', 'schema-v11.sql', 'schema-v12.sql', 'schema-v13.sql', 'schema-v14.sql', 'schema-v15.sql', 'schema-v16.sql', 'schema-v17.sql', 'cognition.py',
             'emotional_system.py', 'memory_state.py', 'memory_emotion.py')
 
 

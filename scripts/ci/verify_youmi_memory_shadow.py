@@ -224,6 +224,40 @@ async def verify(directory, report):
                 pump.stop()
                 assert await pump.wait(1)
             report['checks'].update(managed_idle_cleanup=True)
+            # Cognitive advice shares the original reflection job; no new call.
+            from youmi_companion.memory_state import YoumiMemoryState, cognitive_status
+            from youmi_companion import memory_management
+            cognitive = cognitive_status(store, scope.owner)
+            for item in cognitive['dimensions'].values():
+                item['mode'] = 'dynamic'
+            await YoumiMemoryState(store).cognition(scope, policy, dict(action='configure', version=cognitive['version'],
+                enabled=True, dimensions=cognitive['dimensions']))
+            reflection = await runtime.reflection_settings(scope, policy, dict(action='status'))
+            await runtime.reflection_settings(scope, policy, dict(action='configure', version=reflection['version'],
+                enabled=True, interval_seconds=60))
+            source = '我学习时喜欢听古典乐'
+            async def cognitive_resolve(verified):
+                return lambda sources, context: dict(reflection_version=1, memory_actions=[],
+                    cognitive_adjustment=dict(code='1010', quote=source))
+            cognitive_jobs = JobStore(store, policy_version=2)
+            cognitive_worker = MemoryWorker(cognitive_jobs, policy, cognitive_resolve, encoder=encoder)
+            admitted = await cognitive_worker.submit(TurnCompleted(scope, 'cognitive-fixture', 'once', 'source', source,
+                store.snapshot(scope.owner)['revision']))
+            assert await cognitive_worker.run_once()
+            assert cognitive_jobs.current(admitted)['state'] == 'committed'
+            cognitive = cognitive_status(store, scope.owner)
+            assert cognitive['energy'] == dict(recall=1, impression=-1, expression=1, creativity=-1)
+            assert not await cognitive_worker.run_once()
+            assert cognitive_status(store, scope.owner) == cognitive
+            pinned_id = remember(scope.owner, source, 'pin-fixture')
+            detail = memory_management.manage(store, scope.owner, dict(action='detail', id=pinned_id))
+            expected = dict(revision=detail['revision'], content_version=detail['memory']['content_version'],
+                evidence_version=detail['memory']['evidence_version'])
+            assert memory_management.manage(store, scope.owner, dict(action='pin', id=pinned_id, pinned=True, expected=expected))['pinned']
+            assert memory_management.manage(store, scope.owner, dict(action='detail', id=pinned_id))['memory']['pinned'] is True
+            store.delete_memory(scope.owner, pinned_id)
+            assert store.db.execute('SELECT COUNT(*) FROM youmi_memory_pins WHERE memory_id=?', (pinned_id,)).fetchone()[0] == 0
+            report['checks'].update(cognitive_reflection_once=True, cognition_effective_bounded=True, pin_cas_retention=True)
         finally:
             store.close()
 

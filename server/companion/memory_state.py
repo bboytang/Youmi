@@ -27,10 +27,13 @@ COGNITIVE_DEFAULTS = {
 def cognitive_status(store, owner):
     with store.lock:
         row = store.db.execute('SELECT * FROM youmi_cognitive_state WHERE owner=?', (owner,)).fetchone()
-        return dict(enabled=bool(row['enabled']) if row else False,
+        result = dict(enabled=bool(row['enabled']) if row else False,
             dimensions=json.loads(row['config_json']) if row else copy.deepcopy(COGNITIVE_DEFAULTS),
             energy=json.loads(row['energy_json']) if row else {key: 0.0 for key in COGNITIVE_DEFAULTS},
             version=row['version'] if row else 0)
+        from .cognition import effective
+        result['effective'] = effective(result['dimensions'], result['energy'])
+        return result
 
 
 def _number(value, low, high):
@@ -176,6 +179,8 @@ def merge_in_transaction(store, owner, command, *, job_id=None):
     if state is None or state['paused'] or state['revision'] != command['revision']:
         raise MemoryError('conflict', 'Memory changed')
     for name, memory_id in [('retired', retired), ('survivor', survivor)]:
+        if store.db.execute('SELECT 1 FROM youmi_memory_pins WHERE memory_id=?', (memory_id,)).fetchone():
+            raise MemoryError('conflict', 'Unpin memories before merging')
         row = store.db.execute('SELECT x.content_version,x.evidence_version FROM memories m '
             'JOIN mia_memory_meta x ON x.memory_id=m.id WHERE m.owner=? AND m.id=? AND m.confirmed=1 '
             "AND x.state='active' AND NOT EXISTS (SELECT 1 FROM youmi_memory_replacements r WHERE r.retired_id=m.id)",

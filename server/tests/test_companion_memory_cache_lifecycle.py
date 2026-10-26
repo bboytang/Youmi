@@ -447,7 +447,7 @@ class ManagedCacheMigrationTests(unittest.TestCase):
     def v15(self):
         with self.store.db:
             remove_v16(self.store.db)
-            self.store.db.execute('DELETE FROM mia_schema_migrations WHERE version=16')
+            self.store.db.execute('DELETE FROM mia_schema_migrations WHERE version>=16')
         namespace = {'__file__': str(Path('server/companion/schema.py').resolve())}
         source = subprocess.check_output(['git', 'show', '879e62e2:server/companion/schema.py'], text=True)
         exec(compile(source, 'frozen-v15.py', 'exec'), namespace)

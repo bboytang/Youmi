@@ -270,11 +270,13 @@ def context_for(store, owner, expected_consent=None):
     # A bounded reconciliation/evidence set, not an answer retrieval fallback.
     with store.lock:
         rows = store.db.execute('SELECT m.id,m.content,m.category,x.content_version,x.evidence_version,'
-            'x.entities,x.keywords,x.trigger_terms FROM memories m '
+            'x.entities,x.keywords,x.trigger_terms,EXISTS(SELECT 1 FROM youmi_memory_pins p WHERE p.memory_id=m.id) AS pinned FROM memories m '
             "JOIN mia_memory_meta x ON x.memory_id=m.id WHERE m.owner=? AND m.confirmed=1 AND x.state='active' "
             'ORDER BY m.updated_at DESC,m.rowid DESC LIMIT 8', (owner,)).fetchall()
         from .emotions import consent
         result = EvidenceContext()
+        from .memory_state import cognitive_status
+        result.cognition = cognitive_status(store, owner)
         from .memory_artifacts import versions
         result.artifact_versions = versions(store, owner)
         from .features import settings
@@ -675,6 +677,10 @@ class LLMMemoryExtractor:
             if reflection:
                 from .reflection_prompt import INSTRUCTIONS as reflection_instructions
                 instruction += reflection_instructions
+                if (getattr(context, 'cognition', None) or {}).get('enabled'):
+                    from .reflection_prompt import COGNITIVE_INSTRUCTIONS
+                    instruction += COGNITIVE_INSTRUCTIONS
+                    payload['cognition'] = dict(effective=context.cognition['effective'], dimensions=list(context.cognition['dimensions']))
                 payload.update(reflection_version=1, maintenance_due=reflection['maintenance_due'],
                     existing_artifact_keys=[dict(kind=kind, key=key)
                         for kind, key in sorted(getattr(context, 'artifact_versions', {}))[:8]])

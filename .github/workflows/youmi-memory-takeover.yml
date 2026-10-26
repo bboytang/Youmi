@@ -45,6 +45,7 @@ jobs:
           server.tests.test_companion_memory_cache_lifecycle
           server.tests.test_companion_memory_cache_cleanup
           server.tests.test_companion_memory_state
+          server.tests.test_companion_cognitive_policy
           server.tests.test_companion_memory_reflection
           server.tests.test_companion_memory_artifacts
           server.tests.test_companion_reflection_generation

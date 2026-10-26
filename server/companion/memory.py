@@ -492,11 +492,13 @@ class MemoryStore:
                 observations = commit_observations(self, job, structured)
                 from .memory_reflection_policy import commit_completion
                 commit_completion(self, job, structured)
+                from .cognition import commit_adjustment
+                cognition_changed = commit_adjustment(self, job, structured)
                 pending = any(not self.db.execute('SELECT confirmed FROM memories WHERE id=?', (memory_id,)).fetchone()[0]
                               for memory_id in changed)
                 summary = json.dumps({'confirmation_required': True}) if pending else None
                 self.db.execute("UPDATE mia_jobs SET state=?,source_payload='{}',validated_result=?,updated_at=?,error_category=NULL WHERE id=?",
-                                ('committed' if changed or trait_updated or observations or artifacts else 'empty', summary, now, job_id))
+                                ('committed' if changed or trait_updated or observations or artifacts or cognition_changed else 'empty', summary, now, job_id))
             return {"applied": True, "memories": changed, "trait_updated": trait_updated}
 
     def personality(self, owner):

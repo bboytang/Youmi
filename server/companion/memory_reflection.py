@@ -41,7 +41,7 @@ def validate_proposal(value, sources, context):
         if getattr(context, 'reflection', None) and not getattr(context, 'reflection_fastpath', False):
             raise ExtractionError('field_schema', 'Enabled reflection requires version 1 actions')
         return validate_output(value, sources, context)
-    if (set(raw) - {'reflection_version', 'memory_actions', 'trait', 'observations'}
+    if (set(raw) - {'reflection_version', 'memory_actions', 'trait', 'observations', 'cognitive_adjustment'}
             or type(raw.get('reflection_version')) is not int or raw['reflection_version'] != 1):
         raise ExtractionError('field_schema', 'Unsupported reflection contract')
     actions = raw.get('memory_actions')
@@ -71,6 +71,9 @@ def validate_proposal(value, sources, context):
     if 'observations' in raw:
         normalized['observations'] = raw['observations']
     result = validate_output(normalized, sources, context)
+    if 'cognitive_adjustment' in raw:
+        from .cognition import validate_adjustment
+        result['_cognitive_adjustment'] = validate_adjustment(raw['cognitive_adjustment'], sources, context)
     if artifacts:
         if getattr(context, 'reflection', None) and not context.reflection['maintenance_due']:
             raise ExtractionError('field_schema', 'Maintenance is not due for this task')

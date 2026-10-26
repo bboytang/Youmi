@@ -33,3 +33,13 @@ cache coordinator reconciles authorized canonical snapshots and crash markers;
 it does not restore the upstream database, public scope, or directory management.
 Disk support is explicit synthetic-data shadow evaluation only, with no default
 production path or default reply activation. See docs/memory-takeover/index-recovery.md.
+
+
+2026-10-26 cognitive design study: the four-bit reflection directions, elastic
+regression and bounded tanh parameter mapping were studied in the same pinned
+upstream core/soul/soul_state.py. cognition.py is an original Youmi integration
+with canonical persistence, source/version validation and job-transaction
+idempotency. It uses zero as the energy regression center, separates fixed
+configuration from dynamic energy, and does not copy upstream in-memory storage,
+public scope or emotional authority. Mathematical concepts are not a relicensing
+of unrelated Youmi code; the copied search implementation keeps its GPL notice.
