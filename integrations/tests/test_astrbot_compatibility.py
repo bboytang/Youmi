@@ -220,7 +220,7 @@ async def test_segmented_reply_sends_each_sentence_as_a_separate_message(setup, 
         'enable': True, 'words_count_threshold': 150, 'regex': r'.*?[。？！~…]+|.+$'}}}
     event.set_extra('youmi_turn', TurnState(connector.client.prepared, 'text'))
     await final_reply(setup, '第一句。第二句！第三句？')
-    assert [[part['text'] for part in call['message']] for call in sent] == [
+    assert [[part['data']['text'] for part in call['message']] for call in sent] == [
         ['第一句。'], ['第二句！'], ['第三句？']]
     assert len([call for call in connector.client.calls if call[0] == 'complete']) == 1
 
@@ -232,7 +232,7 @@ async def test_segmented_reply_splits_newline_separated_sentences(setup, hooks):
         'enable': True, 'words_count_threshold': 150, 'regex': r'.*?[。？！~…]+|.+$'}}}
     event.set_extra('youmi_turn', TurnState(connector.client.prepared, 'text'))
     await final_reply(setup, '第一句\n第二句\n第三句')
-    assert [[part['text'] for part in call['message']] for call in sent] == [
+    assert [[part['data']['text'] for part in call['message']] for call in sent] == [
         ['第一句'], ['第二句'], ['第三句']]
 
 
@@ -249,7 +249,7 @@ async def test_reply_bubbles_have_no_blank_lines(setup, hooks, settings, text, e
     connector.context.get_config = lambda *args, **kwargs: {'platform_settings': {'segmented_reply': settings}}
     event.set_extra('youmi_turn', TurnState(connector.client.prepared, 'text'))
     await final_reply(setup, text)
-    assert [[part['text'] for part in call['message']] for call in sent] == [[item] for item in expected]
+    assert [[part['data']['text'] for part in call['message']] for call in sent] == [[item] for item in expected]
     assert len([call for call in connector.client.calls if call[0] == 'complete']) == 1
 
 
