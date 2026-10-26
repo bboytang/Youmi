@@ -170,6 +170,8 @@ class YoumiBM25Search:
     def search(self, query, vector_scores, limit=4):
         rows = self._staged_search(query, 24)
         if vector_scores:
+            # Fusion ranks evidence; it cannot qualify a lexical-only hit.
+            rows = [row for row in rows if row['item_id'] in vector_scores]
             return self._rrf_fuse(rows, vector_scores, threshold=0.5, limit=limit)
         return [dict(id=row["item_id"], bm25_score=row["bm25_score"],
                      bm25_normalized_score=row["bm25_normalized_score"],

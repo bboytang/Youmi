@@ -74,9 +74,17 @@ async def verify(directory, report):
             assert len(emotion['values']) == 51
             assert await runtime.retrieve(scope, policy, '旅行热茶') == baseline
             store.edit_memory(scope.owner, target, '我旅行时喜欢带温水')
+            from youmi_companion.embedding import EmbeddingUnavailable
+            try:
+                await runtime.shadow_retrieve(scope, policy, '热茶')
+            except EmbeddingUnavailable:
+                pass
+            else:
+                raise AssertionError('Missing current vectors must not weaken relevance')
+            await index.rebuild_batch(scope, policy)
             corrected = await runtime.shadow_retrieve(scope, policy, '热茶')
             assert '我旅行时喜欢带一壶热茶' not in json.dumps(corrected, ensure_ascii=False)
-            assert corrected['vector_status'] == 'unavailable'
+            assert corrected['vector_status'] == 'ready'
             report['checks'] = dict(real_bge=True, real_tantivy=True, canonical_sources=True,
                 owner_isolation=True, read_only_shadow=True, all_51_emotions_preserved=True,
                 default_engine_unchanged=True, old_content_not_resurrected=True)

@@ -120,3 +120,6 @@
 
 
 补充核实：JobStore默认已为V2，start_worker使用默认构造，原生/QQ共用该worker。因此6B2的automatic_cognition=False及“旧任务尚未启用”说明需要修正为能力true，实际仍须认知/反思开关；不需要为步骤7重新改任务默认。先前总结推测任务默认V1不正确，以实际jobs.py/start_worker为准。旧历史V1任务继续原策略、不回填。新检索统一切换仍未实现。
+
+
+最新6C1：方案quality-migration.md，首次真实对照d0026454/40284772244质量失败：两套16无关问题的新空召回0%，旧100%，正例/隔离/canonical通过。源因为向量空集回退宽松BM25及RRF加入未过语义门槛的条目。保留报告/tmp/youmi-quality-first-results；补8独立负例f21bb70c，再按已写契约收紧混合检索。两个新机制用例在原实现失败，修复后相关72项通过，精确BGE复验仍待核对。缺向量现在返回EmbeddingUnavailable，不再隐式词法降级；use_vectors=False只供显式词法研究。6B2首次页面两场景*4失败已修正（缺capabilities兼容、数字控件真实input），最终页面CI未确认。禁止切生产，继续质量/容量/迁移/统一引擎及部署。

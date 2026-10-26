@@ -89,19 +89,19 @@ class YoumiMemoryShadow:
         scores = []
         if corpus.enabled and corpus.records:
             if use_vectors:
-                try:
-                    from .retrieval import SEMANTIC_FLOOR
-                    vector = await self.index.candidates(scope, authorization, query, limit=24, minimum=SEMANTIC_FLOOR)
-                    if vector['snapshot'] != {'revision': corpus.version[0], 'content_epoch': corpus.version[1]}:
-                        raise EmbeddingUnavailable('memory_changed')
-                    owned_ids = {row['id'] for row in corpus.records}
-                    vector_scores = {row['id']: row['cosine'] for row in vector['candidates'] if row['id'] in owned_ids}
-                    vector_status = 'ready'
-                except EmbeddingUnavailable as error:
-                    if str(error) == 'memory_changed':
-                        raise
-                    vector_status = 'unavailable'
-        if (corpus.enabled and corpus.records) or self.cache_dir is not None or self.managed_cache is not None:
+                from .retrieval import SEMANTIC_FLOOR
+                vector = await self.index.candidates(scope, authorization, query, limit=24, minimum=SEMANTIC_FLOOR)
+                if vector['snapshot'] != {'revision': corpus.version[0], 'content_epoch': corpus.version[1]}:
+                    raise EmbeddingUnavailable('memory_changed')
+                owned_ids = {row['id'] for row in corpus.records}
+                vector_scores = {row['id']: row['cosine'] for row in vector['candidates'] if row['id'] in owned_ids}
+                vector_status = 'ready'
+        # An empty qualified set is no_match, not permission to loosen relevance.
+        # Explicit lexical-only evaluation remains available, never a fallback
+        # after a missing/broken encoder. Disabled/empty cache reconciliation runs.
+        no_qualified_candidates = vector_status == 'ready' and not vector_scores
+        if not no_qualified_candidates and ((corpus.enabled and corpus.records)
+                or self.cache_dir is not None or self.managed_cache is not None):
             scores = await self._search(corpus.records, query, vector_scores, corpus=corpus, limit=limit)
         records = await self.repository.get_by_ids(scope, authorization, corpus, [row['id'] for row in scores])
         results = [dict(record, retrieval=score) for record, score in zip(records, scores)]

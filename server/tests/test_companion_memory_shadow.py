@@ -147,11 +147,31 @@ class ShadowRetrievalTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(result['results'][0]['retrieval']['bm25_score'], 0)
         self.assertEqual(result['results'][0]['retrieval']['score_kind'], 'rrf')
 
-    async def test_missing_vectors_fall_back_to_bm25_and_no_match_is_explicit(self):
+    async def test_ready_empty_vector_candidates_do_not_turn_common_characters_into_evidence(self):
+        self.fact('我的朋友喜欢绿色的植物')
+        async def no_candidates(scope, authorization, query, **kwargs):
+            return dict(snapshot=dict(zip(('revision', 'content_epoch'), self.index._snapshot(scope))), candidates=[])
+        with patch.object(self.index, 'candidates', side_effect=no_candidates):
+            result = await YoumiMemoryRuntime(self.index).shadow_retrieve(self.scope, self.auth, '光的传播速度是什么？')
+        self.assertEqual(result['results'], [])
+        self.assertEqual(result['memory_status'], 'no_match')
+        self.assertEqual(result['vector_status'], 'ready')
+
+    async def test_rrf_cannot_add_a_lexical_match_without_semantic_qualification(self):
+        from server.companion.memory_search import YoumiBM25Search
+        engine = YoumiBM25Search()
+        engine.rebuild([dict(id='lexical-only', judgment='我的热茶', tags=[]),
+            dict(id='semantic', judgment='登山', tags=[])])
+        results = engine.search('热茶', {'semantic': .6})
+        self.assertEqual([row['id'] for row in results], ['semantic'])
+
+    async def test_missing_vectors_are_unavailable_and_explicit_lexical_evaluation_remains_separate(self):
         tea = self.fact('喜欢热茶')  # Intentionally no vector index yet.
         runtime = YoumiMemoryRuntime(self.index)
-        result = await runtime.shadow_retrieve(self.scope, self.auth, '热茶')
-        self.assertEqual(result['vector_status'], 'unavailable')
+        with self.assertRaises(EmbeddingUnavailable):
+            await runtime.shadow_retrieve(self.scope, self.auth, '热茶')
+        result = await runtime.shadow_retrieve(self.scope, self.auth, '热茶', use_vectors=False)
+        self.assertEqual(result['vector_status'], 'not_requested')
         self.assertEqual(result['results'][0]['id'], tea)
         result = await runtime.shadow_retrieve(self.scope, self.auth, '滑雪', use_vectors=False)
         self.assertEqual(result['memory_status'], 'no_match')
