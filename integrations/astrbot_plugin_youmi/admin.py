@@ -23,7 +23,8 @@ ADMIN_INSTRUCTION = (
     '不能当作修改成功，也不要盲目重试写操作。密钥占位符可原样传回以保留原值；'
     '不要向用户输出凭据。能力以当前接口和实际授权结果为准。\n'
 )
-SENSITIVE = re.compile(r'password|passwd|secret|token|credential|authorization|api[_-]?key|access[_-]?key|^key$', re.I)
+SENSITIVE = re.compile(r'password|passwd|secret|credential|authorization|api[_-]?key|access[_-]?key|'
+                       r'(?:access|refresh|service|bearer|id)[_-]?token|(?:^|[_.-])(?:token|key)$', re.I)
 
 
 class AdminClient:
@@ -130,7 +131,7 @@ class AdminClient:
                          path_hash=hashlib.sha256(path.encode()).hexdigest())
             if self.session is None:
                 self.session = aiohttp.ClientSession(connector=aiohttp.TCPConnector(limit=2),
-                                                     cookie_jar=aiohttp.DummyCookieJar(), trust_env=True)
+                                                     cookie_jar=aiohttp.DummyCookieJar())
                 # Pinned aiohttp otherwise retries PUT/DELETE after a lost response.
                 self.session._retry_connection = False
             credential = self._authorization(endpoint)

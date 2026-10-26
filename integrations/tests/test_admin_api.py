@@ -42,16 +42,17 @@ async def test_full_config_save_preserves_secrets_and_audit_has_no_values(tmp_pa
         if request.method == 'PUT':
             saved.update(await request.json())
             return web.json_response({'code': 0})
-        return web.json_response({'api_key': 'provider-private', 'volume': 10,
+        return web.json_response({'api_key': 'provider-private', 'volume': 10, 'max_tokens': 8192,
                                   'params': [{'paramCode': 'server.secret', 'paramValue': 'server-private'}]})
     async with api(tmp_path, handler) as (admin, manifest):
         result = await admin.request(manifest, 'youmi', 'GET', '/settings')
         config = result['result']
+        assert config['max_tokens'] == 8192
         assert 'provider-private' not in json.dumps(result)
         assert 'server-private' not in json.dumps(result)
         config['volume'] = 20
         await admin.request(manifest, 'youmi', 'PUT', '/settings', body=config)
-        assert saved == {'api_key': 'provider-private', 'volume': 20,
+        assert saved == {'api_key': 'provider-private', 'volume': 20, 'max_tokens': 8192,
                          'params': [{'paramCode': 'server.secret', 'paramValue': 'server-private'}]}
         journal = admin.audit_file.read_text()
         assert all(secret not in journal for secret in ['provider-private', 'server-private', 'fixture-admin-credential'])
