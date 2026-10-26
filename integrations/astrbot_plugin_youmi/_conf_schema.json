@@ -7,7 +7,7 @@
   "timeout_prepare": {"type": "int", "default": 15, "description": "Prepare timeout seconds"},
   "timeout_complete": {"type": "int", "default": 10, "description": "Complete timeout seconds"},
   "timeout_tts": {"type": "int", "default": 30, "description": "TTS timeout seconds"},
-  "text_voice_policy": {"type": "string", "default": "reply_to_voice", "options": ["text", "reply_to_voice", "text_and_voice"], "description": "Native text plus optional Youmi voice"},
+  "text_voice_policy": {"type": "string", "default": "reply_to_voice", "options": ["text", "reply_to_voice", "text_and_voice"], "description": "Text, voice-only for voice input, or both"},
   "max_dynamic_context_chars": {"type": "int", "default": 24000, "description": "Reject, never truncate, an oversized dynamic context"},
   "enable_active_message_context": {"type": "bool", "default": true, "description": "Inject Youmi context into native cron Agent runs"},
   "scheduled_tool_budget": {"type": "int", "default": 8192, "description": "Reviewed conservative budget for scheduled Agent tool schemas"},
