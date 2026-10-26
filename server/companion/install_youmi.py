@@ -287,7 +287,7 @@ def install(root, changes):
                      "events.py", "emotions.py", "schema-v3.sql", "schema-v4.sql", "schema-v5.sql", "schema-v6.sql", "affect.py", "features.py", "management.py", "character.py", "schema-v7.sql",
                      "request_accounting.py", "requirements-vector.txt", "schema-v8.sql", "schema-v9.sql", "schema-v10.sql", "emotional_system.py", "astrbot_api.py",
                      "astrbot_identity.py", "astrbot_turns.py", "astrbot_media.py",
-                     "memory_repository.py", "memory_shadow.py", "memory_search.py", "memory_state.py", "schema-v11.sql",
+                     "memory_repository.py", "memory_shadow.py", "memory_search.py", "memory_state.py", "memory_reflection.py", "schema-v11.sql",
                      "requirements-memory-shadow.txt", "YOUMI_MEMORY_NOTICE.md", "YOUMI_MEMORY_LICENSE"]:
             shutil.copy2(Path(__file__).parent / name, destination / name)
         for relative, (_, changed) in changes.items():

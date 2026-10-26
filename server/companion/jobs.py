@@ -10,7 +10,8 @@ import sqlite3
 
 from .authorization import AuthenticatedScope, PrivateAuthorizationRequired
 from .memory import MemoryError, _safe_text
-from .extraction import context_for, validate_output
+from .extraction import context_for
+from .memory_reflection import validate_proposal as validate_output
 from .embedding import EmbeddingUnavailable
 from .semantic import SemanticMemoryIndex
 from .proposal import validation_feedback

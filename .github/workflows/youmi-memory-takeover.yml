@@ -41,6 +41,7 @@ jobs:
           server.tests.test_companion_memory_runtime
           server.tests.test_companion_memory_shadow
           server.tests.test_companion_memory_state
+          server.tests.test_companion_memory_reflection
           server.tests.test_emotional_system
           server.tests.test_companion_affect
           server.tests.test_companion_character
