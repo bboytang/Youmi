@@ -263,3 +263,12 @@
 - 三种安装载荷加入V16，全量/情感入口带新协调器；原V1–V15冻结不改。实际安装脚本增加managed_commit_purge / managed_no_stale_rewrite / managed_startup_recovery，待准确提交CI。
 - 受控模式当前安全策略为失效后清空整个分区，新增事实也可能导致重建；不能将其宣称为生产增量性能达标。原临时合成模式继续新增追加。原始外部sqlite连接只保证失效账本，清理由启动/后续提交/显式恢复负责；数据库搬迁须先清原受控根。
 - 生产未连接/注册/部署/启用，无生产缓存或备份，无真实模型/QQ消息，所有并行工作保留。
+
+### 2026-10-26 — 6A V16受控清理后端机制验收及交接
+
+- 准确产品/验证提交 `56aefbce140b3fd0c48080487101ac00c833c9f8`。[双Python](https://github.com/bboytang/Youmi/actions/runs/40271011502)各364项，[完整后端](https://github.com/bboytang/Youmi/actions/runs/40271011453)691项及人设传输通过。
+- [实际安装/BGE/Tantivy](https://github.com/bboytang/Youmi/actions/runs/40271011495)全阶段通过；下载109916字节artifact（ID12627963206）至/tmp/youmi-managed-cache-final-results，vector/code_sha和shadow/commit均为准确SHA且passed=true。23项影子机制全真，新增提交清理/旧快照不复活/启动恢复三项。
+- [Java授权](https://github.com/bboytang/Youmi/actions/runs/40271011455)194项及JAR，[Manager基线](https://github.com/bboytang/Youmi/actions/runs/40271011484)150项及基线4项全部通过。本轮准确产品SHA首次五组CI全通过；本地夹具首轮失败保留记录，不作为通过。
+- 最终diff复核，V1–V15、人物原文与原情感算法未改，V16冻结；所有并行QQ/AstrBot文件未覆盖/提交。没有生产连接/升级/目录注册/缓存/备份或真实消息，无前端/固件/真机验收。
+- 更新方案/管理契约/索引生命周期/验证/工作交接。本轮完成候选后端清理机制，不等于生产启用：还需pending页面及真实回执、有界本地空闲重试/最久保留时限、容量/质量/预算及切换回退。当前只在启动/后续提交/查询/内部recover重试，无空闲定时器，锁释放后一直闲置不能宣称已自动清理。
+- 下一任务先补这个重试与页面反馈缺口，再继续6B动态认知策略与固定条目、6C迁移/中文对照和7切换回退。生产保持关闭，后续schema从V17扩展。

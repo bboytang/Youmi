@@ -1,5 +1,27 @@
 # Youmi 记忆接管验证记录
 
+## 步骤6A：V16受控缓存清理与启动恢复后端机制
+
+方案提交 `622648f0`，准确产品与验证提交 **`56aefbce140b3fd0c48080487101ac00c833c9f8`**，以下五组检查全部对应这一SHA并通过。
+
+| 检查 | 结果 | GitHub Actions |
+| --- | --- | --- |
+| Python3.10/3.12 | 各364项通过，新增25项生命周期/迁移测试 | https://github.com/bboytang/Youmi/actions/runs/40271011502 |
+| 完整后端/人设传输 | 691项及传输检查通过 | https://github.com/bboytang/Youmi/actions/runs/40271011453 |
+| 实际安装/BGE/Tantivy及原向量/检索/上下文/回复/提取 | 所有阶段通过 | https://github.com/bboytang/Youmi/actions/runs/40271011495 |
+| Java授权/JAR | 194项及JAR通过 | https://github.com/bboytang/Youmi/actions/runs/40271011455 |
+| Manager基线 | 原有150项及基线4项通过 | https://github.com/bboytang/Youmi/actions/runs/40271011484 |
+
+本地新增25项、相关68项、另一组158项、完整兼容364项和冻结真实旧MemoryStore迁移8项通过；范围有重叠，不相加成独立测试数。首轮两项夹具准备错误已修正：未建普通向量、前次改文已撤掉待删除来源；未放宽断言或修改原情感算法。
+
+新增行为测试覆盖真实进程中断/跨进程锁/其他MemoryStore写入、删除期间原生查询不复活旧缓存、提交/回滚与空清空、超100分区时前台目标直接清理、删除/fsync/数据库确认故障及代次竞争、孤立owner、符号链接拒绝和外部文件保持、非默认51维配置保持、V15→V16保持/幂等/失败与中断/冻结旧loader拒绝。成功清理保留稳定空writer.lock及目录，删除其余私有段/清单/未知文件并fsync；这不是介质取证级安全擦除。
+
+已下载artifact `Youmi-actual-vectors-56aefbce140b3fd0c48080487101ac00c833c9f8`（ID12627963206，109916字节）至 `/tmp/youmi-managed-cache-final-results`。vector-results.json.code_sha、memory-shadow-results.json.commit均为准确SHA且passed=true，影子23项全真；新增managed_commit_purge / managed_no_stale_rewrite / managed_startup_recovery，原默认召回/51维/联动与索引恢复检查继续通过。
+
+V1–V15未改，V16冻结，后续从V17扩展。默认不注册且不建缓存，正常retrieve仍旧算法；原shadow_cache_dir模式仍只限合成，受控模式需内部显式managed_shadow_cache=True且无公开开启路由。普通/情感完整安装含新协调器，AstrBot历史增量包只迁schema且不具备开启受控模式的入口。
+
+验收限于候选后端机制，**不等于生产启用验收**：页面/真实终端pending与重试展示、最久保留时限/空闲重试策略、容量/质量/预算、切换回退仍待完成。当前重试由启动、后续提交/查询或内部recover驱动，没有独立空闲清理定时器；锁忙时明确pending。受控模式失效会清整分区，增量性能未达标验收。原始外部sqlite连接不能保证提交后立即回调，数据库搬迁必须先清原根。未访问生产/部署/注册/新建生产缓存/备份或发送真实消息；未作前端/固件修改及真机结论。
+
 ## 步骤 6A 第二段基础：V15 事务失效账本
 
 方案 `2916e7c7`，产品 `6459fe6dd8ee743e6cd811c971ea8d7207181407`，最终准确验证提交 **`879e62e2db089dcb75b2783c642da0d157c2a5f6`**（仅修正 Python3.10 故障注入后的授权器恢复）。以下结果全部对应最终 SHA。
