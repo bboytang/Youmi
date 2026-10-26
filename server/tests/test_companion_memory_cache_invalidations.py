@@ -190,7 +190,7 @@ os._exit(37)
     def v14(self):
         with self.store.db:
             remove_v15(self.store.db)
-            self.store.db.execute('DELETE FROM mia_schema_migrations WHERE version=15')
+            self.store.db.execute('DELETE FROM mia_schema_migrations WHERE version>=15')
         namespace = {'__file__': str(Path('server/companion/schema.py').resolve())}
         source = subprocess.check_output(['git', 'show', '1a4e7277:server/companion/schema.py'], text=True)
         exec(compile(source, 'frozen-v14.py', 'exec'), namespace)

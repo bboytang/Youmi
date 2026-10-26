@@ -61,3 +61,9 @@
 5. GitHub 验证准确提交的后端/安装/Java 与原前端基线、Vue 构建、Chromium/Android Chrome/iOS WebKit/Firefox 全套模拟。页面草稿、失败、冲突、智能体切换、来源消失、删除取消、手机溢出须有交互断言。真实手机与 QQ/App/设备验证仍属后续获授权验收，不部署生产。
 
 5B 最终页面包含导航及卡片入口、来源详情与版本化事实写入、证据整理与候选、分组配置和能量调整、情感审计跳转。草稿放弃使用页面自有 el-dialog，Promise 在确认/取消/关闭/销毁时结束；不同于通用 MessageBox 的 hashchange 关闭逻辑，浏览器地址变化仍允许用户明确取消离开。结果不明时保留草稿，配置或事实旧版本不自动重试；正在请求时阻止切换。现有记忆弹窗继续兼容，事实内容仍沿用原有存储限制，人设原文不由此页编辑或截断。
+
+## 受控缓存清理状态（V16，默认未注册）
+
+status追加cache_cleanup={state,error}；state为not_registered / complete / pending，error只为busy / io / database / null，不暴露目录或错误正文。事实edit/delete响应在已注册分区时同时返回saved=true与cache_cleanup，saved只代表canonical事实已提交，pending不能显示成物理清理已完成。原MemoryStore.handle响应也提供此状态。当前未注册的edit/delete保持原saved响应兼容，不提供公开注册或开启受控磁盘模式的操作。
+
+受控模式仅通过内部运行时managed_shadow_cache=True显式选择，默认回复工厂仍不传；生产前端/真实终端对pending和重试的展示必须在启用前验收，当前不因后端机制通过而发布生产。

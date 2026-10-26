@@ -376,7 +376,7 @@ migrate(db)
         self.assertEqual(result.returncode, 77)
         old_loader(self.store.db)
         migrate(self.store.db)
-        self.assertEqual(self.store.db.execute('SELECT MAX(version) FROM mia_schema_migrations').fetchone()[0], 15)
+        self.assertEqual(self.store.db.execute('SELECT MAX(version) FROM mia_schema_migrations').fetchone()[0], 16)
 
     async def test_schema_aware_legacy_engine_keeps_post_upgrade_data_and_latest_emotion(self):
         self.store.clock = lambda: 1800000000

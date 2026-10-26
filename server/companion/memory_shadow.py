@@ -9,16 +9,20 @@ from .memory_repository import YoumiMemoryRepository
 
 
 class YoumiMemoryShadow:
-    def __init__(self, index, *, cache_dir=None):
+    def __init__(self, index, *, cache_dir=None, managed=False):
         self.index = index
         self.repository = YoumiMemoryRepository(index.store)
         self._slots = asyncio.Semaphore(1)
         self.cache_dir = cache_dir
         with index.store.lock:
             self.database = index.store.db.execute('PRAGMA database_list').fetchone()['file']
+        self.managed_cache = None
+        if managed:
+            from .memory_cache_lifecycle import YoumiManagedMemoryCache
+            self.managed_cache = YoumiManagedMemoryCache(self.database)
 
     @staticmethod
-    def _score(records, query, vector_scores, *, cache_path=None):
+    def _score(records, query, vector_scores, *, cache_path=None, managed_cache=None, corpus=None):
         try:
             from .memory_search import YoumiBM25Search
         except ImportError:
@@ -28,6 +32,8 @@ class YoumiMemoryShadow:
             [row['category']] + terms(row['entities']) + terms(row['keywords']) + terms(row['trigger_terms']))))
             for row in records]
         try:
+            if managed_cache is not None:
+                return managed_cache.search(corpus, rows, query, vector_scores)
             if cache_path is not None:
                 from .memory_index_cache import search as cached_search
                 return cached_search(cache_path, rows, query, vector_scores)
@@ -46,7 +52,9 @@ class YoumiMemoryShadow:
             raise EmbeddingUnavailable('memory_shadow_busy') from None
         try:
             score = self._score
-            if self.cache_dir is not None:
+            if self.managed_cache is not None:
+                score = partial(score, managed_cache=self.managed_cache, corpus=corpus)
+            elif self.cache_dir is not None:
                 from .memory_index_cache import partition
                 score = partial(score, cache_path=partition(self.cache_dir, self.database, corpus.owner, corpus.persona_id))
             future = asyncio.get_running_loop().run_in_executor(None, score, records, query, vector_scores)
@@ -86,7 +94,7 @@ class YoumiMemoryShadow:
                     if str(error) == 'memory_changed':
                         raise
                     vector_status = 'unavailable'
-        if (corpus.enabled and corpus.records) or self.cache_dir is not None:
+        if (corpus.enabled and corpus.records) or self.cache_dir is not None or self.managed_cache is not None:
             scores = await self._search(corpus.records, query, vector_scores, corpus=corpus)
         records = await self.repository.get_by_ids(scope, authorization, corpus, [row['id'] for row in scores])
         results = [dict(record, retrieval=score) for record, score in zip(records, scores)]

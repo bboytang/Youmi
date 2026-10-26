@@ -178,6 +178,33 @@ async def verify(directory, report):
             finally:
                 reopened.close()
             report['checks'].update(invalidation_survives_reopen=True, invalidation_stale_ack_refused=True)
+            # The managed path is separately opt-in and has a fixed private root.
+            from youmi_companion.memory_cache_lifecycle import YoumiManagedMemoryCache
+            from youmi_companion.memory_repository import YoumiMemoryRepository
+            from youmi_companion.embedding import EmbeddingUnavailable
+            import sqlite3
+            managed_id = remember(scope.owner, '我周末喜欢看画展', 'managed-fixture')
+            managed = YoumiMemoryRuntime(index, managed_shadow_cache=True)
+            assert (await managed.shadow_retrieve(scope, policy, '画展', use_vectors=False))['results'][0]['id'] == managed_id
+            coordinator = YoumiManagedMemoryCache(Path(folder) / 'canonical.sqlite3')
+            managed_path = coordinator.directory(scope.owner)
+            stale = await YoumiMemoryRepository(store).capture(scope, policy)
+            store.delete_memory(scope.owner, managed_id)
+            assert sorted(p.name for p in managed_path.iterdir()) == ['writer.lock']
+            assert store.cache_cleanup_status(scope.owner)['state'] == 'complete'
+            try:
+                coordinator.search(stale, [dict(id=managed_id, judgment='我周末喜欢看画展', tags=[])], '画展', {})
+            except EmbeddingUnavailable as error:
+                assert str(error) == 'memory_changed'
+            else:
+                raise AssertionError('Stale managed corpus must not recreate deleted segments')
+            (managed_path / 'partial-private-segment').write_text('synthetic interrupted segment')
+            with sqlite3.connect(Path(folder) / 'canonical.sqlite3') as raw:
+                raw.execute('UPDATE youmi_memory_cache_partitions SET writing=1 WHERE owner=?', (scope.owner,))
+            reopened = MemoryStore(Path(folder) / 'canonical.sqlite3')
+            reopened.close()
+            assert sorted(p.name for p in managed_path.iterdir()) == ['writer.lock']
+            report['checks'].update(managed_commit_purge=True, managed_no_stale_rewrite=True, managed_startup_recovery=True)
         finally:
             store.close()
 

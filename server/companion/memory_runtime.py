@@ -9,10 +9,13 @@ Emotion and persona remain owned by their existing services, not this runtime.
 
 
 class YoumiMemoryRuntime:
-    def __init__(self, index, *, shadow_cache_dir=None):
+    def __init__(self, index, *, shadow_cache_dir=None, managed_shadow_cache=False):
+        if type(managed_shadow_cache) is not bool or (managed_shadow_cache and shadow_cache_dir is not None):
+            raise ValueError('Invalid shadow cache mode')
         self._index = index
         self._shadow = None
         self._shadow_cache_dir = shadow_cache_dir
+        self._managed_shadow_cache = managed_shadow_cache
 
     @property
     def store(self):
@@ -26,7 +29,7 @@ class YoumiMemoryRuntime:
         # does not import Tantivy or require its optional dependency.
         if self._shadow is None:
             from .memory_shadow import YoumiMemoryShadow
-            self._shadow = YoumiMemoryShadow(self._index, cache_dir=self._shadow_cache_dir)
+            self._shadow = YoumiMemoryShadow(self._index, cache_dir=self._shadow_cache_dir, managed=self._managed_shadow_cache)
         return await self._shadow.retrieve(scope, authorization, query, use_vectors=use_vectors)
 
     async def _require(self, scope, authorization, permission):

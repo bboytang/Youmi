@@ -46,7 +46,9 @@ def _read(store, owner, command):
             _fields(command, {'action'})
             reflection = reflection_status(store, owner)
             reflection.pop('owner', None)
-            return dict(revision=revision, features=feature_settings(store, owner),
+            from .memory_cache_lifecycle import YoumiManagedMemoryCache
+            return dict(revision=revision, cache_cleanup=YoumiManagedMemoryCache.status(store.db, owner),
+                features=feature_settings(store, owner),
                 reflection=reflection, emotion_linkage=linkage_settings(store, owner),
                 cognition=cognitive_status(store, owner),
                 capabilities=dict(engine='legacy', emotion_ranking='shadow_only',
@@ -98,7 +100,8 @@ def manage(store, owner, command):
             store.edit_memory(owner, command['id'], command['content'], command['confirmed'], expected=command['expected'])
         else:
             store.delete_memory(owner, command['id'], expected=command['expected'])
-        return {'saved': True}
+        cleanup = store.cache_cleanup_status(owner)
+        return dict(saved=True, cache_cleanup=cleanup) if cleanup['state'] != 'not_registered' else {'saved': True}
     if action in {'reflection', 'emotion_linkage', 'cognition'}:
         _fields(command, {'action', 'operation'})
         operation = command['operation']

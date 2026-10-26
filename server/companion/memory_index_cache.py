@@ -1,7 +1,8 @@
-"""Disposable disk index for explicit, synthetic-data shadow evaluation only.
+"""Native index primitives; standalone search is synthetic evaluation only.
 
-Canonical SQLite is always read again. This is not a production cache: inactive
-partitions are reconciled on their next shadow query, not at fact deletion time.
+Standalone partitions reconcile on the next query, not at fact deletion time.
+The separately opt-in managed coordinator owns registration and cleanup while
+reusing the stable lock and private _search_locked implementation below.
 """
 
 from contextlib import contextmanager
@@ -44,11 +45,14 @@ def _replace_json(path, value):
 
 
 @contextmanager
-def _locked(path):
+def _locked(path, *, timeout=.4):
     path.mkdir(parents=True, mode=0o700, exist_ok=True)
+    if path.is_symlink():
+        raise OSError('Cache partition cannot be a symlink')
     os.chmod(path, 0o700)
-    with (path / 'writer.lock').open('a') as lock:
-        deadline = time.monotonic() + .4
+    descriptor = os.open(path / 'writer.lock', os.O_CREAT | os.O_RDWR | os.O_NOFOLLOW, 0o600)
+    with os.fdopen(descriptor, 'a') as lock:
+        deadline = time.monotonic() + timeout
         while True:
             try:
                 fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
@@ -84,40 +88,48 @@ def _manifest(path):
 
 def search(path, rows, query, vector_scores):
     """A complete authorized snapshot reconciles the partition before any search."""
+    path = Path(path)
+    with _locked(path):
+        return _search_locked(path, rows, query, vector_scores)
+
+
+def _search_locked(path, rows, query, vector_scores):
+    """Caller must hold the stable partition writer.lock through search."""
     from .memory_search import YoumiBM25Search
     path = Path(path)
     current = {row['id']: hashlib.sha256(json.dumps([row['judgment'], row['tags']],
         ensure_ascii=False).encode()).hexdigest() for row in rows}
-    with _locked(path):
-        manifest_path, dirty, index_path = path / 'manifest.json', path / 'dirty.json', path / 'index'
-        manifest = _manifest(manifest_path)
-        previous = manifest['hashes'] if manifest is not None else {}
-        reset = dirty.exists() or manifest is None or not index_path.is_dir()
-        # Replacing/removing facts rebuilds from scratch, dropping historical
-        # segment files as well as logical documents. New facts can append.
-        reset = reset or any(current.get(key) != digest for key, digest in previous.items())
-        engine = None
-        if not reset:
-            try:
-                engine = YoumiBM25Search(index_path)
-                if engine._index.searcher().num_docs != len(previous):
-                    reset = True
-            except Exception:
+    manifest_path, dirty, index_path = path / 'manifest.json', path / 'dirty.json', path / 'index'
+    if index_path.is_symlink() or any(child.is_symlink() for child in index_path.rglob('*')):
+        raise OSError('Cache index cannot contain symlinks')
+    manifest = _manifest(manifest_path)
+    previous = manifest['hashes'] if manifest is not None else {}
+    reset = dirty.exists() or manifest is None or not index_path.is_dir()
+    # Replacing/removing facts rebuilds from scratch, dropping historical
+    # segment files as well as logical documents. New facts can append.
+    reset = reset or any(current.get(key) != digest for key, digest in previous.items())
+    engine = None
+    if not reset:
+        try:
+            engine = YoumiBM25Search(index_path)
+            if engine._index.searcher().num_docs != len(previous):
                 reset = True
-        if reset or current != previous:
-            _replace_json(dirty, {'format': FORMAT})
-            if reset:
-                engine = None  # Release reader before removing its segment files.
-                if index_path.exists():
-                    shutil.rmtree(index_path)
-                index_path.mkdir(mode=0o700)
-                engine = YoumiBM25Search(index_path)
-                engine.rebuild(rows)
-            else:
-                engine.append([row for row in rows if row['id'] not in previous])
-            _replace_json(manifest_path, {'format': FORMAT, 'hashes': current})
-            dirty.unlink()
-            _sync_directory(path)
+        except Exception:
+            reset = True
+    if reset or current != previous:
+        _replace_json(dirty, {'format': FORMAT})
+        if reset:
+            engine = None  # Release reader before removing its segment files.
+            if index_path.exists():
+                shutil.rmtree(index_path)
+            index_path.mkdir(mode=0o700)
+            engine = YoumiBM25Search(index_path)
+            engine.rebuild(rows)
         else:
-            engine._index.reload()
-        return engine.search(query, vector_scores)
+            engine.append([row for row in rows if row['id'] not in previous])
+        _replace_json(manifest_path, {'format': FORMAT, 'hashes': current})
+        dirty.unlink()
+        _sync_directory(path)
+    else:
+        engine._index.reload()
+    return engine.search(query, vector_scores)

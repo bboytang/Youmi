@@ -75,14 +75,14 @@ class RequestMigrationTests(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(db.execute('SELECT COUNT(*) FROM mia_schema_migrations').fetchone()[0], 3)
             migrate(db)
             migrate(db)
-            self.assertEqual(db.execute('SELECT COUNT(*) FROM mia_schema_migrations').fetchone()[0], 15)
+            self.assertEqual(db.execute('SELECT COUNT(*) FROM mia_schema_migrations').fetchone()[0], 16)
             self.assertEqual(db.execute('PRAGMA foreign_key_check').fetchall(), [])
         finally:
             db.close()
 
     def test_old_migration_contract_rejects_v4_before_processing_jobs(self):
         rows = self.store.db.execute('SELECT version FROM mia_schema_migrations').fetchall()
-        self.assertEqual([row[0] for row in rows], list(range(1, 16)))
+        self.assertEqual([row[0] for row in rows], list(range(1, 17)))
         # The immutable V3 loader requires len(rows)<=3 and the exact checksum.
         self.assertFalse(1 <= len(rows) <= 3)
         self.assertNotEqual(self.store.db.execute('SELECT schema_checksum FROM mia_schema_migrations WHERE version=3').fetchone()[0],

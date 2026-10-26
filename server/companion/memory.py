@@ -139,6 +139,24 @@ def trait_supported(evidence):
     return False
 
 
+class _MemoryConnection(sqlite3.Connection):
+    # SQLite's context manager commits in C, so both entry points need the hook.
+    on_commit = None
+
+    def commit(self):
+        active = self.in_transaction
+        super().commit()
+        if active and self.on_commit is not None:
+            self.on_commit()
+
+    def __exit__(self, kind, value, traceback):
+        active = self.in_transaction
+        result = super().__exit__(kind, value, traceback)
+        if active and kind is None and self.on_commit is not None:
+            self.on_commit()
+        return result
+
+
 class MemoryStore:
     def __init__(self, path, clock=time.time):
         path = Path(path)
@@ -148,7 +166,7 @@ class MemoryStore:
         os.chmod(path, 0o600)
         self.clock = clock
         self.lock = threading.RLock()
-        self.db = sqlite3.connect(path, check_same_thread=False)
+        self.db = sqlite3.connect(path, check_same_thread=False, factory=_MemoryConnection)
         self.db.row_factory = sqlite3.Row
         self.db.execute("PRAGMA foreign_keys=ON")
         self.db.execute("PRAGMA secure_delete=ON")
@@ -186,6 +204,31 @@ class MemoryStore:
         except BaseException:
             self.db.close()
             raise
+        self._cache_cursor = ''
+        self.db.on_commit = self._cleanup_cache
+        self._cleanup_cache()
+
+    def _cleanup_cache(self, owner=None):
+        # No filesystem dependency at all unless an internal managed shadow
+        # explicitly registered a partition. Cleanup failure never undoes a
+        # committed fact, successful reply or existing emotional transition.
+        try:
+            with self.lock:
+                if not self.db.execute('SELECT 1 FROM youmi_memory_cache_partitions LIMIT 1').fetchone():
+                    return
+                database = self.db.execute('PRAGMA database_list').fetchone()['file']
+                from .memory_cache_lifecycle import YoumiManagedMemoryCache
+                coordinator = YoumiManagedMemoryCache(database)
+                if owner is not None:
+                    if coordinator.status(self.db, owner)['state'] == 'pending':
+                        coordinator.cleanup(owner)
+                else:
+                    result = coordinator.recover(cursor=self._cache_cursor)
+                    self._cache_cursor = result['cursor']
+        except Exception:
+            # The durable invalidation is deliberately left unacknowledged.
+            # Status can still report pending even if recording last_error fails.
+            pass
 
     def _owner(self, owner):
         owner = _text(owner, 256, "authenticated owner")
@@ -512,6 +555,7 @@ class MemoryStore:
             self.db.execute("UPDATE owners SET revision=revision+1 WHERE owner=?", (owner,))
             self._cancel_jobs(owner)
         with self.lock:
+            self._cleanup_cache(owner)
             self._purge()
 
     def delete_memory(self, owner, memory_id, *, expected=None):
@@ -529,6 +573,7 @@ class MemoryStore:
             self.db.execute("UPDATE owners SET revision=revision+1 WHERE owner=?", (owner,))
             self._cancel_jobs(owner)
         with self.lock:
+            self._cleanup_cache(owner)
             self._purge()
 
     def set_paused(self, owner, paused):
@@ -570,6 +615,7 @@ class MemoryStore:
             self.db.execute("UPDATE owners SET revision=revision+1,version=version+1 WHERE owner=?", (owner,))
             self._cancel_jobs(owner)
         with self.lock:
+            self._cleanup_cache(owner)
             self._purge()
 
     def reset_personality(self, owner):
@@ -579,7 +625,13 @@ class MemoryStore:
             self.db.execute("UPDATE owners SET revision=revision+1,version=version+1 WHERE owner=?", (owner,))
             self._cancel_jobs(owner)
         with self.lock:
+            self._cleanup_cache(owner)
             self._purge()
+
+    def cache_cleanup_status(self, owner):
+        from .memory_cache_lifecycle import YoumiManagedMemoryCache
+        with self.lock:
+            return YoumiManagedMemoryCache.status(self.db, owner)
 
     def handle(self, owner, request):
         if not isinstance(request, dict):
@@ -610,7 +662,8 @@ class MemoryStore:
         elif action not in {"list", "personality"}:
             raise MemoryError("invalid_input", "Unknown memory action")
         state = self.snapshot(owner)
-        return {"memories": self.list_memories(owner), "paused": state["paused"], "personality": self.personality(owner),
+        return {"cache_cleanup": self.cache_cleanup_status(owner),
+                "memories": self.list_memories(owner), "paused": state["paused"], "personality": self.personality(owner),
                 "management": {"version": 1, "actions": ["feature_settings", "set_feature_settings", "job_status", "events", "event_delete", "emotion_consent", "emotion_status",
                     "observations", "observation_update", "observation_delete", "emotion_clear"]}}
 
