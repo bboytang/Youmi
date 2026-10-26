@@ -1,5 +1,28 @@
 # Youmi 记忆接管验证记录
 
+## 步骤6A：空闲自动重试与管理页清理反馈
+
+计划 `cb218765`；准确产品与验证提交 **`e3b512fb436e22d7ca0f1e40c3fe042ff4e7366e`**。以下六组检查均对应这一SHA且全部通过。
+
+| 检查 | 结果 | GitHub Actions |
+| --- | --- | --- |
+| 前端构建/基线/四浏览器 | 原有回归与快照通过，Chromium/Android Chrome/iOS WebKit/Firefox共184项全部通过 | https://github.com/bboytang/Youmi/actions/runs/40274946743 |
+| Python3.10/3.12 | 各371项通过，新增7项空闲重试/关闭/取消测试 | https://github.com/bboytang/Youmi/actions/runs/40274946760 |
+| 完整后端/人设传输 | 后端698项及传输检查通过 | https://github.com/bboytang/Youmi/actions/runs/40274946739 |
+| 实际安装/BGE/Tantivy/原链路 | 所有阶段通过，影子24项检查全真 | https://github.com/bboytang/Youmi/actions/runs/40274946736 |
+| Java授权/JAR | 194项及JAR通过 | https://github.com/bboytang/Youmi/actions/runs/40274946812 |
+| Manager基线 | 原有150项及基线4项通过 | https://github.com/bboytang/Youmi/actions/runs/40274946732 |
+
+新增后端测试验证真实文件锁释放后没有对话/模型请求仍会清理、失败重试/游标、未注册无目录、同worker单daemon lane、等待取消/关闭超时仍保留实际文件锁、晚完成使用独立SQLite连接而不访问已关闭store、共用关闭预算、主task被取消也停止调度。本地7项、相关36项、完整371项均通过，范围重叠不相加。
+
+新增5个浏览器场景在四个项目运行，共增加20项，原164项保留：pending删除回执不假称全部完成、编辑pending与配置草稿、核对失败及不同agent状态隔离、事实草稿不丢/不重发写、旧后端缺状态仍保持已知pending。原有53项组件回归与快照步骤通过；原始字节比较48/49，严格模块/依赖/CSS语义比较步骤通过，不写成字节完全一致。
+
+前端artifact `Youmi-responsive-admin-e3b512fb436e22d7ca0f1e40c3fe042ff4e7366e`（ID12629997250，134700454字节，14天）包含候选源码/静态/提交标记/基线与浏览器报告；本机未整体下载大型包，不宣称人工看过所有截图。小型实际安装artifact（ID12630026337，110113字节）已下载至 `/tmp/youmi-idle-cleanup-results`，核对vector/code_sha与shadow/commit为准确SHA且passed=true；24项影子机制全真，新增managed_idle_cleanup=true。
+
+默认5秒/最多10分区，单批结束后再等5秒。正常静态队列一轮约ceil(N/10)*5秒加执行时间，这是调度估算，持续IO/数据库故障无硬删除期限并保持pending；停服由下一次启动恢复。未注册不建根，不调用模型，不改变51维/人设或默认召回，也不公开开启受控模式。无schema变化，V1–V16冻结，后续从V17扩展。
+
+本轮准确产品SHA首次六组CI全部通过。生产未连接/部署/注册/开启/备份或外发消息，浏览器为合成API/模拟手机，不等于真实生产或真机验收。6A候选机制与页面反馈的缺口已补，仍须完成6B认知自动策略/固定条目、6C质量/预算/容量与迁移、7授权真实链路/切换回退；不可提前切换。
+
 ## 步骤6A：V16受控缓存清理与启动恢复后端机制
 
 方案提交 `622648f0`，准确产品与验证提交 **`56aefbce140b3fd0c48080487101ac00c833c9f8`**，以下五组检查全部对应这一SHA并通过。

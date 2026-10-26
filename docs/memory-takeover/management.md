@@ -64,6 +64,6 @@
 
 ## 受控缓存清理状态（V16，默认未注册）
 
-status追加cache_cleanup={state,error}；state为not_registered / complete / pending，error只为busy / io / database / null，不暴露目录或错误正文。事实edit/delete响应在已注册分区时同时返回saved=true与cache_cleanup，saved只代表canonical事实已提交，pending不能显示成物理清理已完成。原MemoryStore.handle响应也提供此状态。当前未注册的edit/delete保持原saved响应兼容，不提供公开注册或开启受控磁盘模式的操作。
+status追加cache_cleanup={state,error}；state为not_registered / complete / pending，error只为busy / io / database / null，不暴露目录或错误正文。事实edit/delete响应在已注册分区时同时返回saved=true与cache_cleanup，saved只代表canonical事实已提交，pending不能显示成物理清理已完成。原MemoryStore.handle响应也提供此状态。当前未注册的edit/delete保持原saved响应兼容，不提供公开注册或开启受控磁盘模式的操作。页面显示当前智能体pending/complete，pending编辑/删除回执使用警告反馈；只读核对只更新清理状态，不重发写入、不丢草稿。旧后端缺状态不能把已知pending变成complete。
 
-受控模式仅通过内部运行时managed_shadow_cache=True显式选择，默认回复工厂仍不传；生产前端/真实终端对pending和重试的展示必须在启用前验收，当前不因后端机制通过而发布生产。
+受控模式仅通过内部运行时managed_shadow_cache=True显式选择，默认回复工厂仍不传；页面的模拟浏览器证据见verification.md，真实终端对pending和重试的展示仍须在启用前验收，不因候选页面/后端通过而发布生产。

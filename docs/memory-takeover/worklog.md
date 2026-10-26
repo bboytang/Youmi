@@ -286,3 +286,11 @@
 - 新增7项本地测试全部通过，相关worker生命周期36项、完整兼容371项通过。覆盖释放真实文件锁后无对话/模型的自动清理、失败重试和游标、单线程/超时/取消/真实锁保持、服务共享截止时间/关库后晚完成的独立连接、未注册不建目录、主task取消。未放宽原关闭预算。
 - 新增5个四浏览器场景：删除pending与只读核对、编辑pending与配置草稿、状态失败与跨agent隔离、事实草稿保持、缺失状态不清掉pending。node语法检查通过，等待准确提交浏览器CI，未安装本地大型前端依赖。
 - 实际安装脚本新增managed_idle_cleanup检查，等待准确提交CI。生产未连接/注册/部署/开关/备份/真实消息，人设和情感权威未改，并行QQ文件保留。
+
+### 2026-10-26 — 空闲重试与页面反馈验收、交接
+
+- 准确产品与验证 `e3b512fb436e22d7ca0f1e40c3fe042ff4e7366e`。[双Python](https://github.com/bboytang/Youmi/actions/runs/40274946760)各371项，[完整后端](https://github.com/bboytang/Youmi/actions/runs/40274946739)698项及人设传输通过。[前端](https://github.com/bboytang/Youmi/actions/runs/40274946743)原有组件/快照、生产构建和四浏览器184项全通过；字节48/49，严格语义比较步骤通过，未将其写成字节完全相同。
+- [实际安装/BGE/Tantivy](https://github.com/bboytang/Youmi/actions/runs/40274946736)全阶段通过；下载110113字节artifact（ID12630026337）至/tmp/youmi-idle-cleanup-results，核对准确SHA、vector/shadow passed=true及24项机制全真，新增managed_idle_cleanup=true。[Java授权](https://github.com/bboytang/Youmi/actions/runs/40274946812)194项/JAR，[Manager基线](https://github.com/bboytang/Youmi/actions/runs/40274946732)150+4全部通过。
+- 前端artifact ID12629997250，134700454字节，候选源码/静态/基线/报告保留14天，本机未整体下载或人工看所有截图。新增5场景*4完整保留草稿、权限/agent、状态失败、缺失状态和不重发写断言。
+- 六组准确产品SHA首次全部通过，最终diff已复核；无schema变化，V1–V16、人设/情感权威与所有并行QQ文件未改写或提交。生产未连接/部署/注册/启用/备份，无真实消息或真机结论。
+- 更新方案、管理/清理契约、验证及交接。6A的空闲重试与页面反馈缺口已补，持续故障仍明确pending、不承诺硬删除时限。下一步6B先写四维自动认知/行为映射和独立固定条目契约，再实现验收；6C质量/预算/容量、迁移和7切换/真实链路/回退继续保持未完成，不提前启用。
