@@ -9,6 +9,7 @@ import re
 
 from .extraction import validate_output
 from .proposal import ExtractionError
+from .memory_artifacts import KINDS, validate_actions
 
 
 MEMORY_FIELDS = frozenset({
@@ -44,8 +45,11 @@ def validate_proposal(value, sources, context):
     actions = raw.get('memory_actions')
     if not isinstance(actions, list) or len(actions) > 16:
         raise ExtractionError('field_schema', 'Reflection requires at most 16 actions')
-    memories = []
+    memories, artifacts = [], []
     for action in actions:
+        if isinstance(action, dict) and isinstance(action.get('action'), str) and action['action'] in KINDS:
+            artifacts.append(action)
+            continue
         if (not isinstance(action, dict) or set(action) != {'action', 'memory'}
                 or not isinstance(action['action'], str) or action['action'] not in {'remember', 'revise'}):
             raise ExtractionError('field_schema', 'Unsupported reflection action')
@@ -64,4 +68,14 @@ def validate_proposal(value, sources, context):
     normalized = {'memories': memories, 'trait': raw.get('trait')}
     if 'observations' in raw:
         normalized['observations'] = raw['observations']
-    return validate_output(normalized, sources, context)
+    result = validate_output(normalized, sources, context)
+    if artifacts:
+        derived = validate_actions(artifacts, context)
+        referenced = {proof['id'] for item in derived for proof in item['evidence']}
+        changed = {item['reconciliation']['target_id'] for item in result['memories'] if 'reconciliation' in item}
+        known = {fact['id']: fact for fact in context}
+        if (referenced & changed or any(record['content'] == known[identifier]['content']
+                for record in result['memories'] for identifier in referenced)):
+            raise ExtractionError('source_semantic', 'Batch changes its own artifact evidence')
+        result['artifacts'] = derived
+    return result

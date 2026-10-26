@@ -33,5 +33,13 @@ class YoumiMemoryRuntime:
         # Preserve revocation errors; never turn them into an empty recall.
         return await self._index._require(scope, authorization, permission)
 
+    async def list_artifacts(self, scope, authorization):
+        from .memory_artifacts import YoumiMemoryArtifacts
+        return await YoumiMemoryArtifacts(self.store).list(scope, authorization)
+
+    async def delete_artifact(self, scope, authorization, identifier, version):
+        from .memory_artifacts import YoumiMemoryArtifacts
+        return await YoumiMemoryArtifacts(self.store).remove(scope, authorization, identifier, version)
+
     def _check(self, scope, expected, db=None):
         return self._index._check(scope, expected, db)

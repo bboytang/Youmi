@@ -330,7 +330,7 @@ class MigrationTests(unittest.IsolatedAsyncioTestCase):
             enabled=True, dimensions=state['dimensions']))
         with self.store.db:
             remove_v11(self.store.db)
-            self.store.db.execute('DELETE FROM mia_schema_migrations WHERE version=11')
+            self.store.db.execute('DELETE FROM mia_schema_migrations WHERE version>=11')
         old = {'__file__': str(Path('server/companion/schema.py').resolve())}
         source = subprocess.check_output(['git', 'show', 'dc4a996f:server/companion/schema.py'], text=True)
         exec(compile(source, 'frozen-v10-schema.py', 'exec'), old)
@@ -376,7 +376,7 @@ migrate(db)
         self.assertEqual(result.returncode, 77)
         old_loader(self.store.db)
         migrate(self.store.db)
-        self.assertEqual(self.store.db.execute('SELECT MAX(version) FROM mia_schema_migrations').fetchone()[0], 11)
+        self.assertEqual(self.store.db.execute('SELECT MAX(version) FROM mia_schema_migrations').fetchone()[0], 12)
 
     async def test_schema_aware_legacy_engine_keeps_post_upgrade_data_and_latest_emotion(self):
         self.store.clock = lambda: 1800000000

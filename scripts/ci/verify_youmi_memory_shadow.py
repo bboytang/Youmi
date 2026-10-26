@@ -14,21 +14,30 @@ from youmi_companion import emotional_system
 from youmi_companion.authorization import AuthenticatedScope, PrivateAuthorizationRequired
 from youmi_companion.embedding import SemanticEncoder
 from youmi_companion.memory import MemoryStore
+from youmi_companion.jobs import JobStore, MemoryWorker, TurnCompleted
 from youmi_companion.memory_runtime import YoumiMemoryRuntime
 from youmi_companion.semantic import SemanticMemoryIndex
 
 
 class FixturePolicy:
+    def __init__(self, scope):
+        self.scope = scope
+
     async def require(self, scope, permission):
-        if permission not in scope.permissions:
+        if scope != self.scope or permission not in scope.permissions:
             raise PrivateAuthorizationRequired()
+
+    async def restore(self, snapshot):
+        if snapshot != self.scope.snapshot():
+            raise PrivateAuthorizationRequired()
+        return self.scope
 
 
 async def verify(directory, report):
     scope = AuthenticatedScope('user:1:agent:shadow-ci', 1, 1, 'shadow-ci', 'mia',
         'fixture-device', 'fixture-client', 0, 1, datetime.now(timezone.utc) + timedelta(days=1),
         frozenset({'memory:read', 'memory:write', 'memory:manage'}))
-    policy, encoder = FixturePolicy(), SemanticEncoder(directory)
+    policy, encoder = FixturePolicy(scope), SemanticEncoder(directory)
     with tempfile.TemporaryDirectory() as folder:
         store = MemoryStore(Path(folder) / 'canonical.sqlite3', clock=lambda: 1800000000)
         try:
@@ -71,6 +80,30 @@ async def verify(directory, report):
             report['checks'] = dict(real_bge=True, real_tantivy=True, canonical_sources=True,
                 owner_isolation=True, read_only_shadow=True, all_51_emotions_preserved=True,
                 default_engine_unchanged=True, old_content_not_resurrected=True)
+            # Installed-package boundary: synthetic reflection, actual worker/DB,
+            # no new model call. Default extraction and recall remain unchanged.
+            fact = dict(store.db.execute('SELECT * FROM memories WHERE owner=? AND content=?',
+                (scope.owner, '我练舞时喜欢听轻音乐')).fetchone())
+            async def resolve(verified):
+                return lambda sources, context: dict(reflection_version=1, memory_actions=[
+                    dict(action=action, key=key, title='练舞', evidence=[dict(id=fact['id'], quote=fact['content'])])
+                    for action, key in [('profile', 'attribute'), ('note', 'practice'), ('propose_retirement', 'practice')]])
+            jobs = JobStore(store, policy_version=1)
+            worker = MemoryWorker(jobs, policy, resolve, encoder=encoder)
+            event = TurnCompleted(scope, 'reflection-fixture', 'completed-fixture', 'fixture-message',
+                '今天继续聊聊', store.snapshot(scope.owner)['revision'])
+            admitted = await worker.submit(event)
+            assert await worker.run_once()
+            assert jobs.current(admitted)['state'] == 'committed'
+            artifacts = await runtime.list_artifacts(scope, policy)
+            assert len(artifacts) == 3
+            assert all(item['body'] == fact['content'] for item in artifacts)
+            assert all(item['preview_only'] for item in artifacts if item['kind'] == 'retirement')
+            assert emotional_system.status(store, scope.owner) == emotion
+            store.edit_memory(scope.owner, fact['id'], '我练舞时喜欢听节奏音乐')
+            assert await runtime.list_artifacts(scope, policy) == []
+            report['checks'].update(installed_reflection_artifacts=True, artifact_source_invalidation=True,
+                maintenance_preview_only=True)
         finally:
             store.close()
 

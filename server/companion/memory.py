@@ -438,13 +438,18 @@ class MemoryStore:
             if job_id is not None:
                 from .memory_state import attach_job_sources
                 attach_job_sources(self, job, new_source_memories)
+                from .memory_artifacts import commit_in_transaction
+                artifacts = commit_in_transaction(self, job, structured.get('artifacts', []))
+                if artifacts:
+                    self.db.execute('UPDATE owners SET revision=revision+1 WHERE owner=?', (owner,))
+                    self._cancel_jobs(owner, exclude=job_id)
                 from .emotions import commit as commit_observations
                 observations = commit_observations(self, job, structured)
                 pending = any(not self.db.execute('SELECT confirmed FROM memories WHERE id=?', (memory_id,)).fetchone()[0]
                               for memory_id in changed)
                 summary = json.dumps({'confirmation_required': True}) if pending else None
                 self.db.execute("UPDATE mia_jobs SET state=?,source_payload='{}',validated_result=?,updated_at=?,error_category=NULL WHERE id=?",
-                                ('committed' if changed or trait_updated or observations else 'empty', summary, now, job_id))
+                                ('committed' if changed or trait_updated or observations or artifacts else 'empty', summary, now, job_id))
             return {"applied": True, "memories": changed, "trait_updated": trait_updated}
 
     def personality(self, owner):

@@ -275,6 +275,8 @@ def context_for(store, owner, expected_consent=None):
             'ORDER BY m.updated_at DESC,m.rowid DESC LIMIT 8', (owner,)).fetchall()
         from .emotions import consent
         result = EvidenceContext()
+        from .memory_artifacts import versions
+        result.artifact_versions = versions(store, owner)
         from .features import settings
         result.growth_enabled = settings(store, owner)['personality_growth']
         result.tracking = consent(store, owner)
