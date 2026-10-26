@@ -396,3 +396,10 @@
 ## 画像与笔记空列表反馈（2026-10-26）
 
 用户反馈点不动，已发问确认标签/分类标题/已有按钮哪类问题。生产仅只读统计：画像/笔记/维护候选均0，反思enabled=true、interval_seconds=86400。分类本身静态h2，没有生成条目时不存在证据/删除按钮，既有证据操作openDetail会切换记忆标签。先在management.md写独立空状态修正计划，仅补自动生成说明及四类暂无条目文案，不新增手动生成/写入或修改反思间隔；diff检查通过，准确四浏览器构建验证及静态上线待完成。若用户所指为已有按钮/标签，仍需跟随其反馈复现，不能把文案改动当作该操作修复。保留并行QQ文件与生产后端8048536b。
+
+
+## 画像与笔记空状态：已验证并上线（2026-10-26）
+
+用户已确认是页面仅四个分类标题，并非已有按钮无响应。生产只读核查四类条目均0；标题按原设计是分类，生成条目后才出现证据/删除操作。产品ce25d4f80205f2a4c01fa034db64997ea0cf31c9仅加自动整理说明和每类暂无条目提示，未增加手动生成/编辑或修改整理间隔。GitHub前端40335447431与后端40335447082均通过；前端212通过、0跳过/失败/波动，制品12657376066，ZIP SHA3464610c4bafdad5e5e29f21084bc19399affb4e7bed2fe90f1136eaecaf1104。
+
+仅覆盖9个变化的静态文件、保留旧hash资源，454个发布文件逐项核对及HTTP8002实际index匹配。管理端新镜像youmi-manager:artifact-empty-ce25d4f8，ID9e7264698cfa3f42e83b4f57ff6386afc7ef3babc628f76643b00f2295c0bf40；继承memory-8048536b，JAR保持a90389e5f3f09b611e679199abd62fd8601d49f388e6a5a616cce054fc2bc8da。Compose仅改管理端image，语音后端/QQ侧车启动时间未变；后端继续8048536b/V18，不改记忆/人设/情感/认知配置，也未人为制造条目。操作证据/脚本在/opt/xiaozhi-server/youmi-artifact-empty-ce25d4f8，包括frontend-manifest.json、ci-proof.json、compose-command.json、deployment-proof.json；本地/tmp同名目录。
