@@ -21,8 +21,9 @@ from verify_youmi_retrieval import FixturePolicy, metrics, meets_quality, scope
 
 async def evaluate(directory, report):
     fixtures = Path('/experiment/server/tests/fixtures')
-    paths = [fixtures / 'persona_memory_retrieval_zh_v5.json', fixtures / 'persona_memory_retrieval_p13_holdout.json']
-    baseline, holdout = [json.loads(path.read_text()) for path in paths]
+    paths = [fixtures / 'persona_memory_retrieval_zh_v5.json', fixtures / 'persona_memory_retrieval_p13_holdout.json',
+        fixtures / 'youmi_memory_unrelated_6c_v1.json']
+    baseline, holdout, extension = [json.loads(path.read_text()) for path in paths]
     report['datasets'] = {path.name: hashlib.sha256(path.read_bytes()).hexdigest() for path in paths}
     facts = {item['id']: item for item in baseline['memories'] if scope(item['scope']).persona_id == 'mia'}
     policy, encoder = FixturePolicy(), SemanticEncoder(directory)
@@ -48,7 +49,7 @@ async def evaluate(directory, report):
                     pass
             runtime = YoumiMemoryRuntime(index)
             before = '\n'.join(store.db.iterdump())
-            for suite, cases in [('regression', baseline['queries']), ('independent', holdout['queries'])]:
+            for suite, cases in [('regression', baseline['queries']), ('independent', holdout['queries'] + extension['queries'])]:
                 for case in cases:
                     current = scope(case.get('scope', 'J/daily/mia'))
                     if current.persona_id != 'mia':

@@ -1,0 +1,14 @@
+{
+  "version": "6C-negative-v1",
+  "purpose": "Frozen after first P13 failure and before relevance fix; independent unrelated questions, no production data",
+  "queries": [
+    {"id":"6c-n01","query":"哈勃常数描述哪种宇宙现象？","expected":[]},
+    {"id":"6c-n02","query":"编译器如何处理词法分析和语法分析？","expected":[]},
+    {"id":"6c-n03","query":"素数分解与公钥密码之间有什么联系？","expected":[]},
+    {"id":"6c-n04","query":"火成岩和沉积岩的形成过程有哪些区别？","expected":[]},
+    {"id":"6c-n05","query":"国际单位制中的电流基本单位叫什么？","expected":[]},
+    {"id":"6c-n06","query":"排序算法的稳定性是什么意思？","expected":[]},
+    {"id":"6c-n07","query":"叶绿素吸收哪些波长的光？","expected":[]},
+    {"id":"6c-n08","query":"自由落体的加速度与物体质量有关吗？","expected":[]}
+  ]
+}
