@@ -222,7 +222,7 @@ os._exit(37)
             with self.assertRaises(sqlite3.DatabaseError):
                 migrate(self.store.db)
         finally:
-            self.store.db.set_authorizer(None)
+            self.store.db.set_authorizer(lambda *args: sqlite3.SQLITE_OK)
         self.assertEqual(list(self.store.db.iterdump()), before)
         old(self.store.db)
         migrate(self.store.db)
