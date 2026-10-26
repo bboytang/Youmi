@@ -86,7 +86,10 @@ test('memory linkage audit explains its reason and opens only the current agents
   await page.route('**/xiaozhi/agent/first/memory-system', async route => {
     const command = route.request().postDataJSON(); requested.push(command);
     const status = { features: { memory_recall: true }, reflection: { enabled: false, interval_seconds: 86400, version: 0 },
-      cognition: { enabled: false, dimensions: {}, energy: {}, version: 0 }, emotion_linkage: { enabled: false, version: 0 } };
+      cognition: { enabled: false, dimensions: Object.fromEntries(['recall', 'impression', 'expression', 'creativity'].map(key => [key,
+        { minimum: key === 'recall' || key === 'impression' ? 1 : 0, baseline: 1, maximum: 1, mode: 'fixed', sensitivity: .3 }])),
+      energy: { recall: 0, impression: 0, expression: 0, creativity: 0 }, version: 0 },
+      emotion_linkage: { enabled: false, memory_to_emotion: true, emotion_to_memory: true, stimulus_weight: .25, ranking_limit: .1, cooldown_seconds: 86400, version: 0 } };
     const data = command.action === 'status' ? status : command.action === 'list' ? { memories: [], total: 0, offset: 0, page_size: 50 } : { artifacts: [] };
     await route.fulfill({ json: command.action === 'detail' ? { code: 400 } : { code: 0, data } });
   });

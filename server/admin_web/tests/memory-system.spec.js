@@ -189,3 +189,36 @@ test('deep link loads the selected agent current source', async ({ page }) => {
   await setup(page, 'agentId=first&memoryId=first-blue');
   await expect(page.getByRole('textbox', { name: '记忆内容' })).toHaveValue('first 我喜欢蓝色 <script>unsafe</script>');
 });
+
+test('navigation entry preserves the selected agent when already on the memory page', async ({ page }) => {
+  await setup(page);
+  // A compact navigation uses the same entry as desktop.
+  const toggle = page.getByRole('button', { name: '导航菜单', exact: true });
+  if (await toggle.isVisible()) await toggle.click();
+  await page.getByRole('navigation').getByText('记忆系统', { exact: true }).click();
+  await expect(page.getByText('正在管理：')).toContainText('智能体一');
+  await expect(page.getByRole('alert')).toHaveCount(0);
+});
+
+test('an in-flight source read cannot apply to a different selected agent', async ({ page }) => {
+  await setup(page);
+  let release;
+  await page.route('**/xiaozhi/agent/first/memory-system', async route => {
+    if (route.request().postDataJSON().action !== 'detail') { await route.fallback(); return; }
+    await new Promise(resolve => { release = resolve; });
+    await route.fulfill({ json: { code: 0, data: { memory: { id: 'first-blue', content: 'first 当前来源', confirmed: true,
+      state: 'active', content_version: 1, evidence_version: 2 }, sources: [], source_total: 0,
+      offset: 0, page_size: 50, revision: 1, replacements: [] } } });
+  });
+  await page.getByRole('button', { name: '查看来源与编辑' }).first().click();
+  await expect.poll(() => typeof release).toBe('function');
+  await page.evaluate(() => { location.hash = '#/memory-system?agentId=second'; });
+  await expect(page).toHaveURL(/agentId=first/);
+  release();
+  await expect(page.getByRole('textbox', { name: '记忆内容' })).toHaveValue('first 当前来源');
+  await page.locator('.el-select').first().click();
+  await page.getByText('智能体二', { exact: true }).last().click();
+  await expect(page.getByText('正在管理：')).toContainText('智能体二');
+  await expect(page.getByRole('textbox', { name: '记忆内容' })).toHaveCount(0);
+  await expect(page.getByText('first 当前来源', { exact: true })).toHaveCount(0);
+});

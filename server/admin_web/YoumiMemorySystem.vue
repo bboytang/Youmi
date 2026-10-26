@@ -153,7 +153,7 @@ export default {
   async beforeRouteUpdate(to, from, next) {
     if (!await this.confirmDiscard()) { next(false); return; }
     next();
-    await this.run(() => this.loadAgent(to.query.agentId, to.query.memoryId));
+    await this.run(() => this.loadAgent(to.query.agentId || this.agentId || (this.agents[0] || {}).id, to.query.memoryId));
   },
   methods: {
     changed(key) { return !!this.draft[key] && JSON.stringify(this.draft[key]) !== this.originals[key]; },
