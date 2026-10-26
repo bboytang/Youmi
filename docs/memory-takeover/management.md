@@ -21,3 +21,27 @@
 - 浏览器自动化验证桌面与手机布局、登录权限、草稿与失败、版本冲突、记录跳转及来源消失。真实终端/模型质量仍属后续验收。
 
 固定条目能力当前没有存储契约，本阶段不得将 confirmed 冒充永久固定。候选不自动合并/删除；手动合并必须逐条确认且提交服务端版本。生产启用仍需后续步骤 6–7。
+
+## 5A 已实现的接口契约
+
+首轮产品提交 `38eab3be5ca166fbe768b67f6c61f9c42a851367`；修正 Java 冲突响应后的最终产品/验证提交 `8d0e7209215a128d888c142aebca612c125f5c4b`，5A 检查全部通过，链接见 verification.md。没有新增数据库版本。浏览器只向现有 manager 的 `/agent/{agentId}/memory-system` POST，下列 operation 直接作为请求体；manager 包装成 `memory_system` 后才发送到原内部管理端点。5B 页面尚未接入。
+
+| operation | 字段与返回 |
+| --- | --- |
+| status | 仅 action；返回 revision、features、reflection、emotion_linkage、cognition、capabilities |
+| list | action、可选 offset；每页 50 条，返回 memories、total、offset、page_size、revision |
+| detail | action、id、可选来源 offset；返回 memory、sources/source_total、分页、revision、最多 50 条相关 replacements |
+| reflection | action、operation；子命令仅 status 或完整 configure（version、enabled、interval_seconds，60–604800） |
+| emotion_linkage | action、operation；子命令仅 status 或完整 configure（全部配置及 version），沿用权重 0–1、排序上限 0–0.1、冷却 0–2592000 秒 |
+| cognition | action、operation；子命令 status、完整 configure（version、enabled、dimensions）或 adjust（version、energy）；自动策略未接入 |
+| artifacts | 仅 action；返回 artifacts，包含完整证据原句、证据版本与 preview_only；召回关闭时隐藏，恢复后可重新读取 |
+| delete_artifact | action、id、version；只删除整理条目，保留事实；不接受布尔数值充当版本 |
+| merge | action、operation_id、retired_id、survivor_id、revision、versions；versions 包含 retired/survivor 各自的 [content_version,evidence_version]；相同操作重试返回 duplicate=true |
+
+所有操作均通过前后所有者证明；子命令不接受 owner、设备身份或任意模型动作。console 所有者证明授予该智能体的管理权，不能伪造一个设备 scope 复用设备授权。设备内部的 read/manage 权限接口不变。配置和合并复用既有事务实现，读操作使用同一 SQLite 快照且不创建 owner。
+
+列表和详情保留待确认、失效及合并退役状态，不把它们转成有效召回。来源仅返回已保存的摘录和已有回合元数据，不保存或返回新的聊天全文、指纹和状态快照正文。详情 ID 已删除、未知或属于其他智能体，统一返回不可用；记录跳转须使用当前有效详情，不能从旧情感审计拼回原文。
+
+内部冲突返回 HTTP 409 和 `{code:409,error:<类别>}`；manager 复核所有者后转为标准业务 `code=409`，提示保留草稿后重新核对。无效输入/不可用来源返回错误；网络错误和服务端失败返回“操作结果未确认”，不提示成功。配置保存结果不明时需刷新，不能自动重试旧 CAS。成功响应仍是 `{code:0,data:...}`。
+
+本阶段没有修改旧 memory_list/memory_delete 弹窗接口。5B 如要在新页面加入事实编辑/确认/删除，应先补充同事务的内容/证据版本校验，不能在事务外先查版本再调用旧无 CAS 写接口。来源分页与相关合并关系上限是不同限制，页面不能声称展示了无限合并图谱。

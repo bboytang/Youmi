@@ -1,5 +1,25 @@
 # Youmi 记忆接管验证记录
 
+## 步骤 5A：按智能体管理接口
+
+首轮产品 `38eab3be5ca166fbe768b67f6c61f9c42a851367`；最终产品及验证提交 **`8d0e7209215a128d888c142aebca612c125f5c4b`**。以下检查全部对应最终 SHA；后续交接文档提交不改变产品代码。
+
+| 检查 | 结果 | GitHub Actions |
+| --- | --- | --- |
+| Python 3.10 / 3.12 | 各 307 项通过，新增 15 项管理路由测试 | https://github.com/bboytang/Youmi/actions/runs/40260067662 |
+| 完整后端及人设传输 | 634 项通过，传输检查通过 | https://github.com/bboytang/Youmi/actions/runs/40260067690 |
+| 实际安装/真实 BGE/Tantivy/上下文/回复/提取及联动 | 所有阶段通过；对最终提交手动触发 | https://github.com/bboytang/Youmi/actions/runs/40260068662 |
+| 绑定授权与管理代理 | Java 194 项通过（新增 2 项），JAR 构建通过 | https://github.com/bboytang/Youmi/actions/runs/40260067650 |
+| Manager 基线 | 原有 150 项及基线 4 项通过 | https://github.com/bboytang/Youmi/actions/runs/40260067648 |
+
+15 项管理路由用例使用真实临时 SQLite、本地 HTTP、完成任务生成的整理条目；验证鉴权/前后撤权、不同智能体隔离、来源分页、待确认和删除不复活、配置 CAS、合并幂等与回滚、整理删除/来源变化、失败不返回成功、长人设与非默认 51 维配置保持。Java 使用真实登录/HTTP/Shiro/MySQL/Redis 和合成内部代理服务，验证所有者/匿名/禁用账号、转发边界及冲突、服务错误响应。
+
+首轮 [Java 检查](https://github.com/bboytang/Youmi/actions/runs/40259785763) 的新增测试发现 409 被错误翻译查询变成 500；检查固定上游异常/响应源码后改用 Result.error(code,msg)，原断言保留并增强提示断言。最终 194 项全部通过，没有跳过测试，也没有以首次 JAR 构建成功掩盖失败。
+
+下载最终向量 artifact（109978 字节），核对 memory-shadow-results.json 的 commit 与最终 SHA 一致、passed=true，全部 15 项机制检查为 true。实际安装检查证明新增载荷不破坏既有机制，不代表浏览器已经接上新接口或真实模型质量通过。
+
+没有新增 schema、部署或生产数据访问，没有新备份及真实消息。管理页面/草稿/手机布局/记录跳转尚未实现与验收，不能将 5A 当作步骤 5 完成；新页面事实编辑/确认/删除需补同事务版本校验。后续还需 5B、步骤 6–7、认知自动策略及获授权真实终端验收。
+
 ## 步骤 4：记忆与情感双向联动后端机制
 
 准确产品及测试提交：`43c15bde7db0ca94ea02bdb64d1021a51b1e8dc0`。后续文档提交不改变被测产品代码。

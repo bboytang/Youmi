@@ -157,3 +157,21 @@
 - [绑定授权](https://github.com/bboytang/Youmi/actions/runs/40258355253) Java 192 项及 JAR 构建通过；[Manager 基线](https://github.com/bboytang/Youmi/actions/runs/40258355484) 原有 150 项及基线 4 项通过。模型评价使用合成提案，没有真实模型质量或真实终端结论。
 - 最终 diff 已复核，V1–V13 未改，V14 冻结。原有 10 个用户修改和 YOUMI_ASTRBOT/ 保留未提交。未连接生产库、部署、备份或外发消息。
 - 下一步为 5 管理页/接口及审计展示；认知自动策略、索引恢复、质量影子对照与切换回退仍在剩余阶段，不提前启用生产或替换旧默认召回。
+
+### 2026-10-26 — 步骤 5A 管理接口实施及首轮验证
+
+- 先写 management.md，将步骤 5 分为 5A 管理接口与 5B 独立页面。方案提交 `3e80cba9`，接口首轮产品提交 `38eab3be5ca166fbe768b67f6c61f9c42a851367`。整个步骤 5 尚未完成。
+- 新增 `/agent/{agentId}/memory-system`，复用原登录、HTTPS、manager 前后所有者核验和内部管理端点；服务端证明的 owner 才能执行配置、查看来源与整理结果、删除整理条目和手动合并。没有伪造设备 scope、模型管理工具或新的数据权威。
+- 列表/来源每页 50 条，读操作同一 SQLite 快照；返回内容/证据版本、revision、待确认/退役状态和最多 50 条相关合并关系。陌生、跨智能体或已删除来源统一不可用，不从旧记录恢复正文。
+- 反思、认知、情感联动的配置复用原有 CAS；整理删除保留事实，合并保留稳定 ID、原来源与原幂等边界。status 明示默认旧引擎、排序仅影子、认知自动策略/固定条目/候选自动执行未实现，不随读取启用开关。
+- 新增 15 项 Python 路由测试和 2 项 Java 登录代理测试。本地新增及相关 123 项通过，涵盖长人设、非默认情感配置保持、各智能体隔离、来源分页、冲突、撤权、来源失效和失败回滚。
+- 首轮 GitHub 双 Python 各 307 项、完整后端 634 项及人设传输通过。Java 194 项中新增冲突测试失败：把 409 传给 RenException(int,String...)，该构造器查询不存在的翻译词条，导致实际响应变成 500。检查固定上游 Result/RenException 源码后，修正为 Result.error(code,msg)，保留原测试且补断言冲突提示。修正提交 `8d0e7209`，等待准确最终提交 CI，不能以首轮 JAR 能构建代替测试通过。
+- 安装载荷加入 memory_management.py；V1–V14、人设/情感权威及原完成回合路径均未改。未连接生产、未部署、未启用开关、未新增备份或真实消息；原有 10 个用户修改和 YOUMI_ASTRBOT/ 保持未提交。
+
+### 2026-10-26 — 步骤 5A 接口验收完成与交接
+
+- 最终产品及验证提交 `8d0e7209215a128d888c142aebca612c125f5c4b`。[双 Python](https://github.com/bboytang/Youmi/actions/runs/40260067662) 各 307 项、[完整后端](https://github.com/bboytang/Youmi/actions/runs/40260067690) 634 项及人设传输通过。
+- [绑定授权及管理代理](https://github.com/bboytang/Youmi/actions/runs/40260067650) Java 194 项及 JAR 全部通过，新路由冲突码和提示断言生效；[Manager 基线](https://github.com/bboytang/Youmi/actions/runs/40260067648) 150 项及基线 4 项通过。
+- 为最终 SHA 手动补齐 [实际安装/BGE 链路](https://github.com/bboytang/Youmi/actions/runs/40260068662)，全部阶段通过。下载 109978 字节结果 artifact，memory-shadow-results.json 的 commit、passed 和 15 项检查均核对通过；合成机制不是模型质量或生产性能证明。
+- 最终 diff 已复核；V1–V14 无变化。保留且未提交 10 个用户修改和 YOUMI_ASTRBOT/，未操作生产、备份或外发消息。
+- 下一步 5B：复用原 Vue2/ElementUI 和源码补丁安装，在导航/智能体卡片添加“记忆系统”，接入新 API、草稿/保存失败/版本冲突、来源详情和情感记录跳转，完成四浏览器及手机模拟验收。新页面事实编辑/确认/删除需先补同事务版本校验，不能直接把旧无 CAS 写入包装成新版。整个步骤 5 与后续迁移/切换仍未完成。

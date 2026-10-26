@@ -1,6 +1,6 @@
 # Youmi 记忆接管工作交接
 
-最后更新：2026-10-26（步骤 4 后端机制验收完成）。目标和完整验收见 `plan.md`；每步实测结果见 `worklog.md`。
+最后更新：2026-10-26（步骤 5A 管理接口验收完成）。目标和完整验收见 `plan.md`；每步实测结果见 `worklog.md`。
 
 ## 当前进度
 
@@ -12,6 +12,7 @@
 - 步骤 3B 后端机制验收完成：`033cfd05efc5a1c4cba2ae3c532af4f031558564`。新增 24 项；GitHub 双版本各 231 项、后端 575 项、人设传输、真实 BGE 安装链路、绑定授权和 Manager 基线通过。V12 仅在合成库/CI 运行，生产未升级。自动生成/调度尚未接入，不代表整个步骤 3 完成。
 - 步骤 3C 机制验收完成：产品 `299fc994`，最终验证 `c0a4a288af38dfe7c1774f41052040f12faa633b`。GitHub 双 Python 各 268 项、后端 595 项及人设传输、实际安装/真实 BGE/固定 Provider+SDK MockTransport、绑定授权和 Manager 基线全部通过。新增 20 项；3A–3C 的步骤 3 后端机制已完成，真实模型质量及线上启用仍待后续验收，生产未升级或开启反思。
 - 步骤 4 后端机制验收完成：`43c15bde7db0ca94ea02bdb64d1021a51b1e8dc0`。GitHub 双 Python 各 292 项、后端 619 项及人设传输、实际 BGE/安装/联动和排序、绑定授权及 Manager 基线全部通过。新增 24 项；V14 已冻结。默认联动关闭、排序仅影子检索，生产和旧默认召回未切换；真实模型质量/终端尚未验收。
+- 步骤 5A 管理接口验收完成：最终 `8d0e7209215a128d888c142aebca612c125f5c4b`。新增 15 项 Python 和 2 项 Java 测试，GitHub 双 Python 各 307 项、完整后端 634 项及人设传输、Java 194 项及 JAR、Manager 基线、实际 BGE/安装链路全部通过。首轮冲突响应错误及修正如实记录。没有新增 schema 或部署，5B 页面仍未实现，整个步骤 5 未完成。
 
 ## 实施约束
 
@@ -29,7 +30,11 @@
 
 步骤 4 后端机制及准确提交 CI 已通过，契约见 emotion-linkage.md。新增 24 项、相关 294 项本地通过；共用 builder_for 使用 YoumiEmotionContextBuilder，QQ/App/设备后续入口须复用此工厂。原始 user_text 与记忆完整原句、ID/内容/证据版本分开；两组最多八个不同维度，合并原始 delta 后一次执行原有 transition，成功完成后才消费内容版本冷却（新增佐证不重置）。联动新表故障保存点回退本轮变化，不得阻断原情感；授权及上下文变更错误仍传播。
 
-下一任务为步骤 5 管理页/接口。内部运行时 emotion_linkage 提供 status/configure，需要 read/manage 权限和完整配置 CAS；尚无公开路由或管理 UI。情感历史的 memory_link 记录关联 interaction_history_id、session_id、turn_id、来源 ID/版本及原因，无引用正文。总开关默认关闭、方向开关默认开启且继承现代情感/记忆主开关，候选不在生产提前启用。排序只接显式影子检索且保护否定/纠错/时间查询，默认召回不变；默认回复不额外注入整理内容。合并/退役仅预览，索引恢复和质量评估仍在后续。
+下一任务为步骤 5B 独立页面。5A 已公开 `/agent/{agentId}/memory-system`，经原管理代理的 `memory_system` 动作，只使用服务端 owner 证明；契约见 management.md。status/list/detail 提供版本、来源分页和最多 50 条合并关系；reflection/emotion_linkage/cognition 复用完整配置 CAS；artifacts/delete_artifact/merge 复用证据、版本及幂等。内部运行时设备接口的 read/manage 权限保持不变，console 所有者证明拥有该智能体完整管理权，不应构造虚假设备 scope。Java 冲突使用 Result.error(409,msg)，不要用查询翻译词条的 RenException(int,String...)。
+
+5B 入口：server/admin_web/emotional_system.py 的源锚点安装、apply.py 的预检查与复制、YoumiEmotionSystem.vue 和 tests/emotional-system.spec.js 的既有模式。导航/智能体卡片增“记忆系统”，保留旧记忆弹窗；新页面用同源 HTTPS + RequestService.sensitive，按智能体保存草稿，切换/离开前确认，过期请求不可覆盖新智能体。GitHub youmi-admin-responsive.yml 已提供 Chromium/Android Chrome/iOS WebKit/Firefox 模拟与源码/静态产物，不在本机下载大型依赖。新页面如要编辑/确认/删除事实，必须先补同事务内容/证据版本检查；旧 memory_list/memory_delete 未改，不能事务外先查后调用旧写入假装 CAS。
+
+情感历史的 memory_link 记录关联 interaction_history_id、session_id、turn_id、来源 ID/版本及原因，无引用正文。5B 应显示原因并链接当前智能体详情，已删除来源只显示不可用。总开关默认关闭、方向开关默认开启且继承现代情感/记忆主开关，候选不在生产提前启用。排序只接显式影子检索且保护否定/纠错/时间查询，默认召回不变；默认回复不额外注入整理内容。自动合并/退役仍仅预览，5A 只允许所有者明确提交带版本的手动合并；索引恢复和质量评估仍在后续。
 
 后续不得直接使用上游原生独立数据库/public scope 或按 judgment 跨 owner 去重。persona_id 的历史值 `mia` 不当作人物名称修改。V1–V14 已提交冻结，后续扩展从 V15 开始，并同步历史迁移夹具。新检索结果仍不可进入默认回复，需完成剩余验收及步骤 5–7。
 
