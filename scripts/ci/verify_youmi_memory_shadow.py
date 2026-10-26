@@ -205,6 +205,25 @@ async def verify(directory, report):
             reopened.close()
             assert sorted(p.name for p in managed_path.iterdir()) == ['writer.lock']
             report['checks'].update(managed_commit_purge=True, managed_no_stale_rewrite=True, managed_startup_recovery=True)
+            from youmi_companion.memory_cache_cleanup import YoumiMemoryCleanupPump
+            pending_segment = managed_path / 'idle-private-segment'
+            pending_segment.write_text('synthetic idle residue')
+            with sqlite3.connect(Path(folder) / 'canonical.sqlite3') as raw:
+                raw.execute('UPDATE youmi_memory_cache_partitions SET writing=1 WHERE owner=?', (scope.owner,))
+            pump = YoumiMemoryCleanupPump(Path(folder) / 'canonical.sqlite3', interval=.01)
+            pump.start()
+            try:
+                deadline = asyncio.get_running_loop().time() + 3
+                while asyncio.get_running_loop().time() < deadline:
+                    if not pending_segment.exists() and store.cache_cleanup_status(scope.owner)['state'] == 'complete':
+                        break
+                    await asyncio.sleep(.01)
+                assert not pending_segment.exists()
+                assert store.cache_cleanup_status(scope.owner)['state'] == 'complete'
+            finally:
+                pump.stop()
+                assert await pump.wait(1)
+            report['checks'].update(managed_idle_cleanup=True)
         finally:
             store.close()
 

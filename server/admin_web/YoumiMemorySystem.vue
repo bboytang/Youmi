@@ -15,6 +15,11 @@
         <p>正在管理：<strong>{{ agentName }}</strong></p>
         <el-button :disabled="busy" @click="refresh">刷新并核对服务器状态</el-button>
         <p v-if="dirty">有未保存的修改</p>
+        <section v-if="cleanup && cleanup.state !== 'not_registered'" aria-label="缓存清理状态">
+          <p v-if="cleanup.state === 'pending'" role="alert">搜索缓存待清理。记忆变更已提交，清理尚未完成；服务运行时会定期重试，持续故障可能延后。{{ cleanupReason }}</p>
+          <p v-else-if="cleanup.state === 'complete'" role="status">搜索缓存清理已完成。</p>
+          <el-button :disabled="busy" @click="checkCleanup">核对缓存清理进度</el-button>
+        </section>
         <el-tabs v-model="tab">
           <el-tab-pane label="记忆与来源" name="memories">
             <p v-if="listing">共 {{ listing.total }} 条；已确认不代表永久固定，待确认和已合并记忆保留原状态。</p>
@@ -141,6 +146,8 @@ export default {
   },
   computed: {
     memories() { return this.listing ? this.listing.memories : []; },
+    cleanup() { return this.state && this.state.cache_cleanup; },
+    cleanupReason() { return this.cleanup ? ({ busy: '当前分区忙碌。', io: '存储清理暂不可用。', database: '清理确认暂不可用。' }[this.cleanup.error] || '') : ''; },
     agentName() { return (this.agents.find(agent => agent.id === this.agentId) || {}).agentName; },
     factDirty() { return this.edit && JSON.stringify(this.edit) !== this.originalEdit; },
     dirty() { return this.factDirty || groups.some(key => this.changed(key)); },
@@ -225,6 +232,21 @@ export default {
       this.listing = listing; this.artifacts = items.artifacts;
       if (memoryId) { this.tab = 'memories'; await this.readDetail(memoryId); }
     },
+    acceptCleanup(value) {
+      if (!value || !['not_registered', 'pending', 'complete'].includes(value.state)) throw new Error('缓存清理状态未确认，请稍后核对。');
+      this.$set(this.state, 'cache_cleanup', value);
+    },
+    async checkCleanup() {
+      await this.run(async () => { const result = await this.call({ action: 'status' }); this.acceptCleanup(result.cache_cleanup); });
+    },
+    factReceipt(result) {
+      if (!result || result.saved !== true) throw new Error('记忆变更结果未确认，请刷新核对。');
+      if (result.cache_cleanup) this.acceptCleanup(result.cache_cleanup);
+    },
+    factNotice(message) {
+      if (this.cleanup && this.cleanup.state === 'pending') this.$message.warning(message + '，搜索缓存仍待清理，请核对进度。');
+      else this.$message.success(message);
+    },
     selectAgent(id) { return this.$router.push({ path: '/memory-system', query: { agentId: id } }); },
     async refresh() { if (await this.confirmDiscard()) await this.run(() => this.loadAgent(this.agentId, this.detail && this.detail.memory.id)); },
     async readDetail(id, offset = 0) {
@@ -267,9 +289,9 @@ export default {
     async saveFact() {
       await this.run(async () => {
         try {
-          await this.call({ action: 'edit', id: this.detail.memory.id, expected: this.expected(), ...this.edit });
+          this.factReceipt(await this.call({ action: 'edit', id: this.detail.memory.id, expected: this.expected(), ...this.edit }));
           this.originalEdit = JSON.stringify(this.edit);
-          await this.reloadFacts(); this.$message.success('记忆已保存');
+          await this.reloadFacts(); this.factNotice('记忆已保存');
         } catch (error) { this.factBlocked = true; throw error; }
       });
     },
@@ -285,7 +307,7 @@ export default {
       try { await this.$confirm('确定永久删除这条记忆及相关衍生记录？\n' + this.detail.memory.content, '删除记忆', { confirmButtonText: '删除', cancelButtonText: '取消', dangerouslyUseHTMLString: false }); } catch (_) { return; }
       if (agent !== this.agentId || !this.detail || this.detail.memory.id !== id) return;
       await this.run(async () => {
-        try { await this.call({ action: 'delete', id, expected }); this.detail = null; this.edit = null; await this.reloadFacts(); this.$message.success('记忆已删除'); }
+        try { this.factReceipt(await this.call({ action: 'delete', id, expected })); this.detail = null; this.edit = null; await this.reloadFacts(); this.factNotice('记忆已删除'); }
         catch (error) { this.factBlocked = true; throw error; }
       });
     },

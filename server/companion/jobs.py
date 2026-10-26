@@ -183,10 +183,16 @@ class MemoryWorker:
         self.closing = False
         self.task = None
         self.wake = asyncio.Event()
+        from .memory_cache_cleanup import YoumiMemoryCleanupPump
+        with jobs.store.lock:
+            database = jobs.store.db.execute('PRAGMA database_list').fetchone()['file']
+        self.cleanup = YoumiMemoryCleanupPump(database)
 
     async def start(self):
         await asyncio.to_thread(self.jobs.recover)
+        self.cleanup.start()
         self.task = asyncio.create_task(self.run(), name='youmi-memory-worker')
+        self.task.add_done_callback(lambda task: self.cleanup.stop())
 
     async def submit(self, event):
         if self.closing:
@@ -373,10 +379,18 @@ class MemoryWorker:
     async def close(self, timeout=20):
         self.closing = True
         self.wake.set()
-        if self.task:
-            done, pending = await asyncio.wait({self.task}, timeout=timeout)
+        self.cleanup.stop()
+        if (self.task is None or self.task.done()) and not self.cleanup.alive:
+            return True
+        cleanup_wait = asyncio.create_task(self.cleanup.wait(timeout))
+        tracked = {cleanup_wait} | ({self.task} if self.task is not None else set())
+        try:
+            done, pending = await asyncio.wait(tracked, timeout=max(0, timeout))
             for task in pending:
                 task.cancel()
-            # No wait for an uncooperative model thread or a fresh per-job deadline.
-            return not pending
-        return True
+            # Share one budget with cleanup. A timed-out daemon keeps its native
+            # file lock/reference and stop signal until IO actually completes.
+            return not pending and not self.cleanup.alive
+        finally:
+            if not cleanup_wait.done():
+                cleanup_wait.cancel()

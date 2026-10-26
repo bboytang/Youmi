@@ -10,12 +10,12 @@ const dimensions = Object.fromEntries(['recall', 'impression', 'expression', 'cr
   maximum: key === 'recall' ? 20 : key === 'impression' ? 10 : 1, mode: 'fixed', sensitivity: .3
 }]));
 
-async function setup(page, query = 'agentId=first') {
+async function setup(page, query = 'agentId=first', cleanup = null) {
   const commands = [], states = {};
-  const backend = { fail: 0, unavailable: false };
+  const backend = { fail: 0, unavailable: false, cleanup: null, statusFail: 0 };
   function state(agent) {
     return states[agent] ||= {
-      revision: 1, features: { memory_recall: true },
+      revision: 1, cache_cleanup: agent === 'first' && cleanup ? clone(cleanup) : { state: 'not_registered', error: null }, features: { memory_recall: true },
       reflection: { enabled: false, version: 0, interval_seconds: 86400, last_maintenance_at: null },
       emotion_linkage: { enabled: false, version: 0, memory_to_emotion: true, emotion_to_memory: true,
         stimulus_weight: .25, ranking_limit: .1, cooldown_seconds: 86400 },
@@ -45,6 +45,7 @@ async function setup(page, query = 'agentId=first') {
     if (backend.fail && (command.operation || ['edit', 'delete', 'merge'].includes(action))) {
       await route.fulfill({ json: { code: backend.fail, msg: 'synthetic failure' } }); return;
     }
+    if (action === 'status' && backend.statusFail) { await route.fulfill({ json: { code: backend.statusFail, msg: 'status unavailable' } }); return; }
     if (action === 'status') data = current;
     if (action === 'list') data = { memories: current.memories, total: current.memories.length, offset: command.offset || 0, page_size: 50, revision: current.revision };
     if (action === 'detail') {
@@ -73,6 +74,7 @@ async function setup(page, query = 'agentId=first') {
       const row = current.memories.find(item => item.id === command.retired_id);
       row.state = 'superseded'; row.confirmed = false; current.revision++; data = { duplicate: false };
     }
+    if (['edit', 'delete'].includes(action) && backend.cleanup) { current.cache_cleanup = clone(backend.cleanup); data.cache_cleanup = clone(backend.cleanup); }
     await route.fulfill({ json: { code: 0, data } });
   });
   await page.goto('https://youmi-fixture.invalid/#/memory-system?' + query);
@@ -226,4 +228,73 @@ test('an in-flight source read cannot apply to a different selected agent', asyn
   await expect(page.getByText('正在管理：')).toContainText('智能体二');
   await expect(page.getByRole('textbox', { name: '记忆内容' })).toHaveCount(0);
   await expect(page.getByText('first 当前来源', { exact: true })).toHaveCount(0);
+});
+
+
+test('delete receipt warns about pending cache then checks completion without another write', async ({ page }) => {
+  const { backend, states, commands } = await setup(page);
+  backend.cleanup = { state: 'pending', error: 'io' };
+  await page.getByRole('button', { name: '查看来源与编辑' }).first().click();
+  await page.getByRole('button', { name: '删除此条记忆' }).click();
+  await page.locator('.el-message-box').getByRole('button', { name: '删除', exact: true }).click();
+  const status = page.getByRole('region', { name: '缓存清理状态' });
+  await expect(status.getByRole('alert')).toContainText('搜索缓存待清理');
+  await expect(page.locator('.el-message--warning')).toContainText('记忆已删除，搜索缓存仍待清理');
+  expect(commands.filter(item => item.command.action === 'delete')).toHaveLength(1);
+  states.first.cache_cleanup = { state: 'complete', error: null };
+  await page.getByRole('button', { name: '核对缓存清理进度' }).click();
+  await expect(status.getByRole('status')).toHaveText('搜索缓存清理已完成。');
+  expect(commands.filter(item => item.command.action === 'delete')).toHaveLength(1);
+});
+
+test('edit pending receipt and cleanup check preserve a separate unsaved configuration', async ({ page }) => {
+  const { backend, states, commands } = await setup(page);
+  backend.cleanup = { state: 'pending', error: 'busy' };
+  await page.getByRole('button', { name: '查看来源与编辑' }).first().click();
+  await page.getByRole('textbox', { name: '记忆内容' }).fill('我现在喜欢绿色');
+  await page.getByRole('button', { name: '保存记忆', exact: true }).click();
+  await expect(page.getByRole('region', { name: '缓存清理状态' }).getByRole('alert')).toContainText('当前分区忙碌');
+  await page.getByRole('tab', { name: '反思设置', exact: true }).click();
+  await page.getByRole('switch', { name: '启用反思', exact: true }).click();
+  states.first.cache_cleanup = { state: 'complete', error: null };
+  await page.getByRole('button', { name: '核对缓存清理进度' }).click();
+  await expect(page.getByRole('switch', { name: '启用反思', exact: true })).toBeChecked();
+  await expect(page.getByText('有未保存的修改', { exact: true })).toBeVisible();
+  expect(commands.filter(item => item.command.action === 'edit')).toHaveLength(1);
+  expect(commands.filter(item => item.command.operation)).toHaveLength(0);
+});
+
+test('cleanup status failure retains pending and switching agent never carries its banner', async ({ page }) => {
+  const { backend } = await setup(page, 'agentId=first', { state: 'pending', error: 'database' });
+  const status = page.getByRole('region', { name: '缓存清理状态' });
+  await expect(status.getByRole('alert')).toContainText('清理确认暂不可用');
+  backend.statusFail = 500;
+  await page.getByRole('button', { name: '核对缓存清理进度' }).click();
+  await expect(page.getByText('操作结果未确认，请刷新核对；草稿仍然保留。', { exact: true })).toBeVisible();
+  await expect(status.getByRole('alert')).toContainText('搜索缓存待清理');
+  backend.statusFail = 0;
+  await page.locator('.el-select').first().click();
+  await page.getByText('智能体二', { exact: true }).last().click();
+  await expect(page.getByText('正在管理：')).toContainText('智能体二');
+  await expect(status).toHaveCount(0);
+});
+
+test('checking cache does not discard a fact draft or submit it', async ({ page }) => {
+  const { states, commands } = await setup(page, 'agentId=first', { state: 'pending', error: null });
+  await page.getByRole('button', { name: '查看来源与编辑' }).first().click();
+  await page.getByRole('textbox', { name: '记忆内容' }).fill('尚未保存的记忆草稿');
+  states.first.cache_cleanup = { state: 'complete', error: null };
+  await page.getByRole('button', { name: '核对缓存清理进度' }).click();
+  await expect(page.getByRole('textbox', { name: '记忆内容' })).toHaveValue('尚未保存的记忆草稿');
+  await expect(page.getByText('有未保存的修改', { exact: true })).toBeVisible();
+  expect(commands.filter(item => ['edit', 'delete'].includes(item.command.action))).toHaveLength(0);
+});
+
+test('missing cleanup status cannot turn known pending into complete', async ({ page }) => {
+  const { states, commands } = await setup(page, 'agentId=first', { state: 'pending', error: 'io' });
+  delete states.first.cache_cleanup;
+  await page.getByRole('button', { name: '核对缓存清理进度' }).click();
+  await expect(page.getByText('缓存清理状态未确认，请稍后核对。', { exact: true })).toBeVisible();
+  await expect(page.getByRole('region', { name: '缓存清理状态' }).getByRole('alert')).toContainText('搜索缓存待清理');
+  expect(commands.filter(item => ['edit', 'delete'].includes(item.command.action))).toHaveLength(0);
 });
