@@ -35,6 +35,7 @@ class YoumiPrivateManagementTest {
     private static final long OWNER = 940000001L, OTHER = 940000002L;
     private static final String AGENT = "mia-management-ci";
     private static final AtomicInteger calls = new AtomicInteger();
+    private static final AtomicInteger responseStatus = new AtomicInteger(200);
     private static final AtomicReference<JsonNode> forwarded = new AtomicReference<>();
     private static final HttpServer bridge = startBridge();
     @Autowired private TestRestTemplate http;
@@ -54,7 +55,7 @@ class YoumiPrivateManagementTest {
                     ? "{\"code\":0,\"data\":{\"features\":{\"memory_recall\":true},\"paused\":false,\"counts\":{\"memories\":2}}}"
                     : "{\"code\":1}").getBytes(StandardCharsets.UTF_8);
                 exchange.getResponseHeaders().set("Content-Type", "application/json");
-                exchange.sendResponseHeaders(200, body.length);
+                exchange.sendResponseHeaders(responseStatus.get(), body.length);
                 exchange.getResponseBody().write(body);
                 exchange.close();
             });
@@ -71,7 +72,7 @@ class YoumiPrivateManagementTest {
     @AfterAll static void stopBridge() { bridge.stop(0); }
 
     @BeforeEach void fixtures() {
-        calls.set(0); forwarded.set(null);
+        calls.set(0); forwarded.set(null); responseStatus.set(200);
         db.update("DELETE FROM ai_agent WHERE id=?", AGENT);
         db.update("DELETE FROM sys_user_token WHERE user_id IN (?,?)", OWNER, OTHER);
         db.update("DELETE FROM sys_user WHERE id IN (?,?)", OWNER, OTHER);
@@ -136,6 +137,35 @@ class YoumiPrivateManagementTest {
         assertNotEquals(0, post("/config/mia-management/verify", proof, token(OWNER)).path("code").asInt());
         db.update("UPDATE sys_user SET status=0 WHERE id=?", OWNER);
         assertNotEquals(0, post("/config/mia-management/verify", proof, secret).path("code").asInt());
+    }
+
+    @Test void memorySystemUsesLoginOwnerAndRejectsForeignAnonymousAndDisabledUsers() throws Exception {
+        String path = "/agent/" + AGENT + "/memory-system";
+        assertNotEquals(0, post(path, Map.of("action", "status"), token(OTHER)).path("code").asInt());
+        assertNotEquals(0, post(path, Map.of("action", "status"), null).path("code").asInt());
+        assertEquals(0, calls.get());
+        var command = Map.of("action", "emotion_linkage", "operation", Map.of("action", "status"));
+        assertEquals(0, post(path, command, token(OWNER)).path("code").asInt());
+        assertEquals(OWNER, forwarded.get().path("operator_id").asLong());
+        assertEquals(AGENT, forwarded.get().path("agent_id").asText());
+        assertEquals("memory_system", forwarded.get().path("request").path("action").asText());
+        assertEquals("emotion_linkage", forwarded.get().path("request").path("operation").path("action").asText());
+        String ownerToken = token(OWNER);
+        db.update("UPDATE sys_user SET status=0 WHERE id=?", OWNER);
+        assertNotEquals(0, post(path, command, ownerToken).path("code").asInt());
+        assertEquals(1, calls.get());
+    }
+
+    @Test void memoryConflictsAndUnavailableServiceNeverLookLikeSavedSettings() throws Exception {
+        String path = "/agent/" + AGENT + "/memory-system";
+        String ownerToken = token(OWNER);
+        responseStatus.set(409);
+        assertEquals(409, post(path, Map.of("action", "status"), ownerToken).path("code").asInt());
+        responseStatus.set(400);
+        assertNotEquals(0, post(path, Map.of("action", "status"), ownerToken).path("code").asInt());
+        responseStatus.set(503);
+        assertNotEquals(0, post(path, Map.of("action", "status"), ownerToken).path("code").asInt());
+        assertEquals(3, calls.get());
     }
 
     @Test void ownerCanResetOnlyYoumiEmotionWithoutEditingRole() throws Exception {

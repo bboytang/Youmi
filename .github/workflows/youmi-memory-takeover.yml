@@ -45,6 +45,7 @@ jobs:
           server.tests.test_companion_memory_artifacts
           server.tests.test_companion_reflection_generation
           server.tests.test_companion_memory_emotion
+          server.tests.test_companion_memory_management
           server.tests.test_companion_request_accounting
           server.tests.test_emotional_system
           server.tests.test_companion_affect

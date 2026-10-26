@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.client.HttpClientErrorException;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
@@ -75,7 +76,7 @@ public class YoumiCompanionManagementController {
         long operator = SecurityUser.getUserId();
         grant(agentId, operator);
         if (!(command.get("action") instanceof String action)
-                || !Set.of("status", "pause", "set_feature_settings", "emotion_consent", "reset_youmi_emotion", "reset_mia_emotion", "memory_list", "memory_delete", "set_character", "affect_system").contains(action)) {
+                || !Set.of("status", "pause", "set_feature_settings", "emotion_consent", "reset_youmi_emotion", "reset_mia_emotion", "memory_list", "memory_delete", "set_character", "affect_system", "memory_system").contains(action)) {
             throw new RenException(ErrorCode.PARAMS_GET_ERROR);
         }
         var factory = new SimpleClientHttpRequestFactory();
@@ -93,6 +94,15 @@ public class YoumiCompanionManagementController {
             }
             grant(agentId, operator);
             return new Result<>().ok(mapper.convertValue(result.get("data"), Object.class));
+        } catch (HttpClientErrorException rejected) {
+            grant(agentId, operator);
+            if (action.equals("memory_system") && rejected.getStatusCode().value() == 409) {
+                throw new RenException(409, "记忆或配置已变化，请保留草稿并刷新后核对");
+            }
+            if (action.equals("memory_system") && rejected.getStatusCode().value() == 400) {
+                throw new RenException(ErrorCode.PARAMS_GET_ERROR, "记忆操作未完成，请核对参数或来源是否仍然有效");
+            }
+            throw new RenException(ErrorCode.INTERNAL_SERVER_ERROR, "Youmi 管理服务暂不可用，操作结果未确认，请刷新重试");
         } catch (Exception unavailable) {
             throw new RenException(ErrorCode.INTERNAL_SERVER_ERROR, "Youmi 管理服务暂不可用，操作结果未确认，请刷新重试");
         }
@@ -103,5 +113,12 @@ public class YoumiCompanionManagementController {
     public Result<Object> affectSystem(@PathVariable String agentId, @RequestBody Map<String, Object> operation,
                                       HttpServletRequest request) {
         return manage(agentId, Map.of("action", "affect_system", "operation", operation), request);
+    }
+
+    @PostMapping("/agent/{agentId}/memory-system")
+    @RequiresPermissions("sys:role:normal")
+    public Result<Object> memorySystem(@PathVariable String agentId, @RequestBody Map<String, Object> operation,
+                                      HttpServletRequest request) {
+        return manage(agentId, Map.of("action", "memory_system", "operation", operation), request);
     }
 }

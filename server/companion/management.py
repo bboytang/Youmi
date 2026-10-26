@@ -39,7 +39,7 @@ class ManagementHandler:
             action = command.get('action')
             if action == 'reset_mia_emotion':
                 action = 'reset_youmi_emotion'  # Historical clients retain their reset operation.
-            if action not in {'status', 'pause', 'set_feature_settings', 'emotion_consent', 'reset_youmi_emotion', 'memory_list', 'memory_delete', 'set_character', 'affect_system'}:
+            if action not in {'status', 'pause', 'set_feature_settings', 'emotion_consent', 'reset_youmi_emotion', 'memory_list', 'memory_delete', 'set_character', 'affect_system', 'memory_system'}:
                 raise ValueError()
             if self.store is None:
                 from .youmi_adapter import _store
@@ -47,6 +47,11 @@ class ManagementHandler:
             else:
                 store = self.store
             def apply():
+                if action == 'memory_system':
+                    from .memory_management import manage
+                    if set(command) != {'action', 'operation'}:
+                        raise ValueError()
+                    return manage(store, owner, command['operation'])
                 if action == 'affect_system':
                     from .emotional_system import manage
                     operation = command.get('operation')
@@ -76,7 +81,16 @@ class ManagementHandler:
                 elif action != 'status':
                     store.handle(owner, command)
                 return status(store, owner)
-            result = await asyncio.to_thread(apply)
+            try:
+                result = await asyncio.to_thread(apply)
+            except MemoryError as error:
+                if action != 'memory_system':
+                    raise
+                # Do not disclose conflict information after ownership is revoked.
+                if await authorization._request('/config/youmi-management/verify', proof) != grant:
+                    raise PrivateAuthorizationRequired()
+                code = 409 if error.code in {'conflict', 'evidence_changed', 'memory_changed'} else 400
+                return web.json_response({'code': code, 'error': error.code}, status=code)
             if await authorization._request('/config/youmi-management/verify', proof) != grant:
                 raise PrivateAuthorizationRequired()
             if request.path.startswith('/youmi/') and isinstance(result, dict):
