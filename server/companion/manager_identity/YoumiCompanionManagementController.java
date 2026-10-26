@@ -97,10 +97,10 @@ public class YoumiCompanionManagementController {
         } catch (HttpClientErrorException rejected) {
             grant(agentId, operator);
             if (action.equals("memory_system") && rejected.getStatusCode().value() == 409) {
-                throw new RenException(409, "记忆或配置已变化，请保留草稿并刷新后核对");
+                return new Result<>().error(409, "记忆或配置已变化，请保留草稿并刷新后核对");
             }
             if (action.equals("memory_system") && rejected.getStatusCode().value() == 400) {
-                throw new RenException(ErrorCode.PARAMS_GET_ERROR, "记忆操作未完成，请核对参数或来源是否仍然有效");
+                return new Result<>().error(ErrorCode.PARAMS_GET_ERROR, "记忆操作未完成，请核对参数或来源是否仍然有效");
             }
             throw new RenException(ErrorCode.INTERNAL_SERVER_ERROR, "Youmi 管理服务暂不可用，操作结果未确认，请刷新重试");
         } catch (Exception unavailable) {

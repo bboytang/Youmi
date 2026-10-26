@@ -160,7 +160,9 @@ class YoumiPrivateManagementTest {
         String path = "/agent/" + AGENT + "/memory-system";
         String ownerToken = token(OWNER);
         responseStatus.set(409);
-        assertEquals(409, post(path, Map.of("action", "status"), ownerToken).path("code").asInt());
+        var conflict = post(path, Map.of("action", "status"), ownerToken);
+        assertEquals(409, conflict.path("code").asInt());
+        assertTrue(conflict.path("msg").asText().contains("保留草稿"));
         responseStatus.set(400);
         assertNotEquals(0, post(path, Map.of("action", "status"), ownerToken).path("code").asInt());
         responseStatus.set(503);
