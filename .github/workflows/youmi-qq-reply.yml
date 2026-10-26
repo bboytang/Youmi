@@ -1,0 +1,25 @@
+name: Verify Youmi QQ replies
+on:
+  push:
+    paths:
+      - 'integrations/astrbot_plugin_youmi/**'
+      - 'integrations/tests/**'
+      - '.github/workflows/youmi-qq-reply.yml'
+  pull_request:
+    paths:
+      - 'integrations/astrbot_plugin_youmi/**'
+      - 'integrations/tests/**'
+      - '.github/workflows/youmi-qq-reply.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  connector:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install -r integrations/requirements-test.txt
+      - run: python scripts/ci/verify_astrbot_fusion.py connector

@@ -48,10 +48,10 @@ class YoumiConnector(Star):
             config = self.context.get_config()
         settings = config.get('platform_settings', {}).get('segmented_reply', {})
         if not settings.get('enable'):
-            return [text]
+            return [re.sub(r'\s*[\r\n]+\s*', ' ', text).strip()]
         threshold = settings.get('words_count_threshold', 150)
         if isinstance(threshold, int) and threshold > 0 and len(text) >= threshold:
-            return [text]
+            return [re.sub(r'\s*[\r\n]+\s*', ' ', text).strip()]
         default_pattern = r'.*?[。？！~…]+|.+$'
         pattern = settings.get('regex') or default_pattern
         if pattern == default_pattern:
@@ -67,6 +67,7 @@ class YoumiConnector(Star):
                 segments = [re.sub(cleanup, '', segment) for segment in segments]
             except re.error:
                 logger.warning('Invalid AstrBot segmented reply cleanup rule; keeping punctuation')
+        segments = [re.sub(r'\s*[\r\n]+\s*', ' ', segment).strip() for segment in segments]
         return [segment for segment in segments if segment]
 
     def supports(self, event):
@@ -431,15 +432,15 @@ class YoumiConnector(Star):
             if remaining and not (visible.strip() in already and all(isinstance(part, Plain) for part in remaining)):
                 plain_text = ''.join(part.text for part in remaining if isinstance(part, Plain))
                 segments = self._segmented_reply(plain_text, event) if plain_text else [plain_text]
-                if len(segments) == 1:
-                    await event.send(MessageChain(remaining))
-                else:
-                    other_parts = [part for part in remaining if not isinstance(part, Plain)]
-                    for index, segment in enumerate(segments):
-                        parts = [Plain(segment)]
-                        if index == len(segments) - 1:
-                            parts.extend(other_parts)
-                        await event.send(MessageChain(parts))
+                other_parts = [part for part in remaining if not isinstance(part, Plain)]
+                segments = [segment for segment in segments if segment]
+                for index, segment in enumerate(segments):
+                    parts = [Plain(segment)]
+                    if index == len(segments) - 1:
+                        parts.extend(other_parts)
+                    await event.send(MessageChain(parts))
+                if not segments and other_parts:
+                    await event.send(MessageChain(other_parts))
             state.sent = True
             # Preserve Meme pending image delivery and other native after hooks.
             await call_event_hook(event, EventType.OnAfterMessageSentEvent)

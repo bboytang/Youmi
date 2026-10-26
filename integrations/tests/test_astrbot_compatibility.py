@@ -237,6 +237,23 @@ async def test_segmented_reply_splits_newline_separated_sentences(setup, hooks):
 
 
 @pytest.mark.asyncio
+@pytest.mark.parametrize('settings,text,expected', [
+    ({'enable': True}, ' 第一段\n\n第二段\n\n\n最后一句 ', ['第一段', '第二段', '最后一句']),
+    ({'enable': True}, ' 只有一句\r\n\r\n ', ['只有一句']),
+    ({'enable': False}, ' 第一行\r\n\r\n第二行\n ', ['第一行 第二行']),
+    ({'enable': True, 'words_count_threshold': 1}, ' 第一行\n\n第二行 ', ['第一行 第二行']),
+    ({'enable': True, 'regex': r'[\s\S]+'}, ' 第一行\n\n第二行 ', ['第一行 第二行']),
+])
+async def test_reply_bubbles_have_no_blank_lines(setup, hooks, settings, text, expected):
+    connector, meme, event, bot, sent = setup
+    connector.context.get_config = lambda *args, **kwargs: {'platform_settings': {'segmented_reply': settings}}
+    event.set_extra('youmi_turn', TurnState(connector.client.prepared, 'text'))
+    await final_reply(setup, text)
+    assert [[part['text'] for part in call['message']] for call in sent] == [[item] for item in expected]
+    assert len([call for call in connector.client.calls if call[0] == 'complete']) == 1
+
+
+@pytest.mark.asyncio
 async def test_send_exception_is_failed_and_never_successful_completion(setup, hooks):
     connector, meme, event, bot, sent = setup
     bot.send_private_msg.side_effect = RuntimeError('fixture QQ offline')
