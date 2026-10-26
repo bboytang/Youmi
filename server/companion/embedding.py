@@ -4,6 +4,8 @@ import hashlib
 import json
 from pathlib import Path
 import threading
+import time
+from collections import deque
 
 
 MODEL = 'BAAI/bge-base-zh-v1.5'
@@ -24,6 +26,46 @@ def file_sha256(path):
         for block in iter(lambda: source.read(1024 * 1024), b''):
             digest.update(block)
     return digest.hexdigest()
+
+
+class _NativeSlots:
+    """Two active native calls, four bounded FIFO waiters; no fresh-call barging."""
+    def __init__(self):
+        self._cond = threading.Condition()
+        self._available = 2
+        self._queue = deque()
+
+    def acquire(self, timeout):
+        deadline = time.monotonic() + timeout
+        with self._cond:
+            if self._available and not self._queue:
+                self._available -= 1
+                return True
+            if len(self._queue) >= 4:
+                return False
+            ticket = object()
+            self._queue.append(ticket)
+            try:
+                while self._queue[0] is not ticket or not self._available:
+                    remaining = deadline - time.monotonic()
+                    if remaining <= 0:
+                        return False
+                    self._cond.wait(remaining)
+                self._queue.popleft()
+                self._available -= 1
+                self._cond.notify_all()
+                return True
+            finally:
+                if ticket in self._queue:
+                    self._queue.remove(ticket)
+                    self._cond.notify_all()
+
+    def release(self):
+        with self._cond:
+            if self._available >= 2:
+                raise ValueError('Native slot released too many times')
+            self._available += 1
+            self._cond.notify_all()
 
 
 class SemanticEncoder:
@@ -69,7 +111,7 @@ class SemanticEncoder:
                                                  providers=['CPUExecutionProvider'])
             self._inputs = {item.name for item in self._session.get_inputs()}
             self._lock = threading.Lock()
-            self._native_slots = threading.BoundedSemaphore(2)
+            self._native_slots = _NativeSlots()
         except Exception:
             raise EmbeddingUnavailable('embedding_runtime_unavailable') from None
 

@@ -57,6 +57,8 @@ jobs:
           server.tests.test_companion_character
           server.tests.test_companion_features
           server.tests.test_companion_semantic
+          server.tests.test_companion_embedding_admission
+          server.tests.test_companion_encoder_concurrency
           server.tests.test_companion_reply
           server.tests.test_companion_jobs
           server.tests.test_companion_continuity

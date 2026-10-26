@@ -8,7 +8,7 @@ import unittest
 
 import numpy as np
 
-from server.companion.embedding import DIMENSION, EmbeddingUnavailable, SemanticEncoder
+from server.companion.embedding import DIMENSION, EmbeddingUnavailable, SemanticEncoder, _NativeSlots
 from server.companion.jobs import NativeLane
 
 
@@ -60,7 +60,7 @@ def encoder(runtime):
     value._np, value._tokenizer, value._session = np, runtime, runtime
     value._inputs = {'input_ids', 'attention_mask', 'token_type_ids'}
     value._lock = threading.Lock()
-    value._native_slots = threading.BoundedSemaphore(2)
+    value._native_slots = _NativeSlots()
     return value
 
 

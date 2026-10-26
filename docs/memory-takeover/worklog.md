@@ -311,3 +311,4 @@
 - 生产仅只读核查：当前youmi_companion与旧mia_companion均在镜像，后续必须确认原生入口实际导入新包，不能误覆盖旧副本当部署。实际库data/mia-memory.sqlite3为V10，quick_check=ok，owners2/memories20/sources20/vectors15/jobs530；未导出正文或凭据，未迁移/修改生产。
 - 6B1产品08a993350d8272e7591f2337d5ef20db99ce16d0：GitHub双Python/后端/Java/Manager/结构化提供者通过；40280427034实际编码并发失败，下载/tmp/youmi-cognition-first-results核对：新影子27项全真，但短句case2/3为embedding_busy（16/18次实际native），其余短句和长句全部bitwise_equal。未宣称完整验收，不盲目重跑掩盖问题。
 - 对照native窗口与当前BoundedSemaphore实现，准备有界FIFO准入候选，先写新到者抢占老等待者的可重复测试，保留两路/0.4秒和所有原真实编码断言及资源上限，再用原CI验证。
+- 准入问题已在原实现上用确定性“同一Python时间片释放后新到者抢占”测试复现（1项失败）；改为FIFO后该用例及有界四等待者/超时移除测试共3项通过。原编码器并发/取消/异常归还用例改为使用真实新准入器，仍保留两路native和0.4秒限制。相关53项通过，实际BGE/精确CI仍待验证；未改embedding数值/模型/ORT参数或真实并发断言。
