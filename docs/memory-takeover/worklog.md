@@ -108,3 +108,11 @@
 - 新增 24 项本地通过；补充最终旧算法回退用例前，相关回归 232 项通过。覆盖 128 条容量、更新稳定 ID、跨设备/智能体、撤权、并发来源/条目版本、整批回滚后重启复用、维护仅预览、V11 迁移失败/进程中断、兼容旧算法保留条目和最新情感、51 维情感/认知/长人设不变。
 - 历史迁移夹具先移除空 V12 对象，版本断言与完整/增量安装载荷同步；生产迁移校验未放宽。实际安装验证脚本加入合成反思生成的画像/笔记/候选及来源失效清理，等待准确提交 GitHub 验证。
 - 未打开生产库、未部署、未切换引擎、未新增备份或外发消息。当前默认提取器不自动生成新格式，自动反思生成适配和维护调度仍待后续接入；没有宣称完整步骤 3 或整个迁移已完成。
+
+### 2026-10-26 — 步骤 3B 后端机制验收完成与交接
+
+- 产品与验证提交 `033cfd05efc5a1c4cba2ae3c532af4f031558564` 已推送。[双 Python](https://github.com/bboytang/Youmi/actions/runs/40253660358) 各 231 项、[完整后端](https://github.com/bboytang/Youmi/actions/runs/40253660364) 575 项及人设传输通过。
+- [实际 BGE 安装链路](https://github.com/bboytang/Youmi/actions/runs/40253660362) 全部阶段通过；下载其 109694 字节结果 artifact，memory-shadow-results.json 的 commit 与本次准确提交一致、passed=true，新增 installed_reflection_artifacts/artifact_source_invalidation/maintenance_preview_only 及原有八项检查均为 true。
+- [绑定授权](https://github.com/bboytang/Youmi/actions/runs/40253660365) 192 项及 JAR 构建通过，[Manager 基线](https://github.com/bboytang/Youmi/actions/runs/40253660313) 原有 150 项及基线 4 项通过；[提取器语法](https://github.com/bboytang/Youmi/actions/runs/40253660314) 通过，live 作业按 push 条件跳过，没有真实模型调用。
+- 最终 diff 已检查，原有 10 个用户修改及 YOUMI_ASTRBOT/ 未覆盖或提交。V1–V11 未改，V12 本次提交后冻结；没有连接生产库、部署、备份或发送消息。
+- 下一步仍是步骤 3 的反思生成适配和维护调度，再进入步骤 4 联动。当前整理结果是来源支持的原句视图，尚无模型自动整理、自由文件笔记、维护自动执行或管理页面；不得把后端机制验收当作完整系统上线。

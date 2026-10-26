@@ -1,5 +1,22 @@
 # Youmi 记忆接管验证记录
 
+## 步骤 3B：画像、笔记与维护候选后端机制
+
+准确产品及测试提交：`033cfd05efc5a1c4cba2ae3c532af4f031558564`。后续文档提交不改变被测产品代码。
+
+| 检查 | 结果 | GitHub Actions |
+| --- | --- | --- |
+| Python 3.10 / 3.12 | 各 231 项通过，新增 24 项 | https://github.com/bboytang/Youmi/actions/runs/40253660358 |
+| 完整后端及人设传输 | 575 项通过，传输检查通过 | https://github.com/bboytang/Youmi/actions/runs/40253660364 |
+| 安装后真实 BGE/Tantivy、混合召回、上下文、回复、提取及整理 | 所有阶段通过；来源失效清理通过 | https://github.com/bboytang/Youmi/actions/runs/40253660362 |
+| 绑定授权 | Java 192 项通过，JAR 构建通过 | https://github.com/bboytang/Youmi/actions/runs/40253660365 |
+| Manager 基线 | 原有 150 项及基线 4 项通过 | https://github.com/bboytang/Youmi/actions/runs/40253660313 |
+| 提取器语法 | 通过；push 未执行 live 模型作业 | https://github.com/bboytang/Youmi/actions/runs/40253660314 |
+
+新增 24 项覆盖真实 SQLite 的分类/笔记/候选、稳定 ID 更新、128 条容量、跨设备共享及 owner 隔离、读写权限、条目/来源 CAS、证据级联清理、故障原子回滚及重启复用、V11 迁移失败/进程中断、兼容旧算法保留新整理和最新情感，以及 51 维情感/认知/长人设不变。安装后结果文件新增三个检查均 true：installed_reflection_artifacts、artifact_source_invalidation、maintenance_preview_only；准确 SHA 及 passed=true 已核对。
+
+提案为合成输入，不是实际模型自动整理质量证明。默认模型/引擎、生产数据库尚未切换，无真实 QQ/App/设备或物理硬件验收；反思生成适配、维护调度、UI 和后续阶段仍未完成。
+
 ## 步骤 3A：反思动作与受控写入
 
 准确产品及测试提交：`04a440ea6583a694a307019e86cadaf807fd82ee`。后续工作记录提交只修改文档。

@@ -10,3 +10,11 @@
 6. 合成 SQLite 验证分类/笔记/候选、更新/删除、所有者/版本/来源、证据级联清理、原子故障与重启、V11 升级失败恢复、旧算法回退保留新数据、情感及人设不变；历史迁移夹具和安装载荷同步升级。准确提交在 GitHub Actions 跑双 Python、完整后端、实际安装/BGE、授权及管理端回归，再记录工作交接。
 
 上游设计依据：固定提交的 core/services/user_profile_service.py、llm_memory/utils/user_profile.py、llm_memory/service/note_service.py、core/services/sleep_maintenance_service.py。采用其画像分类、笔记和整理思想，在 Youmi 既有权威数据库上重新实现证据关联，不复制其按 tag 猜用户、全局文件笔记索引、独立数据库或自动备份行为。当前交付不等于原插件全部文件笔记、模型生成、定时整理或 UI 已上线。
+
+## 后端契约与验收
+
+反思动作形式为 `{action,key,title,evidence:[{id,quote}]}`；action 为 profile/note/propose_retirement/propose_merge。profile 的 key 为 alias/attribute/skill/relationship/project，其他 key 为 1–64 位字母数字或 `_.:-`，不当作文件路径使用。title 最多 64 字且必须字面存在于来源；quote 必须是当前事实完整正文。退役候选恰好一个来源，合并候选恰好两个来源。每 owner 总量 128 条、每条最多 8 来源；模型不能填自由 body、owner、版本或设置。正文在读取时由当前来源完整原句生成，保留否定及人称。
+
+YoumiMemoryRuntime.list_artifacts 显式读取，delete_artifact 需要 memory:manage 及当前条目版本；无公开 HTTP 路由、无默认注入。更新按 owner/kind/key 保留 ID。原始事实和任务终态与整理写入同事务，条目更新提升 owner revision 并取消其他旧快照任务。来源任一版本变化即清除整条整理视图，宁可后续重新整理，也不保留局部过期资料。
+
+提交 `033cfd05efc5a1c4cba2ae3c532af4f031558564` 的 CI 全部通过，准确链接见 verification.md：Python 3.10/3.12 各 231 项、后端 575 项及人设传输、实际 BGE 安装链路、绑定授权和 Manager 基线。新增 24 项使用合成 SQLite/提案；安装后额外验证整理写入及证据失效清理。没有真实模型反思生成、线上升级或真实终端对话；自动生成与维护调度仍待接入。
