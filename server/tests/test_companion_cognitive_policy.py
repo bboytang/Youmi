@@ -335,7 +335,7 @@ class PinMigrationTests(unittest.TestCase):
     def v16(self):
         with self.store.db:
             remove_v17(self.store.db)
-            self.store.db.execute('DELETE FROM mia_schema_migrations WHERE version=17')
+            self.store.db.execute('DELETE FROM mia_schema_migrations WHERE version>=17')
         namespace = {'__file__': str(Path('server/companion/schema.py').resolve())}
         source = subprocess.check_output(['git', 'show', '56aefbce:server/companion/schema.py'], text=True)
         exec(compile(source, 'frozen-v16.py', 'exec'), namespace)

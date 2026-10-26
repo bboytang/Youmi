@@ -31,7 +31,7 @@ def migrate(db):
     if db.in_transaction:
         raise ValueError('Youmi schema migration requires its own transaction')
     migrations = [Path(__file__).with_name(name).read_text(encoding='utf-8')
-                  for name in ('schema.sql', 'schema-v2.sql', 'schema-v3.sql', 'schema-v4.sql', 'schema-v5.sql', 'schema-v6.sql', 'schema-v7.sql', 'schema-v8.sql', 'schema-v9.sql', 'schema-v10.sql', 'schema-v11.sql', 'schema-v12.sql', 'schema-v13.sql', 'schema-v14.sql', 'schema-v15.sql', 'schema-v16.sql', 'schema-v17.sql')]
+                  for name in ('schema.sql', 'schema-v2.sql', 'schema-v3.sql', 'schema-v4.sql', 'schema-v5.sql', 'schema-v6.sql', 'schema-v7.sql', 'schema-v8.sql', 'schema-v9.sql', 'schema-v10.sql', 'schema-v11.sql', 'schema-v12.sql', 'schema-v13.sql', 'schema-v14.sql', 'schema-v15.sql', 'schema-v16.sql', 'schema-v17.sql', 'schema-v18.sql')]
     digests = [hashlib.sha256(sql.encode()).hexdigest() for sql in migrations]
     db.execute('BEGIN IMMEDIATE')
     try:

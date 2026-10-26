@@ -1,4 +1,4 @@
-"""Explicit read-only evaluation of the ported search; never the reply engine."""
+"""Read-only ported retrieval for explicit evaluation or a selected owner engine."""
 
 import asyncio
 from functools import partial

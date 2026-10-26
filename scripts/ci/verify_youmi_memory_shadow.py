@@ -277,6 +277,28 @@ async def verify(directory, report):
             store.delete_memory(scope.owner, pinned_id)
             assert store.db.execute('SELECT COUNT(*) FROM youmi_memory_pins WHERE memory_id=?', (pinned_id,)).fetchone()[0] == 0
             report['checks'].update(cognitive_reflection_once=True, cognition_effective_bounded=True, pin_cas_retention=True)
+            # Actual installed activation and same-schema old-algorithm rollback.
+            from youmi_companion.memory_engine import configure as select_engine
+            while (await index.rebuild_batch(scope, policy))['has_more']:
+                pass
+            facts_before = [tuple(row) for row in store.db.execute('SELECT * FROM memories ORDER BY id')]
+            sources_before = [tuple(row) for row in store.db.execute('SELECT * FROM sources ORDER BY memory_id,session_id,fingerprint')]
+            affect_before = emotional_system.status(store, scope.owner)
+            old_result = await runtime.retrieve(scope, policy, '练舞轻音乐')
+            assert select_engine(store, scope.owner, dict(action='engine', engine='youmi', version=0))['version'] == 1
+            active = await runtime.retrieve(scope, policy, '练舞轻音乐')
+            assert active['shadow_only'] is False and active['results']
+            assert all(row['source'] is not None for row in active['results'])
+            assert store.cache_cleanup_status(scope.owner)['state'] == 'complete'
+            assert select_engine(store, scope.owner, dict(action='engine', engine='legacy', version=1))['version'] == 2
+            restored = await runtime.retrieve(scope, policy, '练舞轻音乐')
+            assert [row['id'] for row in restored['results']] == [row['id'] for row in old_result['results']]
+            assert [tuple(row) for row in store.db.execute('SELECT * FROM memories ORDER BY id')] == facts_before
+            assert [tuple(row) for row in store.db.execute('SELECT * FROM sources ORDER BY memory_id,session_id,fingerprint')] == sources_before
+            assert emotional_system.status(store, scope.owner) == affect_before
+            report['checks'].update(installed_owner_engine_activation=True, compatible_engine_rollback=True,
+                cutover_preserves_facts_sources_and_emotion=True)
+
         finally:
             store.close()
 

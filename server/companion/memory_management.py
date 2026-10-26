@@ -44,14 +44,17 @@ def _read(store, owner, command):
         revision = _revision(store, owner)
         if action == 'status':
             _fields(command, {'action'})
+            from .memory_engine import status as engine_status
+            selection = engine_status(store, owner)
             reflection = reflection_status(store, owner)
             reflection.pop('owner', None)
             from .memory_cache_lifecycle import YoumiManagedMemoryCache
-            return dict(revision=revision, cache_cleanup=YoumiManagedMemoryCache.status(store.db, owner),
+            return dict(revision=revision, engine=selection, cache_cleanup=YoumiManagedMemoryCache.status(store.db, owner),
                 features=feature_settings(store, owner),
                 reflection=reflection, emotion_linkage=linkage_settings(store, owner),
                 cognition=cognitive_status(store, owner),
-                capabilities=dict(engine='legacy', emotion_ranking='shadow_only',
+                capabilities=dict(engine=selection['engine'],
+                    emotion_ranking='active' if selection['engine'] == 'youmi' else 'shadow_only',
                     automatic_cognition=True, automatic_candidate_execution=False, permanent_memories=True))
         _fields(command, {'action', 'id'} if action == 'detail' else {'action'}, {'offset'})
         offset = _offset(command)
@@ -105,6 +108,9 @@ def manage(store, owner, command):
             store.delete_memory(owner, command['id'], expected=command['expected'])
         cleanup = store.cache_cleanup_status(owner)
         return dict(saved=True, cache_cleanup=cleanup) if cleanup['state'] != 'not_registered' else {'saved': True}
+    if action == 'engine':
+        from .memory_engine import configure
+        return configure(store, owner, command)
     if action in {'reflection', 'emotion_linkage', 'cognition'}:
         _fields(command, {'action', 'operation'})
         operation = command['operation']

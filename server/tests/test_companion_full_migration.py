@@ -52,7 +52,7 @@ class FullMigrationTests(unittest.IsolatedAsyncioTestCase):
         old, before = self.prepare()
         dump = list(self.store.db.iterdump())
         self.store.db.set_authorizer(lambda action, name, *args: sqlite3.SQLITE_DENY
-            if action == sqlite3.SQLITE_CREATE_TRIGGER and name == 'youmi_memory_pin_delete' else sqlite3.SQLITE_OK)
+            if action == sqlite3.SQLITE_CREATE_TABLE and name == 'youmi_memory_engine' else sqlite3.SQLITE_OK)
         try:
             with self.assertRaises(sqlite3.DatabaseError):
                 migrate(self.store.db)
@@ -69,7 +69,7 @@ class FullMigrationTests(unittest.IsolatedAsyncioTestCase):
 from server.companion.schema import migrate
 db=sqlite3.connect(sys.argv[1]); db.execute('PRAGMA foreign_keys=ON')
 def stop(action,name,*args):
- if action==sqlite3.SQLITE_CREATE_TRIGGER and name=='youmi_memory_pin_delete': os._exit(73)
+ if action==sqlite3.SQLITE_CREATE_TABLE and name=='youmi_memory_engine': os._exit(73)
  return sqlite3.SQLITE_OK
 db.set_authorizer(stop); migrate(db)
 '''

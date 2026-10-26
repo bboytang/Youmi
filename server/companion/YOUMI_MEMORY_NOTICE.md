@@ -51,3 +51,10 @@ lexical fallback. Explicit lexical-only evaluation remains available. Equal RRF
 scores prefer stronger normalized BM25 evidence, then stable ID; all non-equal
 fusion scores, thresholds and formula remain unchanged. See the preserved frozen
 quality failures and follow-up checks in docs/memory-takeover/quality-migration.md.
+
+
+2026-10-26 scoped activation: the shared runtime may select this search only for
+an explicitly configured agent owner, using the managed cache lifecycle. An absent
+selection retains legacy retrieval; the disposable arbitrary-path mode remains
+synthetic evaluation only. Canonical SQLite and completed-turn jobs stay the sole
+fact authority; there is no copied upstream public scope or second database.

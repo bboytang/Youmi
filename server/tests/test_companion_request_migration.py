@@ -75,7 +75,7 @@ class RequestMigrationTests(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(db.execute('SELECT COUNT(*) FROM mia_schema_migrations').fetchone()[0], 3)
             migrate(db)
             migrate(db)
-            self.assertEqual(db.execute('SELECT COUNT(*) FROM mia_schema_migrations').fetchone()[0], 17)
+            self.assertEqual(db.execute('SELECT COUNT(*) FROM mia_schema_migrations').fetchone()[0], 18)
             self.assertEqual(db.execute('PRAGMA foreign_key_check').fetchall(), [])
         finally:
             db.close()

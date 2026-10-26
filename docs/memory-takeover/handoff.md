@@ -126,3 +126,8 @@
 
 
 6C1最终准确f521e91b28ad273306e62f397b3a9ce604139632通过：原冻结回归/独立集及8新增负例的新指标与旧相同，质量/隔离/canonical gates全true，实际BGE40286414638、矩阵40286414631、后端40286414577、Manager40286414594。原失败保留在worklog及/tmp/youmi-quality-first-results、second-results；最终报告/tmp/youmi-quality-final-results。等分RRF仅BM25证据优先再ID。6C2完整V10→V17末期失败/中断两项已通过并加入CI；容量脚本已实现合成smoke，真实BGE容量仍待CI。页面最新8d63f6d0补ElementUI数字控件解除busy后的ARIA同步，仍须四浏览器通过。之后7按智能体统一引擎配置/兼容回退、生产定制包与真实授权验收；目标继续active，不能以6C1通过替代最终部署。
+
+
+7A候选已实现：V18/memory_engine.py为每owner唯一legacy/youmi选择，带版本/BEGIN IMMEDIATE、active job/未结束native/未过期QQ发送保护，成功推进owner revision；无记录仍legacy。Runtime按此选择正式受控混合检索，显式shadow接口保留。回退同包选择legacy，不降schema，升级后事实/来源/情感保留。新增9项引擎/迁移及1项HTTP，相关30项、本地完整矩阵425通过；实际安装新增激活/回退检查，精确CI尚待。V1–V17冻结，安装三入口和历史夹具/最新版断言同步18；未覆盖并行QQ/context文件。下一步7B页面切换按钮及草稿/失败/确认/手机验证，再真实模型质量与生产定制候选部署，不能提前完成目标。
+
+容量已核对准确adcf225df9b9c3ba129300b41a722444140f1459/40287057260：10/100/1000/10000、10001与8MiB gates全true，10000暖读p95 311.05ms/旧192.09ms，RSS309268KiB；新并不更快但在400ms门槛内。页面准确8d63f6d08ef98cacd12d6fa1493e8c4905a96b56/40286912421四浏览器200项及既有53项通过，后端40286912404通过。当前生产仍V10未部署、无新备份/外发消息。

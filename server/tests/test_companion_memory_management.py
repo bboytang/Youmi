@@ -50,6 +50,17 @@ class MemoryManagementTests(unittest.IsolatedAsyncioTestCase):
         self.assertNotIn('owner', state['reflection'])
         self.assertEqual(len(self.calls), 2)
 
+    async def test_owner_engine_management_reports_current_selection_and_rejects_stale_change(self):
+        state = await self.data(dict(action='status'))
+        self.assertEqual(state['engine'], dict(engine='legacy', version=0))
+        result = await self.data(dict(action='engine', engine='youmi', version=0))
+        self.assertEqual(result, dict(engine='youmi', version=1))
+        state = await self.data(dict(action='status'))
+        self.assertEqual(state['capabilities']['engine'], 'youmi')
+        self.assertEqual(state['capabilities']['emotion_ranking'], 'active')
+        self.assertEqual((await self.call(dict(action='engine', engine='legacy', version=0))).status, 409)
+        self.assertEqual(await self.data(dict(action='engine', engine='legacy', version=1)), dict(engine='legacy', version=2))
+
     async def test_ownership_and_secret_checked_before_any_operation(self):
         self.assertEqual((await self.call({'action': 'status'}, secret='browser')).status, 401)
         self.assertEqual(self.calls, [])

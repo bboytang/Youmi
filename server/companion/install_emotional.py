@@ -16,7 +16,7 @@ UPDATED = ('jobs.py', 'affect.py', 'character.py', 'context.py', 'reply.py', 'fe
 ADDED = ('emotional_system.py', 'schema-v9.sql', 'schema-v10.sql', 'memory_runtime.py',
          'memory_repository.py', 'memory_shadow.py', 'memory_search.py', 'memory_state.py', 'schema-v11.sql', 'schema-v12.sql', 'memory_artifacts.py',
          'schema-v13.sql', 'memory_reflection_policy.py', 'reflection_prompt.py',
-         'schema-v14.sql', 'memory_emotion.py', 'memory_emotion_context.py', 'memory_management.py', 'memory_index_cache.py', 'memory_cache_invalidations.py', 'schema-v15.sql', 'schema-v16.sql', 'schema-v17.sql', 'cognition.py', 'cognitive_context.py', 'memory_pins.py', 'memory_cache_lifecycle.py', 'memory_cache_cleanup.py',
+         'schema-v14.sql', 'memory_emotion.py', 'memory_emotion_context.py', 'memory_management.py', 'memory_index_cache.py', 'memory_cache_invalidations.py', 'schema-v15.sql', 'schema-v16.sql', 'schema-v17.sql', 'schema-v18.sql', 'memory_engine.py', 'cognition.py', 'cognitive_context.py', 'memory_pins.py', 'memory_cache_lifecycle.py', 'memory_cache_cleanup.py',
          'requirements-memory-shadow.txt', 'YOUMI_MEMORY_NOTICE.md', 'YOUMI_MEMORY_LICENSE')
 
 

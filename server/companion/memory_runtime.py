@@ -1,10 +1,8 @@
-"""Shared memory boundary for App, device and QQ context construction.
+"""Shared per-agent retrieval boundary for App, device and QQ.
 
-Normal recall delegates to the existing index without changing its results,
-authorization, epochs or failures. Explicit shadow recall evaluates the ported
-search without activating it; writes still use the completed-turn ledger and
-validated JobStore path.
-Emotion and persona remain owned by their existing services, not this runtime.
+Absent a selection, recall preserves the existing index. Explicit owner selection
+activates qualified hybrid retrieval with the managed cache. Completed-turn jobs
+remain the only fact writer; emotion and persona retain their existing owners.
 """
 
 
@@ -14,6 +12,7 @@ class YoumiMemoryRuntime:
             raise ValueError('Invalid shadow cache mode')
         self._index = index
         self._shadow = None
+        self._engine_shadow = None
         self._shadow_cache_dir = shadow_cache_dir
         self._managed_shadow_cache = managed_shadow_cache
 
@@ -22,7 +21,24 @@ class YoumiMemoryRuntime:
         return self._index.store
 
     async def retrieve(self, scope, authorization, query):
-        return await self._index.retrieve(scope, authorization, query)
+        from .embedding import EmbeddingUnavailable
+        from .memory_engine import status
+        await self._index._require(scope, authorization, 'memory:read')
+        with self.store.lock:
+            selection = status(self.store, scope.owner)
+        if selection['engine'] == 'legacy':
+            result = await self._index.retrieve(scope, authorization, query)
+        else:
+            if self._engine_shadow is None:
+                from .memory_shadow import YoumiMemoryShadow
+                self._engine_shadow = YoumiMemoryShadow(self._index, managed=True)
+            result = dict(await self._engine_shadow.retrieve(scope, authorization, query))
+            result['shadow_only'] = False
+        await self._index._require(scope, authorization, 'memory:read')
+        with self.store.lock:
+            if status(self.store, scope.owner) != selection:
+                raise EmbeddingUnavailable('memory_changed')
+        return result
 
     async def shadow_retrieve(self, scope, authorization, query, *, use_vectors=True):
         # Explicit evaluation only. The normal reply path never calls this and

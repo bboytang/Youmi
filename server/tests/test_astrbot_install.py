@@ -63,7 +63,7 @@ class InstalledRuntimeTests(unittest.TestCase):
             store.db.set_authorizer(lambda *args: sqlite3.SQLITE_OK)
             self.assertEqual(list(store.db.iterdump()), before)
             schema.migrate(store.db)
-            self.assertEqual(store.db.execute('SELECT MAX(version) FROM mia_schema_migrations').fetchone()[0], 17)
+            self.assertEqual(store.db.execute('SELECT MAX(version) FROM mia_schema_migrations').fetchone()[0], 18)
             self.assertEqual(store.list_memories(owner)[0]['content'], '喜欢蓝色')
             with self.assertRaisesRegex(ValueError, 'version or checksum'):
                 legacy['migrate'](store.db)

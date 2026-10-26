@@ -1,7 +1,12 @@
 """Remove ONLY empty extension objects when constructing historical fixtures."""
 
 
+def remove_v18(db):
+    db.execute('DROP TABLE IF EXISTS youmi_memory_engine')
+
+
 def remove_v17(db):
+    remove_v18(db)
     if db.execute("SELECT 1 FROM sqlite_master WHERE name='youmi_memory_pins'").fetchone():
         for name in ('insert', 'delete', 'immutable'):
             db.execute('DROP TRIGGER youmi_memory_pin_' + name)
