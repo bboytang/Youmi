@@ -26,11 +26,32 @@
 +                }
 --- a/main/manager-web/src/views/DeviceManagement.vue
 +++ b/main/manager-web/src/views/DeviceManagement.vue
-@@ -443,0 +444,3 @@
-+      }, () => {
+@@ -201 +201 @@
+-  beforeDestroy() { this.clearPrivateCode(); },
++  beforeDestroy() { clearTimeout(this._deviceLoadTimer); this.clearPrivateCode(); },
+@@ -406,0 +407,3 @@
++      const requestId = (this._deviceLoadId || 0) + 1;
++      this._deviceLoadId = requestId;
++      clearTimeout(this._deviceLoadTimer);
+@@ -407,0 +411,5 @@
++      this._deviceLoadTimer = setTimeout(() => {
++        if (this._deviceLoadId !== requestId || this._isDestroyed) return;
 +        this.loading = false;
 +        this.$message.error(this.$t('device.getListFailed'));
-@@ -466,0 +470,3 @@
++      }, 10000);
+@@ -408,0 +417,2 @@
++        if (this._deviceLoadId !== requestId || this._isDestroyed) return;
++        clearTimeout(this._deviceLoadTimer);
+@@ -443,0 +454,5 @@
 +      }, () => {
++        if (this._deviceLoadId !== requestId || this._isDestroyed) return;
++        clearTimeout(this._deviceLoadTimer);
 +        this.loading = false;
++        this.$message.error(this.$t('device.getListFailed'));
+@@ -448 +462,0 @@
+-      this.loading = true;
+@@ -450 +463,0 @@
+-        this.loading = false;
+@@ -466,0 +480,2 @@
++      }, () => {
 +        this.mqttServiceAvailable = false;
