@@ -44,3 +44,25 @@ test('a stalled device list stops loading and reports an error', async ({ page }
   await expect(page.locator('.el-message--error')).toBeVisible({ timeout: 15000 });
   await expect(page.locator('.el-loading-mask:visible')).toHaveCount(0);
 });
+
+for (const firmwareVersion of [null, undefined, '']) {
+  test(`devices without a firmware version render alongside hardware (${firmwareVersion})`, async ({ page }) => {
+    await mockBackend(page, false);
+    const errors = [];
+    page.on('pageerror', error => errors.push(error.message));
+    page.on('console', message => {
+      if (message.type() === 'error') errors.push(message.text());
+    });
+    await page.route('**/device/bind/test-agent', route => route.fulfill({
+      json: { code: 0, data: route.request().method() === 'POST' ? '' : [
+        device,
+        { ...device, id: 'qq-device', board: 'youmi-astrbot', alias: 'QQ virtual device', appVersion: firmwareVersion },
+      ] },
+    }));
+    await page.goto('/#/device-management?agentId=test-agent');
+    await expect(page.getByText('QQ virtual device', { exact: true }).first()).toBeVisible();
+    await expect(page.getByRole('button', { name: '硬件授权', exact: true })).toHaveCount(2);
+    await expect(page.locator('.el-loading-mask:visible')).toHaveCount(0);
+    expect(errors).toEqual([]);
+  });
+}

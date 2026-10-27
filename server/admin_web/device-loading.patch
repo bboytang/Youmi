@@ -55,3 +55,6 @@
 @@ -466,0 +480,2 @@
 +      }, () => {
 +        this.mqttServiceAvailable = false;
+@@ -531 +547 @@
+-      const version = row.firmwareVersion.replace(/\./g, '');
++      const version = (row.firmwareVersion || '').replace(/\./g, '');
