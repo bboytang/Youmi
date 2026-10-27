@@ -68,15 +68,15 @@ class NativeNotebookTests(IsolatedAsyncioTestCase):
         self.assertTrue(saved['saved'])
         fresh_event = event()
         fresh_event.message_obj.message_id = 'a-new-message'
-        found = json.loads(await self.plugin.read(fresh_event, query='开心'))
+        found = json.loads(await self.plugin.read(fresh_event, query='开心', kind='secret'))
         self.assertEqual(found['entries'][0]['id'], saved['entry_id'])
-        diary = json.loads(await self.plugin.read(fresh_event, entry_id=saved['entry_id']))
+        diary = json.loads(await self.plugin.read(fresh_event, entry_id=saved['entry_id'], kind='secret'))
         self.assertIn('私密心事', diary['diary'])
         self.plugin.client.call.assert_awaited_with('status', {'turn_token': 'verified-token'})
 
     async def test_other_peer_and_group_cannot_access_secret(self):
         saved = json.loads(await self.plugin.write(event(), '标题', 'private-fixture', 'secret'))
-        other = json.loads(await self.plugin.read(event('11111'), entry_id=saved['entry_id']))
+        other = json.loads(await self.plugin.read(event('11111'), entry_id=saved['entry_id'], kind='secret'))
         self.assertEqual(other, {'found': False})
         group = event()
         group.get_group_id = lambda: 'a-group'
@@ -158,3 +158,43 @@ class NativeNotebookTests(IsolatedAsyncioTestCase):
             star_handlers_registry.star_handlers_map.update(old_map)
             star_map.clear()
             star_map.update(old_stars)
+
+    async def test_directory_does_not_grant_edit_until_body_is_read_this_turn(self):
+        current=event()
+        saved=json.loads(await self.plugin.write(current,'标题','旧正文'))
+        directory=json.loads(await self.plugin.directory(current))
+        self.assertEqual(directory['entries'][0]['id'],saved['entry_id'])
+        denied=json.loads(await self.plugin.update(current,saved['entry_id'],1,'新标题','新正文'))
+        self.assertEqual(denied['error'],'notebook_read_entry_first')
+        opened=json.loads(await self.plugin.read(current,entry_id=saved['entry_id']))
+        edited=json.loads(await self.plugin.update(current,saved['entry_id'],opened['version'],'新标题','新正文'))
+        self.assertTrue(edited['saved'])
+        self.assertEqual(edited['version'],2)
+        denied=json.loads(await self.plugin.delete(current,saved['entry_id'],2))
+        self.assertEqual(denied['error'],'notebook_read_entry_first')
+        opened=json.loads(await self.plugin.read(current,entry_id=saved['entry_id']))
+        self.assertTrue(json.loads(await self.plugin.delete(current,saved['entry_id'],opened['version']))['deleted'])
+
+    async def test_secret_directory_read_and_edit_are_separate_from_important(self):
+        current=event()
+        saved=json.loads(await self.plugin.write(current,'私密标题','旧心事','secret'))
+        self.assertEqual(json.loads(await self.plugin.directory(current))['entries'],[])
+        self.assertEqual(json.loads(await self.plugin.directory(current,kind='secret'))['entries'][0]['title'],'私密标题')
+        self.assertFalse(json.loads(await self.plugin.read(current,entry_id=saved['entry_id']))['found'])
+        opened=json.loads(await self.plugin.read(current,entry_id=saved['entry_id'],kind='secret'))
+        self.assertTrue(json.loads(await self.plugin.update(current,saved['entry_id'],opened['version'],
+                                                          '新标题','新心事','secret'))['saved'])
+        other=event('11111')
+        other.set_extra('youmi_notebook_versions',{('qq:12345:11111','secret',saved['entry_id']):2})
+        self.assertFalse(json.loads(await self.plugin.delete(other,saved['entry_id'],2,'secret'))['deleted'])
+
+    async def test_revoked_scope_cannot_list_modify_or_delete(self):
+        current=event()
+        saved=json.loads(await self.plugin.write(current,'标题','正文'))
+        await self.plugin.read(current,entry_id=saved['entry_id'])
+        self.plugin.client.call.side_effect=BridgeError('authorization_required',403)
+        for result in [await self.plugin.directory(current),
+                       await self.plugin.update(current,saved['entry_id'],1,'新标题','新正文'),
+                       await self.plugin.delete(current,saved['entry_id'],1)]:
+            self.assertEqual(json.loads(result)['error'],'authorization_required')
+        self.assertTrue(self.plugin.store.read('qq:12345:67890',entry_id=saved['entry_id'])['found'])
