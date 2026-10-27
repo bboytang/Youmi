@@ -1,0 +1,7 @@
+name: astrbot_plugin_youmi_notebook
+display_name: 晓筱的笔记本
+desc: 随时记录重要记事和私密心事，自动标注北京时间，按需查阅，跨会话提醒。
+version: v1.0.0
+author: bboytang
+repo: https://github.com/bboytang/Youmi
+astrbot_version: '>=4.29.3,<4.30.0'

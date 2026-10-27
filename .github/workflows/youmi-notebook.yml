@@ -1,0 +1,55 @@
+name: Verify Youmi private notebook
+on:
+  push:
+    paths:
+      - 'integrations/astrbot_plugin_youmi_notebook/**'
+      - 'integrations/tests/test_notebook_*.py'
+      - '.github/workflows/youmi-notebook.yml'
+  pull_request:
+    paths:
+      - 'integrations/astrbot_plugin_youmi_notebook/**'
+      - 'integrations/tests/test_notebook_*.py'
+      - '.github/workflows/youmi-notebook.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  notebook:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m unittest integrations.tests.test_notebook_store -v
+      - run: python -m pip install -r integrations/requirements-test.txt
+      - name: Fetch the exact deployed AstrBot source
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          from scripts.ci.verify_astrbot_fusion import source
+          source('astrbot', Path('/tmp/notebook-sources'))
+          PY
+      - name: Verify real AstrBot hooks and notebook tools without model calls
+        env:
+          PYTHONPATH: .:/tmp/notebook-sources/astrbot
+          ASTRBOT_ROOT: /tmp/notebook-runtime
+          ASTRBOT_DISABLE_METRICS: '1'
+        run: python -m unittest integrations.tests.test_notebook_native -v
+      - name: Package verified notebook plugin
+        run: |
+          mkdir notebook-artifact
+          python - <<'PY'
+          from pathlib import Path
+          from zipfile import ZipFile
+          root = Path('integrations/astrbot_plugin_youmi_notebook')
+          with ZipFile('notebook-artifact/youmi-notebook.zip', 'w') as archive:
+              for file in root.iterdir():
+                  if file.is_file(): archive.write(file, file.name)
+          PY
+          sha256sum notebook-artifact/youmi-notebook.zip > notebook-artifact/SHA256SUMS
+          printf '%s\n' "$GITHUB_SHA" > notebook-artifact/YOUMI_COMMIT
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Youmi-notebook-${{ github.sha }}
+          path: notebook-artifact/
