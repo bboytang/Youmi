@@ -16,7 +16,7 @@ from .notebook import MARKER, REMINDER, Notebook, NotebookError, remind
 
 
 class YoumiNotebook(Star):
-    def __init__(self, context, config):
+    def __init__(self, context):
         super().__init__(context)
         self.directory = Path(get_astrbot_data_path()) / 'plugin_data' / 'astrbot_plugin_youmi_notebook'
         self.bridge_config = json.loads((Path(get_astrbot_data_path()) / 'config' /

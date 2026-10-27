@@ -46,6 +46,23 @@ class NativeNotebookTests(IsolatedAsyncioTestCase):
     def tearDown(self):
         self.temp.cleanup()
 
+    async def test_native_loader_can_construct_a_plugin_without_config_schema(self):
+        root = Path(self.temp.name) / 'runtime'
+        (root / 'config').mkdir(parents=True)
+        (root / 'config/astrbot_plugin_youmi_config.json').write_text(json.dumps({
+            'youmi_base_url': 'http://127.0.0.1:1', 'allow_internal_http': True,
+            'service_credential_file': str(root / 'unused-fixture-credential'),
+            'qq_platform_id': 'qq-ci', 'scheduled_bot_uin': '12345'}))
+        with patch('integrations.astrbot_plugin_youmi_notebook.main.get_astrbot_data_path', return_value=str(root)):
+            # The real loader supplies just context when _conf_schema.json is empty.
+            plugin = YoumiNotebook(SimpleNamespace())
+            try:
+                await plugin.initialize()
+                self.assertEqual(plugin.store.read('qq:12345:67890')['entries'], [])
+                self.assertTrue((root / 'plugin_data/astrbot_plugin_youmi_notebook/notebook.sqlite3').exists())
+            finally:
+                await plugin.terminate()
+
     async def test_actual_native_event_writes_and_recollects_secret_in_a_new_session(self):
         saved = json.loads(await self.plugin.write(event(), '想留住的瞬间', '我：这让我有点开心。', 'secret'))
         self.assertTrue(saved['saved'])
