@@ -1,0 +1,7 @@
+name: astrbot_plugin_youmi_autosession
+display_name: Youmi automatic conversation rotation
+desc: Start a new QQ conversation when the latest model input reaches the configured limit.
+version: v1.0.0
+author: bboytang
+repo: https://github.com/bboytang/Youmi
+astrbot_version: '>=4.29.3,<4.30.0'

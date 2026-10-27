@@ -1,0 +1,16 @@
+name: Verify Youmi automatic conversation rotation
+on:
+  push:
+    branches: [codex/youmi-autosession]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  rotation:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m unittest integrations.tests.test_youmi_autosession -v

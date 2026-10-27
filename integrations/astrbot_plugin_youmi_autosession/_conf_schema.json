@@ -1,0 +1,3 @@
+{
+  "input_token_limit": {"type": "int", "default": 32000, "description": "Rotate after a successful QQ reply when the latest model input reaches this limit; zero disables rotation"}
+}
