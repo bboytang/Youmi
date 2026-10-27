@@ -68,6 +68,7 @@ class HookTests(IsolatedAsyncioTestCase):
             set_extra=lambda key, value: self.extras.__setitem__(key, value))
 
     async def asyncTearDown(self):
+        await self.plugin.terminate()
         sys.modules.pop('integrations.astrbot_plugin_youmi_autosession.main', None)
         self.modules.stop()
 
@@ -76,6 +77,7 @@ class HookTests(IsolatedAsyncioTestCase):
         await self.plugin.agent_done(self.event, None, response)
         self.manager.new_conversation.assert_not_awaited()
         await self.plugin.after(self.event)
+        await asyncio.gather(*self.plugin.rotation_tasks)
         self.manager.new_conversation.assert_awaited_once()
         await self.plugin.after(self.event)
         self.manager.new_conversation.assert_awaited_once()
@@ -87,6 +89,16 @@ class HookTests(IsolatedAsyncioTestCase):
         await self.plugin.agent_done(self.event, None, SimpleNamespace(usage=SimpleNamespace(input=32000)))
         await self.plugin.after(self.event)
         self.manager.new_conversation.assert_not_awaited()
+
+    async def test_after_hook_does_not_deadlock_when_session_lock_is_held(self):
+        lock_manager = self.module.session_lock_manager
+        await self.plugin.agent_done(self.event, None, SimpleNamespace(usage=SimpleNamespace(input=32000)))
+        async with lock_manager.acquire_lock(self.event.unified_msg_origin):
+            await asyncio.wait_for(self.plugin.after(self.event), timeout=0.1)
+            await asyncio.sleep(0)
+            self.manager.new_conversation.assert_not_awaited()
+        await asyncio.gather(*self.plugin.rotation_tasks)
+        self.manager.new_conversation.assert_awaited_once()
 
     async def test_failed_send_does_not_rotate(self):
         await self.plugin.agent_done(self.event, None, SimpleNamespace(usage=SimpleNamespace(input=32000)))

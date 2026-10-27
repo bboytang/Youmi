@@ -1,5 +1,7 @@
 """Rotate Youmi QQ conversations after a large model input."""
 
+import asyncio
+
 from astrbot.api import logger
 from astrbot.api.event import filter
 from astrbot.api.star import Star
@@ -12,6 +14,13 @@ class YoumiAutoSession(Star):
     def __init__(self, context, config):
         super().__init__(context)
         self.config = config
+        self.rotation_tasks = set()
+
+    async def terminate(self):
+        for task in self.rotation_tasks:
+            task.cancel()
+        if self.rotation_tasks:
+            await asyncio.gather(*self.rotation_tasks, return_exceptions=True)
 
     @filter.on_agent_done(priority=-100001)
     async def agent_done(self, event, run_context, response):
@@ -35,9 +44,16 @@ class YoumiAutoSession(Star):
         if not conversation_id or not state or not state.agent_done or not state.sent:
             return
         event.set_extra('youmi_rotation_conversation', None)
+        # This hook may run inside AstrBot's session lock. Do not await a
+        # second acquisition until the event pipeline has released that lock.
+        task = asyncio.create_task(self._rotate(event.unified_msg_origin, event.get_platform_id(), conversation_id))
+        self.rotation_tasks.add(task)
+        task.add_done_callback(self.rotation_tasks.discard)
+
+    async def _rotate(self, origin, platform_id, conversation_id):
         try:
             if await rotate(self.context.conversation_manager, session_lock_manager,
-                            event.unified_msg_origin, event.get_platform_id(), conversation_id):
+                            origin, platform_id, conversation_id):
                 logger.info('Youmi conversation rotated after reaching the input token limit')
         except Exception:
             logger.warning('Youmi automatic conversation rotation failed', exc_info=True)
