@@ -10,7 +10,6 @@ from zoneinfo import ZoneInfo
 import aiohttp
 from bs4 import BeautifulSoup
 
-ALLOWED_HOSTS = frozenset({'www.bing.com', 'www.bbc.com', 'www.nytimes.com', 'www.youtube.com', 'github.com', 'api.github.com', 'en.wikipedia.org', 'zh.wikipedia.org', 'www.zhihu.com', 'www.douban.com', 'www.baidu.com', 'arxiv.org', 'developer.mozilla.org', 'example.com', 'www.example.com', 'openai.com'})
 PROXY = 'http://172.18.0.1:31985'
 PROXY_CREDENTIALS = Path('/AstrBot/data/plugin_data/astrbot_plugin_youmi_web/proxy.json')
 
@@ -23,7 +22,7 @@ def checked_url(url):
         port = u.port
     except ValueError:
         raise ValueError('invalid_port') from None
-    if u.scheme != 'https' or not u.hostname or u.username or u.password or port not in (None, 443) or u.hostname.lower() not in ALLOWED_HOSTS:
+    if u.scheme not in ('http', 'https') or not u.hostname or u.username or u.password:
         raise ValueError('url_not_allowed')
     return u._replace(fragment='').geturl()
 
@@ -39,7 +38,7 @@ def extract(body):
 
 
 class Web:
-    def __init__(self, log_directory=Path('/xiaoxiao/lists')):
+    def __init__(self, log_directory=Path('/AstrBot/data/plugin_data/astrbot_plugin_youmi_web')):
         self.log_directory = log_directory
         self.lock = asyncio.Lock()
         self.last = 0.0

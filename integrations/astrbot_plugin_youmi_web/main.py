@@ -54,9 +54,9 @@ class YoumiWeb(Star):
 
     @filter.llm_tool(name='xiaoxiao_web_read')
     async def read(self, event: AstrMessageEvent, url: str):
-        """用自己的联网出口读取白名单内的公开网页，不登录、不使用 cookie。
+        """用自己的联网工具读取公开网页，不登录、不使用 cookie。
 
         Args:
-            url(string): HTTPS 网页完整地址。
+            url(string): HTTP 或 HTTPS 网页完整地址。
         """
         return await self.retrieve(event, url)

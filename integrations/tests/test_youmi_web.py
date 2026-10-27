@@ -3,9 +3,12 @@ from integrations.astrbot_plugin_youmi_web.web import checked_url, extract
 
 
 class WebTests(unittest.TestCase):
-    def test_allowed_and_blocked_urls(self):
+    def test_public_site_urls_are_not_filtered_by_domain(self):
+        for url in ['https://github.com/example', 'https://arbitrary.example:8443/', 'http://example.org/']:
+            with self.subTest(url=url):
+                self.assertEqual(checked_url(url), url)
         self.assertEqual(checked_url('https://github.com/example#fragment'), 'https://github.com/example')
-        for url in ['http://github.com/', 'https://github.com@127.0.0.1/', 'https://github.com.evil.test/', 'https://127.0.0.1/', 'https://github.com:8443/', 'https://evil.test/']:
+        for url in ['ftp://example.org/', 'https://name:password@example.org/', 'https://example.org:bad/']:
             with self.subTest(url=url), self.assertRaises(ValueError):
                 checked_url(url)
 
