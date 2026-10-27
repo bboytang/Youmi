@@ -31,6 +31,7 @@ def main():
     private_patch = str(bundle / 'private-authorization.patch')
     settings_patch = str(bundle / 'companion-settings.patch')
     branding_patch = str(bundle / 'branding.patch')
+    device_loading_patch = str(bundle / 'device-loading.patch')
     from emotional_system import apply as apply_emotional_system
     with tempfile.TemporaryDirectory(prefix='youmi-admin-check-') as scratch:
         for relative in manifest['files']:
@@ -39,7 +40,7 @@ def main():
                 target = Path(scratch) / relative
                 target.parent.mkdir(parents=True, exist_ok=True)
                 shutil.copy2(source, target)
-        for candidate in (desktop_patch, patch, private_patch, settings_patch, branding_patch):
+        for candidate in (desktop_patch, patch, private_patch, settings_patch, branding_patch, device_loading_patch):
             subprocess.run(['git', 'apply', '--unidiff-zero', '--check', candidate], cwd=scratch, check=True)
             subprocess.run(['git', 'apply', '--unidiff-zero', candidate], cwd=scratch, check=True)
         apply_emotional_system(scratch, check=True)
@@ -51,6 +52,7 @@ def main():
         subprocess.run(['git', 'apply', '--unidiff-zero', private_patch], cwd=root, check=True)
         subprocess.run(['git', 'apply', '--unidiff-zero', settings_patch], cwd=root, check=True)
         subprocess.run(['git', 'apply', '--unidiff-zero', branding_patch], cwd=root, check=True)
+        subprocess.run(['git', 'apply', '--unidiff-zero', device_loading_patch], cwd=root, check=True)
         shutil.copy2(bundle / 'YoumiSettingsDialog.vue', root / 'main/manager-web/src/components/YoumiSettingsDialog.vue')
         shutil.copy2(bundle / 'YoumiMemoryDialog.vue', root / 'main/manager-web/src/components/YoumiMemoryDialog.vue')
         shutil.copy2(bundle / 'YoumiCharacterEditor.vue', root / 'main/manager-web/src/components/YoumiCharacterEditor.vue')
