@@ -12,6 +12,7 @@ from bs4 import BeautifulSoup
 
 ALLOWED_HOSTS = frozenset({'www.bing.com', 'www.bbc.com', 'www.nytimes.com', 'www.youtube.com', 'github.com', 'api.github.com', 'en.wikipedia.org', 'zh.wikipedia.org', 'www.zhihu.com', 'www.douban.com', 'www.baidu.com', 'arxiv.org', 'developer.mozilla.org', 'example.com', 'www.example.com', 'openai.com'})
 PROXY = 'http://172.18.0.1:31985'
+PROXY_CREDENTIALS = Path('/AstrBot/data/plugin_data/astrbot_plugin_youmi_web/proxy.json')
 
 
 def checked_url(url):
@@ -55,14 +56,16 @@ class Web:
     async def fetch(self, url):
         url = checked_url(url)
         async with self.lock:
-            await asyncio.sleep(max(0, 2 - (time.monotonic() - self.last)))
-            self.last = time.monotonic()
+            credentials = json.loads(PROXY_CREDENTIALS.read_text(encoding='utf-8'))
+            auth = aiohttp.BasicAuth(credentials['username'], credentials['password'])
             async with aiohttp.ClientSession(cookie_jar=aiohttp.DummyCookieJar(), timeout=aiohttp.ClientTimeout(total=25), headers={'User-Agent': 'Mozilla/5.0 (compatible; XiaoxiaoWeb/1.0)'}, trust_env=False) as session:
                 for _ in range(4):
+                    await asyncio.sleep(max(0, 2 - (time.monotonic() - self.last)))
+                    self.last = time.monotonic()
                     host = urlsplit(url).hostname
                     status = 'error'
                     try:
-                        async with session.get(url, proxy=PROXY, allow_redirects=False) as response:
+                        async with session.get(url, proxy=PROXY, proxy_auth=auth, allow_redirects=False) as response:
                             status = str(response.status)
                             if response.status in (301, 302, 303, 307, 308):
                                 url = checked_url(urljoin(url, response.headers['Location']))
