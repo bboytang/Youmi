@@ -1,0 +1,36 @@
+--- a/main/manager-web/src/apis/module/device.js
++++ b/main/manager-web/src/apis/module/device.js
+@@ -36,3 +36,8 @@
+-                RequestService.reAjaxFun(() => {
+-                    this.getAgentBindDevices(agentId, callback, failCallback);
+-                });
++                if (failCallback) {
++                    RequestService.clearRequestTime();
++                    failCallback(err);
++                } else {
++                    RequestService.reAjaxFun(() => {
++                        this.getAgentBindDevices(agentId, callback, failCallback);
++                    });
++                }
+@@ -150,3 +155,8 @@
+-                RequestService.reAjaxFun(() => {
+-                    this.getDeviceStatus(agentId, callback, failCallback);
+-                });
++                if (failCallback) {
++                    RequestService.clearRequestTime();
++                    failCallback(err);
++                } else {
++                    RequestService.reAjaxFun(() => {
++                        this.getDeviceStatus(agentId, callback, failCallback);
++                    });
++                }
+--- a/main/manager-web/src/views/DeviceManagement.vue
++++ b/main/manager-web/src/views/DeviceManagement.vue
+@@ -443,0 +444,3 @@
++      }, () => {
++        this.loading = false;
++        this.$message.error(this.$t('device.getListFailed'));
+@@ -466,0 +470,3 @@
++      }, () => {
++        this.loading = false;
++        this.mqttServiceAvailable = false;
