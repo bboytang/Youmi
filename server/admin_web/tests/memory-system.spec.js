@@ -116,6 +116,18 @@ test('phone notebook separates categories and shows escaped read-only content', 
   await expect(page.locator('.notebook-content')).toHaveCount(0);
 });
 
+test('phone shows every memory tab without horizontal paging', async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 800 });
+  await setup(page);
+  for (const name of ['晓筱的笔记本', '记忆与来源', '画像与笔记', '反思设置', '认知设置', '情感联动']) {
+    const tab = page.getByRole('tab', { name, exact: true });
+    await expect(tab).toBeInViewport();
+    await tab.click();
+    await expect(tab).toHaveAttribute('aria-selected', 'true');
+  }
+  await expect(page.locator('.memory-main .el-tabs__nav-next')).toBeHidden();
+});
+
 test('independent memory page saves only the selected agent and sends the existing login', async ({ page }) => {
   const { states, commands } = await setup(page);
   await page.getByRole('tab', { name: '反思设置', exact: true }).click();

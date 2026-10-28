@@ -425,5 +425,16 @@ export default {
 .controls { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 16px; margin: 20px 0; }
 .actions { display: flex; flex-wrap: wrap; gap: 12px; margin: 16px 0; }
 .memory-main .el-button { max-width: 100%; white-space: normal; margin: 6px 0; }
-@media (max-width: 600px) { .memory-main { padding: 14px; } .controls { grid-template-columns: 1fr; } }
+@media (max-width: 600px) {
+  .memory-main { padding: 14px; }
+  .controls { grid-template-columns: 1fr; }
+  .memory-main ::v-deep .el-tabs__nav-wrap.is-scrollable { padding: 0; }
+  .memory-main ::v-deep .el-tabs__nav-prev,
+  .memory-main ::v-deep .el-tabs__nav-next,
+  .memory-main ::v-deep .el-tabs__active-bar { display: none; }
+  .memory-main ::v-deep .el-tabs__nav-scroll { overflow: visible; }
+  .memory-main ::v-deep .el-tabs__nav { display: flex; flex-wrap: wrap; width: 100%; transform: none !important; }
+  .memory-main ::v-deep .el-tabs__item { padding: 0 12px; }
+  .memory-main ::v-deep .el-tabs__item.is-active { box-shadow: inset 0 -2px #409eff; }
+}
 </style>
