@@ -21,7 +21,7 @@ services:
     depends_on: !override
       youmi-netkeeper: {condition: service_healthy, restart: true}
     healthcheck:
-      test: ["CMD", "python", "-c", "import socket; [socket.create_connection(('127.0.0.1', p), timeout=2).close() for p in (31987, 31989, 31990)]; assert any(int(line.split()[1].split(':')[1], 16) == 31991 for line in open('/proc/net/udp').readlines()[1:])"]
+      test: ["CMD", "python", "-c", "import socket; [socket.create_connection(('127.0.0.1', p), timeout=2).close() for p in (31987, 31989, 31990, 31993)]; assert any(int(line.split()[1].split(':')[1], 16) == 31991 for line in open('/proc/net/udp').readlines()[1:])"]
       interval: 5s
       timeout: 4s
       retries: 6
