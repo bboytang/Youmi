@@ -31,7 +31,8 @@ class BridgeClient:
 
     async def call(self, action, data):
         if self.session is None:
-            self.session = aiohttp.ClientSession(connector=aiohttp.TCPConnector(limit=8))
+            self.session = aiohttp.ClientSession(connector=aiohttp.TCPConnector(limit=8),
+                json_serialize=lambda value: json.dumps(value, ensure_ascii=False))
         try:
             token = Path(self.config['service_credential_file']).read_text(encoding='utf-8').strip()
         except (OSError, UnicodeError):
@@ -43,7 +44,8 @@ class BridgeClient:
                 async with self.session.post(self.base + '/internal/astrbot/' + action,
                     json=dict(data, protocol_version=1), headers={'Authorization': 'Bearer ' + token},
                     timeout=aiohttp.ClientTimeout(total=timeout), allow_redirects=False) as response:
-                    limit = None if action == 'prepare' else 3 * 1024 * 1024 if action == 'tts' else 65536
+                    limit = (None if action == 'prepare' else 3 * 1024 * 1024 if action == 'tts'
+                             else 256 * 1024 if action in {'check', 'claim'} else 65536)
                     raw = bytearray()
                     async for chunk in response.content.iter_chunked(8192):
                         raw.extend(chunk)

@@ -131,6 +131,25 @@ class PassportPrepareTests(unittest.IsolatedAsyncioTestCase):
         complete = claim | {'result': 'adapter_accepted', 'message_components': ['plain'], 'agent_tool_summary': []}
         self.assertEqual((await self.post('complete', complete))[0], 200)
 
+    async def test_unicode_reply_uses_bounded_utf8_transport(self):
+        from integrations.astrbot_plugin_youmi.client import BridgeClient
+        _, prepared = await self.post('passport-prepare',
+            {'handle': self.handle, 'attempt_id': 'unicode-attempt', 'model': 'ci-model'})
+        bridge = BridgeClient({'youmi_base_url': str(self.client.make_url('/')).rstrip('/'),
+            'service_credential_file': str(self.root / 'token'), 'allow_internal_http': True})
+        try:
+            text = '🙂。' * 8000
+            claim = {'turn_token': prepared['turn_token'], 'completion_id': 'unicode-completion', 'final_text': text}
+            self.assertEqual((await bridge.call('claim', claim))['checked_text'], text)
+            await bridge.call('passport-reply', {'handle': self.handle, 'turn_token': claim['turn_token'],
+                'completion_id': claim['completion_id'], 'text': text})
+            self.assertEqual(await self.waiter, text)
+            result = await bridge.call('complete', claim | {'result': 'adapter_accepted',
+                'message_components': ['plain'], 'agent_tool_summary': []})
+            self.assertEqual(result['status'], 'completed')
+        finally:
+            await bridge.close()
+
     async def test_revocation_and_context_change_prevent_reply_delivery(self):
         status, prepared = await self.post('passport-prepare',
             {'handle': self.handle, 'attempt_id': 'attempt', 'model': 'ci-model'})
