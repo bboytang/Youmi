@@ -5,6 +5,7 @@ on:
       - 'integrations/astrbot_plugin_youmi_web/**'
       - 'integrations/tests/test_youmi_web.py'
       - 'integrations/tests/test_youmi_web_authorization.py'
+      - 'integrations/tests/test_youmi_network_health.py'
       - 'deploy/youmi-network/**'
       - '.github/workflows/youmi-web.yml'
   workflow_dispatch:
@@ -19,7 +20,7 @@ jobs:
         with:
           python-version: '3.12'
       - run: python -m pip install aiohttp beautifulsoup4
-      - run: python -m unittest integrations.tests.test_youmi_web integrations.tests.test_youmi_web_authorization -v
+      - run: python -m unittest integrations.tests.test_youmi_web integrations.tests.test_youmi_web_authorization integrations.tests.test_youmi_network_health -v
       - run: python -m unittest discover -s deploy/youmi-network/tests -v
       - run: python -m compileall -q integrations/astrbot_plugin_youmi_web
       - name: Build and smoke-test the isolated network keeper

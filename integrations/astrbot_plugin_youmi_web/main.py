@@ -9,6 +9,7 @@ from astrbot.core.utils.astrbot_path import get_astrbot_data_path
 from ..astrbot_plugin_youmi.client import BridgeClient, BridgeError
 from ..astrbot_plugin_youmi.passport import PassportEvent
 from .authorization import authorize
+from .network_health import status as network_status
 from .web import Web
 from .render import render
 
@@ -34,6 +35,17 @@ class YoumiWeb(Star):
             return json.dumps({'error': str(error)[:120]}, ensure_ascii=False)
         except Exception:
             return json.dumps({'error': 'web_unavailable'})
+
+    @filter.llm_tool(name='xiaoxiao_network_status')
+    async def network_status(self, event: AstrMessageEvent):
+        """检查联网代理、浏览器和统一网络服务的本地端口是否可达。"""
+        try:
+            await self.authorize(event)
+            return json.dumps(await network_status(), ensure_ascii=False)
+        except (ValueError, KeyError, BridgeError) as error:
+            return json.dumps({'error': str(error)[:120]}, ensure_ascii=False)
+        except Exception:
+            return json.dumps({'error': 'network_status_unavailable'})
 
     @filter.llm_tool(name='xiaoxiao_web_search')
     async def search(self, event: AstrMessageEvent, query: str):
