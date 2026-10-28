@@ -26,11 +26,13 @@ class NotebookManagementTests(unittest.IsolatedAsyncioTestCase):
             'device_id': 'astrbot-test', 'client_id': 'astrbot:12345', 'credential_file': str(credential)}]}))
         db = root / 'notebook.sqlite3'
         with sqlite3.connect(db) as conn:
+            conn.execute('PRAGMA journal_mode=WAL')
             conn.execute('CREATE TABLE entries (id INTEGER, scope TEXT, kind TEXT, title TEXT, content TEXT, created_at TEXT, updated_at TEXT)')
             conn.executemany('INSERT INTO entries VALUES (?,?,?,?,?,?,?)', [
                 (1, 'qq:12345:67890', 'important', '标题', '正文', '2026-01-01', '2026-01-01'),
                 (2, 'qq:12345:67890', 'secret', '心事', '秘密', '2026-01-01', '2026-01-01'),
                 (3, 'qq:12345:11111', 'important', '其他人', '其他', '2026-01-01', '2026-01-01')])
+        conn.close()
         self.env = patch.dict(os.environ, {'YOUMI_ASTRBOT_CONFIG_FILE': str(config), 'YOUMI_NOTEBOOK_DB': str(db)})
         self.env.start(); self.addCleanup(self.env.stop)
         self.scope = SimpleNamespace(owner='user:1:agent:a')
@@ -67,6 +69,15 @@ class NotebookManagementTests(unittest.IsolatedAsyncioTestCase):
         self.verify = revoke
         with self.assertRaises(PrivateAuthorizationRequired):
             await read_notebook(self, self.scope.owner, {})
+
+    async def test_wal_reopens_when_coordination_files_are_missing(self):
+        db = Path(os.environ['YOUMI_NOTEBOOK_DB'])
+        self.assertFalse(Path(str(db) + '-shm').exists())
+        for _ in range(2):
+            result = await read_notebook(self, self.scope.owner, {'kind': 'important'})
+            self.assertEqual([item['title'] for item in result['entries']], ['标题'])
+        with sqlite3.connect(db) as connection:
+            self.assertEqual(connection.execute('SELECT count(*) FROM entries').fetchone()[0], 3)
 
     async def test_manager_endpoint_rechecks_owner_and_never_accepts_browser_scope(self):
         async def verify_manager(endpoint, proof):

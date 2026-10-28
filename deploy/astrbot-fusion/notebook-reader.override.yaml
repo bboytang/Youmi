@@ -3,4 +3,5 @@ services:
     environment:
       YOUMI_NOTEBOOK_DB: /run/youmi-notebook/notebook.sqlite3
     volumes:
-      - ${YOUMI_NOTEBOOK_DATA_DIR:?Set_the_existing_notebook_data_directory}:/run/youmi-notebook:ro
+      # SQLite WAL may need to create its coordination files; queries use mode=ro.
+      - ${YOUMI_NOTEBOOK_DATA_DIR:?Set_the_existing_notebook_data_directory}:/run/youmi-notebook
