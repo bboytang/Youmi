@@ -61,3 +61,9 @@ V19 候选已接入成功完成账本，QQ 与 Passport 可在本地 fixture 中
 最新隔离提交为 `5e8dde69fc0c03c162bd7cc59fc1d6f0da906c8f`。对应 CI 同款本地检查：后端 813 项通过（57 跳过）、脚本 98 项、CI 辅助 39 项、Compose 检查、连接器 69 项及上游 Meme 1045 项通过（1 跳过、85 子测试通过）。该提交尚未公开推送，仍须 GitHub Actions 与实机验收。
 
 新增固定上游设备 MCP 客户端及执行器的协议回归：模拟 WebSocket 已验证固件音量工具名称、请求、正常与错误结果；真实设备动作仍待验证。
+
+最新隔离提交 `7f107268231c1d2e61b217261314e02c3f9a9837` 增加固定上游 MCP 协议测试；其本地后端 814 项通过（57 项跳过）、脚本 98 项、CI 辅助 39 项及 Compose 检查通过，连接器 69 项及上游 Meme 1045 项通过（1 项跳过、85 子测试通过）。尚未公开推送或实机验收。
+
+用户明确允许后，`7f107268231c1d2e61b217261314e02c3f9a9837` 已推送到公开分支 `codex/passport-astrbot-integration`；[集成工作流](https://github.com/bboytang/Youmi/actions/runs/40617699170) 与 [固件构建](https://github.com/bboytang/Youmi/actions/runs/40617701238) 已启动，尚待终态。固定上游 TTS 文本消费者本地模拟合成探针通过，但非实体音频验收。
+
+GitHub `7f107268` 的协议服务检查失败：该工作流只提供单个 ASR 源文件，不能运行需要完整上游源码的 MCP 探针。已在工作区和隔离候选修复为源码不完整时明确跳过、完整源码时执行，两种路径本地均通过；修复尚未提交。集成 workflow 的 backend、connector、snowluma 已通过，manager 和固件矩阵仍在运行。

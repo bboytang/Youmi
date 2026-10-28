@@ -12,7 +12,12 @@ class PassportNativeMCPTests(unittest.TestCase):
         source = os.environ.get('YOUMI_ASR_TEST_SOURCE')
         if not source:
             self.skipTest('Pinned upstream source is not configured')
-        upstream = Path(source).resolve().parents[3]
+        path = Path(source).resolve()
+        if len(path.parents) < 4:
+            self.skipTest('Full pinned upstream source is not configured')
+        upstream = path.parents[3]
+        if not (upstream / 'core/providers/tools/device_mcp/mcp_executor.py').is_file():
+            self.skipTest('Full pinned upstream source is not configured')
         root = Path(__file__).resolve().parents[2]
         env = dict(os.environ, PYTHONPATH=os.pathsep.join((str(upstream), str(root))))
         subprocess.run([sys.executable, str(Path(__file__).with_name('passport_native_mcp_probe.py'))],

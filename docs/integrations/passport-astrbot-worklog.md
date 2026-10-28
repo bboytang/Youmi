@@ -102,3 +102,10 @@
 
 - 在 CI 同款固定 xiaozhi 源码上，直接使用上游 `MCPClient` 和 `DeviceMCPExecutor`，通过模拟设备 WebSocket 验证 `self.audio_speaker.set_volume` 的名称转换、`tools/call` 消息、参数、正常返回和设备错误映射。只替换测试中的音频模块、日志和设备链路；不声称实体硬件动作通过。
 - 新增上游协议回归：CI 未提供固定源码时明确跳过；标准 backend 验证脚本提供固定上游源码，因此会执行该测试。本地定向测试通过。
+- 隔离提交 `7f107268231c1d2e61b217261314e02c3f9a9837` 的 CI 同款本地检查终态：后端 814 项通过、57 项跳过，固定上游设备 MCP 测试实际执行并通过；脚本 98 项、CI 辅助 39 项及 Compose 检查通过；连接器 69 项、上游 Meme 1045 项和 85 个子测试通过（1 项缺 `botpy` 跳过）。日志 `/tmp/youmi-passport-native-mcp-backend.log`、`/tmp/youmi-passport-native-mcp-connector.log`。尚无 GitHub Actions 或实机结果。
+
+## 已授权推送与 GitHub 验证
+
+- 用户明确允许推送后，已将隔离提交 `7f107268231c1d2e61b217261314e02c3f9a9837` 推送到公开新分支 `codex/passport-astrbot-integration`，原工作区未重置。手动启动 [集成工作流](https://github.com/bboytang/Youmi/actions/runs/40617699170) 和 [固件构建](https://github.com/bboytang/Youmi/actions/runs/40617701238)；推送还触发授权、协议及记忆相关检查。以上运行初查均为进行中，尚无通过结论。
+- 本地临时探针 `/tmp/youmi-passport-tts-probe.py` 使用固定上游 `TTSProviderBase` 的真实文本消费者、真实 DTO 和现有 `GuardedTTSQueue`，模拟合成器接收设备回传的文本，确认结束标记与字幕文本；首次受沙箱线程限制中止，在允许线程的环境重跑通过。该探针不验证真实 TTS 模型、音频传输或设备播放，也不属于已推送提交的自动测试。
+- GitHub [协议工作流](https://github.com/bboytang/Youmi/actions/runs/40617685205) 在 `7f107268` 失败：其只下载单个 ASR 文件，新增上游 MCP 测试无法导入完整 `core`；集成工作流则实际提供完整源码。已修改测试在源码不完整时明确跳过，完整源码时仍执行；两种路径本地均验证。`7f107268` 的集成 workflow 中 backend、connector、snowluma 已通过，两个 manager 任务及固件矩阵仍在运行；修复需新提交及新 SHA 检查。
