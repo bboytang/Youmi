@@ -22,6 +22,20 @@ jobs:
       - run: python -m unittest integrations.tests.test_youmi_web integrations.tests.test_youmi_web_authorization -v
       - run: python -m unittest discover -s deploy/youmi-network/tests -v
       - run: python -m compileall -q integrations/astrbot_plugin_youmi_web
+      - name: Build and smoke-test the isolated network keeper
+        run: |
+          docker build -t youmi-network-ci deploy/youmi-network
+          name="youmi-network-ci-${GITHUB_RUN_ID}"
+          trap 'docker rm -f "$name" >/dev/null 2>&1 || true' EXIT
+          docker run -d --name "$name" --network none --cap-add NET_ADMIN youmi-network-ci
+          for attempt in $(seq 1 30); do
+            status=$(docker inspect --format '{{.State.Health.Status}}' "$name")
+            if [ "$status" = healthy ]; then break; fi
+            sleep 2
+          done
+          test "$status" = healthy
+          docker exec "$name" iptables -t nat -C OUTPUT -p tcp -j YOUMI_NET_TCP
+          docker exec "$name" iptables -t mangle -C OUTPUT -p udp -j YOUMI_NET_UDP
       - name: Package web plugin
         run: |
           mkdir web-artifact
