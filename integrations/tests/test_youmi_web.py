@@ -1,5 +1,6 @@
+import json
 import unittest
-from integrations.astrbot_plugin_youmi_web.web import checked_url, extract
+from integrations.astrbot_plugin_youmi_web.web import checked_url, extract, summarize_json, validate_options
 
 
 class WebTests(unittest.TestCase):
@@ -18,6 +19,35 @@ class WebTests(unittest.TestCase):
         self.assertNotIn('injected', text)
         self.assertLessEqual(len(text), 12000)
 
+    def test_structured_json_summary_and_order(self):
+        data = {'message': {'total-results': 1000, 'items': [
+            {'title': 'T', 'DOI': str(i), 'author': [{'given': 'A', 'family': 'B'}],
+             'abstract': 'a' * 1000, 'unwanted': 'z' * 5000} for i in range(5)]}}
+        text, truncated, shape = summarize_json(json.dumps(data), ('title', 'DOI', 'author', 'abstract', 'given', 'family'), 3, 12000)
+        result = json.loads(text)
+        self.assertTrue(truncated)
+        self.assertEqual(shape['total_results'], 1000)
+        self.assertEqual(len(result['message']['items']), 1)
+        self.assertEqual(result['message']['items'][0]['author'][0]['family'], 'B')
+        self.assertEqual(len(result['message']['items'][0]['abstract']), 400)
+        self.assertNotIn('unwanted', result['message']['items'][0])
+        self.assertEqual(shape['arrays'][0]['total'], 5)
+        self.assertEqual(shape['arrays'][0]['removed_fields_per_item'], [1])
+
+    def test_invalid_options_are_rejected(self):
+        for args in [(None, 0, 10), (None, 21, 10), (None, 3, 12001),
+                     (None, True, 1), ('title', 3, 10), ([1], 3, 10), (['x'] * 21, 3, 10)]:
+            with self.subTest(args=args), self.assertRaises(ValueError):
+                validate_options(*args)
+
+    def test_final_prefix_and_invalid_json_are_marked(self):
+        text, truncated, shape = summarize_json('{"very_long_key":123456}', [], 3, 3)
+        self.assertTrue(truncated)
+        self.assertEqual(len(text), 3)
+        self.assertNotEqual(shape, 'unknown')
+        text, truncated, shape = summarize_json('{bad json', [], 3, 3)
+        self.assertEqual((text, truncated, shape), ('{ba', True, 'unknown'))
+
 
 class WebFetchTests(unittest.IsolatedAsyncioTestCase):
     async def test_json_is_returned_as_bounded_text(self):
@@ -29,7 +59,9 @@ class WebFetchTests(unittest.IsolatedAsyncioTestCase):
 
         body = '{"value":"' + '中' * 20000 + '<script>kept</script>"}'
         async def handle(request):
-            return web.Response(text=body, content_type=request.match_info['content_type'].replace('_', '/'))
+            value = {'small': '{ "text": "中<script>" }', 'broken': '{' + 'x' * 15000,
+                     'huge': '{"value":"' + '中' * 400000 + '"}'}.get(request.query.get('case'), body)
+            return web.Response(text=value, content_type=request.match_info['content_type'].replace('_', '/'))
 
         app = web.Application()
         app.router.add_get('/{content_type}', handle)
@@ -45,9 +77,19 @@ class WebFetchTests(unittest.IsolatedAsyncioTestCase):
                 with patch.object(module, 'PROXY', None), patch.object(module, 'PROXY_CREDENTIALS', credentials):
                     for content_type in ('application_json', 'application_problem+json'):
                         result = await module.Web(Path(directory)).fetch(f'http://127.0.0.1:{port}/{content_type}')
-                        self.assertEqual(result['text'], body[:12000])
+                        self.assertTrue(result['truncated'])
+                        self.assertLessEqual(len(result['text']), 12000)
+                        self.assertIsInstance(json.loads(result['text']), dict)
                         self.assertEqual(result['title'], '')
                         self.assertEqual(result['links'], [])
+                    result = await module.Web(Path(directory)).fetch(f'http://127.0.0.1:{port}/application_json?case=small')
+                    self.assertEqual(result['text'], '{ "text": "中<script>" }')
+                    self.assertFalse(result['truncated'])
+                    for case in ('broken', 'huge'):
+                        result = await module.Web(Path(directory)).fetch(f'http://127.0.0.1:{port}/application_json?case={case}')
+                        self.assertTrue(result['truncated'])
+                        self.assertEqual(result['shape'], 'unknown')
+                        self.assertEqual(len(result['text']), 12000)
                     result = await module.Web(Path(directory)).fetch(f'http://127.0.0.1:{port}/text_plain')
                     self.assertEqual(result['error'], 'unsupported_content_type')
         finally:

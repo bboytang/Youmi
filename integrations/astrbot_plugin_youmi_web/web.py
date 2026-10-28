@@ -1,6 +1,5 @@
 """Scoped, unauthenticated web retrieval through the dedicated proxy."""
 import asyncio
-import codecs
 import json
 import time
 from datetime import datetime
@@ -13,6 +12,93 @@ from bs4 import BeautifulSoup
 
 PROXY = 'http://172.18.0.1:31985'
 PROXY_CREDENTIALS = Path('/AstrBot/data/plugin_data/astrbot_plugin_youmi_web/proxy.json')
+DEFAULT_FIELDS = ('title', 'DOI', 'author', 'published', 'abstract', 'given', 'family', 'name')
+MAX_BODY = 1048576
+
+
+def validate_options(fields, max_items, max_chars):
+    if fields is not None and (not isinstance(fields, list) or len(fields) > 20 or
+                               any(not isinstance(field, str) for field in fields)):
+        raise ValueError('invalid_fields')
+    if type(max_items) is not int or not 1 <= max_items <= 20:
+        raise ValueError('invalid_max_items')
+    if type(max_chars) is not int or not 1 <= max_chars <= 12000:
+        raise ValueError('invalid_max_chars')
+
+
+def summarize_json(text, fields, max_items, max_chars):
+    try:
+        data = json.loads(text)
+        arrays = []
+        array_count = 0
+        removed_fields = 0
+        changed = False
+
+        def limit_arrays(value, count):
+            if isinstance(value, list):
+                return [limit_arrays(v, count) for v in value[:count]]
+            if isinstance(value, dict):
+                return {k: limit_arrays(v, count) for k, v in value.items()}
+            return value
+
+        count = max_items
+        preliminary = limit_arrays(data, count)
+        if len(json.dumps(preliminary, ensure_ascii=False, separators=(',', ':'))) > max_chars:
+            count = 1
+
+        def trim(value, path, item=False):
+            nonlocal removed_fields, changed, array_count
+            if isinstance(value, list):
+                kept = value[:count]
+                if len(value) > len(kept):
+                    changed = True
+                array_count += 1
+                if len(arrays) < 20:
+                    arrays.append({'path': path[:80], 'total': len(value), 'kept': len(kept),
+                                   'removed_fields_per_item': [len(v) - sum(k in fields for k in v) if isinstance(v, dict) else 0 for v in kept]})
+                return [trim(v, path + '[]', True) for v in kept]
+            if isinstance(value, dict):
+                keys = list(value)
+                if item:
+                    keys = [key for key in keys if key in fields]
+                    removed_fields += len(value) - len(keys)
+                    changed |= len(value) != len(keys)
+                return {key: trim(value[key], path + '.' + key) for key in keys}
+            return value
+
+        result = trim(data, '$')
+
+        def shorten(value, limit, key=''):
+            nonlocal changed
+            if isinstance(value, dict):
+                return {k: shorten(v, limit, k) for k, v in value.items()}
+            if isinstance(value, list):
+                return [shorten(v, limit, key) for v in value]
+            if isinstance(value, str):
+                cap = min(limit, 400) if key.lower() == 'abstract' else limit
+                if len(value) > cap:
+                    changed = True
+                    return value[:cap]
+            return value
+
+        result = shorten(result, max_chars)
+        encoded = json.dumps(result, ensure_ascii=False, separators=(',', ':'))
+        if len(encoded) > max_chars:
+            # Shrink long strings before resorting to a non-JSON prefix.
+            result = shorten(result, max(1, max_chars // 20))
+            encoded = json.dumps(result, ensure_ascii=False, separators=(',', ':'))
+        shape = {'fields': [key[:80] for key in list(data)[:20]] if isinstance(data, dict) else [],
+                 'fields_omitted': max(0, len(data) - 20) if isinstance(data, dict) else 0,
+                 'arrays': arrays, 'arrays_omitted': array_count - len(arrays), 'removed_fields': removed_fields}
+        if isinstance(data, dict):
+            total = data.get('total-results')
+            if total is None and isinstance(data.get('message'), dict):
+                total = data['message'].get('total-results')
+            if isinstance(total, (int, float)) and not isinstance(total, bool):
+                shape['total_results'] = total
+        return encoded[:max_chars], changed or len(encoded) > max_chars, shape
+    except (ValueError, RecursionError):
+        return text[:max_chars], True, 'unknown'
 
 
 def checked_url(url):
@@ -53,7 +139,8 @@ class Web:
                 f.write(line)
         await asyncio.to_thread(write)
 
-    async def fetch(self, url):
+    async def fetch(self, url, fields=None, max_items=3, max_chars=12000):
+        validate_options(fields, max_items, max_chars)
         url = checked_url(url)
         async with self.lock:
             credentials = json.loads(PROXY_CREDENTIALS.read_text(encoding='utf-8'))
@@ -74,15 +161,23 @@ class Web:
                                 return {'url': url, 'status': response.status, 'error': 'http_error'}
                             content_type = response.headers.get('Content-Type', '').split(';', 1)[0].strip().lower()
                             if content_type == 'application/json' or content_type.endswith('+json'):
-                                decoder = codecs.getincrementaldecoder(response.charset or 'utf-8')(errors='replace')
-                                text = ''
-                                async for chunk in response.content.iter_chunked(4096):
-                                    text += decoder.decode(chunk)
-                                    if len(text) >= 12000:
+                                body = bytearray()
+                                while len(body) <= MAX_BODY:
+                                    chunk = await response.content.read(min(65536, MAX_BODY + 1 - len(body)))
+                                    if not chunk:
                                         break
+                                    body.extend(chunk)
+                                incomplete = len(body) > MAX_BODY
+                                text = bytes(body[:MAX_BODY]).decode(response.charset or 'utf-8', errors='replace')
+                                result = {'url': url, 'status': response.status, 'title': '', 'links': []}
+                                if not incomplete and len(text) <= max_chars:
+                                    result.update(text=text, truncated=False)
+                                elif incomplete:
+                                    result.update(text=text[:max_chars], truncated=True, shape='unknown')
                                 else:
-                                    text += decoder.decode(b'', final=True)
-                                return {'url': url, 'status': response.status, 'title': '', 'text': text[:12000], 'links': []}
+                                    text, truncated, shape = summarize_json(text, fields if fields is not None else DEFAULT_FIELDS, max_items, max_chars)
+                                    result.update(text=text, truncated=truncated, shape=shape)
+                                return result
                             if 'html' not in content_type:
                                 return {'url': url, 'status': response.status, 'error': 'unsupported_content_type'}
                             body = bytearray()

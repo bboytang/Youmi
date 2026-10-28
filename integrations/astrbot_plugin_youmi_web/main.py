@@ -27,10 +27,10 @@ class YoumiWeb(Star):
     async def authorize(self, event):
         await authorize(event, self.client, self.config['qq_platform_id'], PassportEvent)
 
-    async def retrieve(self, event, url):
+    async def retrieve(self, event, url, fields=None, max_items=3, max_chars=12000):
         try:
             await self.authorize(event)
-            return json.dumps(await self.web.fetch(url), ensure_ascii=False)
+            return json.dumps(await self.web.fetch(url, fields, max_items, max_chars), ensure_ascii=False)
         except (ValueError, KeyError, BridgeError) as error:
             return json.dumps({'error': str(error)[:120]}, ensure_ascii=False)
         except Exception:
@@ -59,13 +59,16 @@ class YoumiWeb(Star):
         return await self.retrieve(event, 'https://www.bing.com/search?' + urlencode({'q': query}))
 
     @filter.llm_tool(name='xiaoxiao_web_read')
-    async def read(self, event: AstrMessageEvent, url: str):
+    async def read(self, event: AstrMessageEvent, url: str, fields: list[str] = None, max_items: int = 3, max_chars: int = 12000):
         """用自己的联网工具读取公开网页，不登录、不使用 cookie。
 
         Args:
             url(string): HTTP 或 HTTPS 网页完整地址。
+            fields(array[string]): 大 JSON 数组元素保留的字段名，最多20个。
+            max_items(number): 每个数组最多保留的条数，1至20，默认3。
+            max_chars(number): JSON 正文最多返回的字符数，1至12000，默认12000。
         """
-        return await self.retrieve(event, url)
+        return await self.retrieve(event, url, fields, max_items, max_chars)
 
     @filter.llm_tool(name='xiaoxiao_web_render')
     async def render_page(self, event: AstrMessageEvent, url: str):
