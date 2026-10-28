@@ -133,7 +133,7 @@ class SharedHistoryTests(unittest.TestCase):
             self.store.db.set_authorizer(None)
         self.assertEqual(list(self.store.db.iterdump()), before)
         migrate(self.store.db)
-        source = subprocess.check_output(['git', 'show', 'HEAD:server/companion/schema.py'], text=True)
+        source = subprocess.check_output(['git', 'show', '12d42ad72b8d6980eba6c63d4735224b760cbac5:server/companion/schema.py'], text=True)
         old = {'__file__': str(Path('server/companion/schema.py').resolve())}
         exec(compile(source, 'frozen-v18.py', 'exec'), old)
         with self.assertRaisesRegex(ValueError, 'version or checksum'):
