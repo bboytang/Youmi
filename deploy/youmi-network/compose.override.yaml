@@ -10,6 +10,7 @@ services:
         aliases: [astrbot, youmi-astrbot-fusion-astrbot-1]
     ports:
       - "127.0.0.1:${ASTRBOT_WEB_PORT:-6185}:6185"
+    expose: ["6185", "6199"]
   youmi-local-proxy:
     network_mode: service:youmi-netkeeper
     cap_add: [NET_ADMIN]
@@ -45,6 +46,7 @@ services:
     network_mode: service:youmi-netkeeper
     networks: !reset {}
     ports: !reset []
+    expose: !reset []
     entrypoint: ["python", "/opt/youmi-network/wait_for_proxy.py"]
     command: ["python", "main.py"]
     volumes:
