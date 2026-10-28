@@ -1,0 +1,46 @@
+# Apply after the existing production Compose files and the 31989 compatibility
+# override. Preserve all existing volumes, credentials, and service settings.
+services:
+  youmi-netkeeper:
+    image: ${YOUMI_NET_KEEPER_IMAGE:?Set_tested_keeper_image}
+    cap_add: [NET_ADMIN]
+    restart: unless-stopped
+    networks:
+      youmi_fusion:
+        aliases: [astrbot, youmi-astrbot-fusion-astrbot-1]
+    ports:
+      - "127.0.0.1:${ASTRBOT_WEB_PORT:-6185}:6185"
+  youmi-local-proxy:
+    network_mode: service:youmi-netkeeper
+    cap_add: [NET_ADMIN]
+    volumes:
+      - type: bind
+        source: ${YOUMI_NET_PROXY_CONFIG:?Set_protected_generated_xray_config}
+        target: /opt/youmi-proxy/local-config.json
+        read_only: true
+    depends_on: !override
+      youmi-netkeeper: {condition: service_healthy, restart: true}
+    healthcheck:
+      test: ["CMD", "python", "-c", "import socket; [socket.create_connection(('127.0.0.1', p), timeout=2).close() for p in (31987, 31989, 31990)]; assert any(int(line.split()[1].split(':')[1], 16) == 31991 for line in open('/proc/net/udp').readlines()[1:])"]
+      interval: 5s
+      timeout: 4s
+      retries: 6
+  youmi-browserless:
+    network_mode: service:youmi-netkeeper
+    depends_on: !override
+      youmi-netkeeper: {condition: service_healthy, restart: true}
+      youmi-local-proxy: {condition: service_healthy, restart: true}
+  astrbot:
+    network_mode: service:youmi-netkeeper
+    networks: !reset {}
+    ports: !reset []
+    entrypoint: ["python", "/opt/youmi-network/wait_for_proxy.py"]
+    command: ["python", "main.py"]
+    volumes:
+      - type: bind
+        source: ${YOUMI_NET_WAIT_SCRIPT:?Set_reviewed_wait_script}
+        target: /opt/youmi-network/wait_for_proxy.py
+        read_only: true
+    depends_on: !override
+      youmi-netkeeper: {condition: service_healthy, restart: true}
+      youmi-local-proxy: {condition: service_healthy, restart: true}

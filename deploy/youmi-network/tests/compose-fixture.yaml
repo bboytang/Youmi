@@ -1,0 +1,7 @@
+services:
+  youmi-local-proxy:
+    image: alpine:3.21
+    network_mode: service:astrbot
+  youmi-browserless:
+    image: alpine:3.21
+    network_mode: service:astrbot

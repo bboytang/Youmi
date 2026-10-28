@@ -23,8 +23,15 @@ jobs:
       - run: python -m unittest discover -s deploy/youmi-network/tests -v
       - run: python -m compileall -q integrations/astrbot_plugin_youmi_web
       - name: Build and smoke-test the isolated network keeper
+        env:
+          YOUMI_NETWORK: fixture-network
+          SNOWLUMA_VNC_PASSWORD: fixture-password
+          YOUMI_NET_KEEPER_IMAGE: youmi-network-ci
+          YOUMI_NET_PROXY_CONFIG: /tmp/youmi-fixture-xray.json
+          YOUMI_NET_WAIT_SCRIPT: /tmp/youmi-fixture-wait.py
         run: |
           docker build -t youmi-network-ci deploy/youmi-network
+          docker compose -f deploy/astrbot-fusion/compose.yaml -f deploy/youmi-network/tests/compose-fixture.yaml -f deploy/youmi-network/compose.override.yaml config --quiet
           name="youmi-network-ci-${GITHUB_RUN_ID}"
           trap 'docker rm -f "$name" >/dev/null 2>&1 || true' EXIT
           docker run -d --name "$name" --network none --cap-add NET_ADMIN youmi-network-ci
@@ -47,7 +54,8 @@ jobs:
               for file in root.iterdir():
                   if file.is_file(): archive.write(file, file.name)
           PY
-          sha256sum web-artifact/youmi-web.zip > web-artifact/SHA256SUMS
+          docker save youmi-network-ci | gzip -1 > web-artifact/youmi-network-keeper.tar.gz
+          sha256sum web-artifact/youmi-web.zip web-artifact/youmi-network-keeper.tar.gz > web-artifact/SHA256SUMS
       - uses: actions/upload-artifact@v4
         with:
           name: Youmi-web-${{ github.sha }}
