@@ -34,6 +34,10 @@ services:
         source: ${YOUMI_NET_BROWSER_WAIT_SCRIPT:?Set_reviewed_browser_wait_script}
         target: /opt/youmi-network/wait_for_proxy.js
         read_only: true
+      - type: bind
+        source: ${YOUMI_NET_RESOLV_CONF:?Set_reviewed_resolver_config}
+        target: /etc/resolv.conf
+        read_only: true
     depends_on: !override
       youmi-netkeeper: {condition: service_healthy, restart: true}
       youmi-local-proxy: {condition: service_healthy, restart: true}
@@ -47,6 +51,10 @@ services:
       - type: bind
         source: ${YOUMI_NET_WAIT_SCRIPT:?Set_reviewed_wait_script}
         target: /opt/youmi-network/wait_for_proxy.py
+        read_only: true
+      - type: bind
+        source: ${YOUMI_NET_RESOLV_CONF:?Set_reviewed_resolver_config}
+        target: /etc/resolv.conf
         read_only: true
     depends_on: !override
       youmi-netkeeper: {condition: service_healthy, restart: true}

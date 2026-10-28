@@ -32,6 +32,7 @@ jobs:
           YOUMI_NET_PROXY_CONFIG: /tmp/youmi-fixture-xray.json
           YOUMI_NET_WAIT_SCRIPT: /tmp/youmi-fixture-wait.py
           YOUMI_NET_BROWSER_WAIT_SCRIPT: /tmp/youmi-fixture-wait.js
+          YOUMI_NET_RESOLV_CONF: /tmp/youmi-fixture-resolv.conf
         run: |
           docker build -t youmi-network-ci deploy/youmi-network
           docker compose -f deploy/astrbot-fusion/compose.yaml -f deploy/youmi-network/tests/compose-fixture.yaml -f deploy/youmi-network/compose.override.yaml config --quiet
@@ -46,6 +47,7 @@ jobs:
           test "$status" = healthy
           docker exec "$name" iptables -t nat -C OUTPUT -p tcp -j YOUMI_NET_TCP
           docker exec "$name" iptables -t mangle -C OUTPUT -p udp -j YOUMI_NET_UDP
+          sudo -E python3 deploy/youmi-network/tests/ci_reconcile.py
       - name: Package web plugin
         run: |
           mkdir web-artifact

@@ -4,6 +4,7 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 import os
 
 from install_rules import install
+from dns_forwarder import start as start_dns
 
 
 class Readiness(BaseHTTPRequestHandler):
@@ -22,6 +23,7 @@ class Readiness(BaseHTTPRequestHandler):
 
 def main():
     install(os.stat('/proc/self/ns/net').st_ino)
+    start_dns()
     HTTPServer(('127.0.0.1', 31992), Readiness).serve_forever()
 
 
