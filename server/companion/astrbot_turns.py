@@ -102,10 +102,6 @@ class TurnLedger:
                 if payload['excerpt']:
                     from .memory_state import try_capture_turn
                     try_capture_turn(self.store, scope.owner, payload['session'], row['turn_key'], payload['excerpt'])
-                if payload.get('shared_input') and text.strip():
-                    from .shared_history import record_locked
-                    record_locked(self.store, scope.owner, row['turn_key'],
-                                  'passport' if payload.get('passport_handle') else 'qq', payload['shared_input'], text)
             effects = {'emotion': emotion, 'events': activated}
             # Events may advance their own epoch; save it with the same commit.
             payload['snapshot'] = self.builder._versions(scope)
@@ -138,11 +134,21 @@ class TurnLedger:
             memory = await self.worker.submit(event)
             if memory['status'] in {'queue_full', 'closing', 'unavailable'}:
                 raise TurnConflict('worker_unavailable', 503)
-        return self.finish(row, {'status': 'completed', 'memory_job': memory, **effects})
+        return self.finish(row, {'status': 'completed', 'memory_job': memory, **effects},
+                           shared=(scope, payload, data['final_text']))
 
-    def finish(self, row, result):
+    def finish(self, row, result, shared=None):
         result = dict(result, turn_key=row['turn_key'])
         with self.store.lock, self.store.db:
+            if shared is not None:
+                scope, payload, text = shared
+                self.validate(scope, payload)
+                if (payload['origin'] == 'user' and payload['source_kind'] in {'text', 'asr'}
+                        and not payload['suppressed'] and not payload['skip_memory']
+                        and payload.get('shared_input') and text.strip()):
+                    from .shared_history import record_locked
+                    record_locked(self.store, scope.owner, row['turn_key'],
+                                  'passport' if payload.get('passport_handle') else 'qq', payload['shared_input'], text)
             self.store.db.execute('UPDATE mia_astrbot_turns SET status=?,result_json=?,payload_json=NULL WHERE turn_key=?',
                 (result['status'], canonical(result), row['turn_key']))
         return result

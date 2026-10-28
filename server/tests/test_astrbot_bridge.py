@@ -429,19 +429,43 @@ class BridgeHTTPTests(unittest.IsolatedAsyncioTestCase):
         self.worker.fail_after_insert = True
         await self.post('complete', body, 503)
         self.assertEqual(self.count('mia_jobs'), 1)
+        self.assertEqual(self.count('youmi_shared_history_turns'), 0)
         result = await self.post('complete', body)
         self.assertEqual(result['status'], 'completed')
         self.assertEqual(result['memory_job']['status'], 'duplicate')
         self.assertEqual(self.count('mia_jobs'), 1)
+        self.assertEqual(self.count('youmi_shared_history_turns'), 1)
 
     async def test_full_queue_is_retryable_without_replaying_effects(self):
         body = self.completion(await self.prepare())
         await self.claim(body)
         self.worker.queue_full = True
         await self.post('complete', body, 503)
+        self.assertEqual(self.count('youmi_shared_history_turns'), 0)
         self.worker.queue_full = False
         await self.post('complete', body)
         self.assertEqual(self.count('mia_jobs'), 1)
+        self.assertEqual(self.count('youmi_shared_history_turns'), 1)
+
+    async def test_shared_clear_while_worker_waits_never_restores_history(self):
+        from server.companion import shared_history
+        body = self.completion(await self.prepare())
+        await self.claim(body)
+        entered, release = asyncio.Event(), asyncio.Event()
+        original = self.worker.submit
+
+        async def delayed(event):
+            entered.set()
+            await release.wait()
+            return await original(event)
+
+        with patch.object(self.worker, 'submit', side_effect=delayed):
+            completing = asyncio.create_task(self.post('complete', body, 409))
+            await asyncio.wait_for(entered.wait(), 2)
+            shared_history.configure(self.store, self.scope.owner, clear=True)
+            release.set()
+            await completing
+        self.assertEqual(self.count('youmi_shared_history_turns'), 0)
 
     async def test_media_and_scheduled_do_not_create_user_memory(self):
         for index, (origin, kind) in enumerate([('user', 'media'), ('scheduled', 'scheduled')]):
