@@ -118,6 +118,19 @@ class PassportPrepareTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual((await self.post('complete', complete))[0], 200)
         self.assertEqual(self.store.db.execute('SELECT COUNT(*) FROM mia_jobs').fetchone()[0], 1)
 
+    async def test_long_checked_reply_is_delivered_and_completed(self):
+        _, prepared = await self.post('passport-prepare',
+            {'handle': self.handle, 'attempt_id': 'long-attempt', 'model': 'ci-model'})
+        text = '好。' * 2500
+        token = prepared['turn_token']
+        claim = {'turn_token': token, 'completion_id': 'long-completion', 'final_text': text}
+        self.assertEqual((await self.post('claim', claim))[0], 200)
+        reply = {'handle': self.handle, 'turn_token': token, 'completion_id': 'long-completion', 'text': text}
+        self.assertEqual((await self.post('passport-reply', reply))[0], 200)
+        self.assertEqual(await self.waiter, text)
+        complete = claim | {'result': 'adapter_accepted', 'message_components': ['plain'], 'agent_tool_summary': []}
+        self.assertEqual((await self.post('complete', complete))[0], 200)
+
     async def test_revocation_and_context_change_prevent_reply_delivery(self):
         status, prepared = await self.post('passport-prepare',
             {'handle': self.handle, 'attempt_id': 'attempt', 'model': 'ci-model'})

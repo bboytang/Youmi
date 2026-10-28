@@ -43,6 +43,15 @@ class PassportDispatchTests(unittest.IsolatedAsyncioTestCase):
         with self.assertRaisesRegex(RuntimeError, 'duplicate_passport_turn'):
             await self.dispatch.submit(self.conn, '重复')
 
+    async def test_reply_limit_matches_checked_text_limit(self):
+        waiter = await self.dispatch.submit(self.conn, '你好')
+        event = await self.dispatch.next_event(timeout=1)
+        handle, _ = await self.tickets.open(event['ticket'])
+        with self.assertRaisesRegex(ValueError, 'invalid_passport_reply'):
+            await self.dispatch.reply(handle, 'a' * 16001)
+        await self.dispatch.reply(handle, 'a' * 16000)
+        self.assertEqual(await waiter, 'a' * 16000)
+
     async def test_interrupted_and_expired_events_are_not_delivered(self):
         await self.dispatch.submit(self.conn, '不应送出')
         self.conn.client_abort = True

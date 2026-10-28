@@ -92,7 +92,7 @@ class PassportDispatch:
             return {'ticket': ticket, 'session_id': turn.session_id, 'turn_id': turn.turn_id, 'text': text}
 
     async def reply(self, handle, text, *, validate=None, receipt=None):
-        if not isinstance(text, str) or not text.strip() or len(text) > 4096:
+        if not isinstance(text, str) or not text.strip() or len(text) > 16000:
             raise ValueError('invalid_passport_reply')
         turn = await self.tickets.resolve(handle)
         async with self._condition:
