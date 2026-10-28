@@ -61,4 +61,5 @@ class BrowserRenderTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(result['text'], 'Rendered Dynamic result')
         self.assertEqual(self.seen['token'], 'test-token')
         self.assertEqual(self.seen['body']['url'], 'https://example.org/page')
+        self.assertEqual(self.seen['body']['gotoOptions']['waitUntil'], 'domcontentloaded')
         self.assertIn('--proxy-server=http://127.0.0.1:31987', json.loads(self.seen['launch'])['args'])

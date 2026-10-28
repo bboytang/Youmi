@@ -15,7 +15,9 @@ async def render(url):
     token = json.loads(CREDENTIALS.read_text(encoding='utf-8'))['token']
     params = {'token': token, 'launch': json.dumps({'args': ['--proxy-server=http://127.0.0.1:31987']})}
     async with aiohttp.ClientSession(cookie_jar=aiohttp.DummyCookieJar(), timeout=aiohttp.ClientTimeout(total=45), trust_env=False) as session:
-        async with session.post(BROWSER_ENDPOINT, params=params, json={'url': url}, allow_redirects=False) as response:
+        async with session.post(BROWSER_ENDPOINT, params=params,
+                                json={'url': url, 'gotoOptions': {'waitUntil': 'domcontentloaded'}},
+                                allow_redirects=False) as response:
             if response.status != 200:
                 return {'url': url, 'error': 'browser_render_failed', 'status': response.status}
             content = bytearray()
