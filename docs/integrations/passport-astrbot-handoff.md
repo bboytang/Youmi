@@ -67,3 +67,11 @@ V19 候选已接入成功完成账本，QQ 与 Passport 可在本地 fixture 中
 用户明确允许后，`7f107268231c1d2e61b217261314e02c3f9a9837` 已推送到公开分支 `codex/passport-astrbot-integration`；[集成工作流](https://github.com/bboytang/Youmi/actions/runs/40617699170) 与 [固件构建](https://github.com/bboytang/Youmi/actions/runs/40617701238) 已启动，尚待终态。固定上游 TTS 文本消费者本地模拟合成探针通过，但非实体音频验收。
 
 GitHub `7f107268` 的协议服务检查失败：该工作流只提供单个 ASR 源文件，不能运行需要完整上游源码的 MCP 探针。已在工作区和隔离候选修复为源码不完整时明确跳过、完整源码时执行，两种路径本地均通过；修复尚未提交。集成 workflow 的 backend、connector、snowluma 已通过，manager 和固件矩阵仍在运行。
+
+最新公开提交为 `55b235f0d9be2e007e1a79849d9b27347dbce91b`，已修复协议工作流的部分上游源码测试问题；该 SHA 的集成、固件、协议、授权、管理端和记忆检查已启动，运行链接与旧失败见工作记录，均需等待最终结果。
+
+`55b235f0` 的 GitHub 集成工作流五项全部通过；协议、授权、管理端基线和记忆兼容工作流也已通过。固件构建和语义向量工作流仍在运行，AI Passport 构建尚在排队；链接见工作记录。
+
+生产运维入口仍需确认；当前工作环境没有生产容器或 SSH 主机别名，已向用户请求既有连接方式。`55b235f0` 固件矩阵仍运行，AI Passport 任务进行中；不得将本地机器视为生产主机。
+
+发现 `55b235f0` 的当前类名 Manager CI 制品只包含 Controller，缺少新增实体设备授权所需 Service；不能用于部署。已修改工作流逐一检查并导出 Controller、Service 和 Binding 类，待新提交 CI 及制品内容核验。

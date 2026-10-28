@@ -109,3 +109,15 @@
 - 用户明确允许推送后，已将隔离提交 `7f107268231c1d2e61b217261314e02c3f9a9837` 推送到公开新分支 `codex/passport-astrbot-integration`，原工作区未重置。手动启动 [集成工作流](https://github.com/bboytang/Youmi/actions/runs/40617699170) 和 [固件构建](https://github.com/bboytang/Youmi/actions/runs/40617701238)；推送还触发授权、协议及记忆相关检查。以上运行初查均为进行中，尚无通过结论。
 - 本地临时探针 `/tmp/youmi-passport-tts-probe.py` 使用固定上游 `TTSProviderBase` 的真实文本消费者、真实 DTO 和现有 `GuardedTTSQueue`，模拟合成器接收设备回传的文本，确认结束标记与字幕文本；首次受沙箱线程限制中止，在允许线程的环境重跑通过。该探针不验证真实 TTS 模型、音频传输或设备播放，也不属于已推送提交的自动测试。
 - GitHub [协议工作流](https://github.com/bboytang/Youmi/actions/runs/40617685205) 在 `7f107268` 失败：其只下载单个 ASR 文件，新增上游 MCP 测试无法导入完整 `core`；集成工作流则实际提供完整源码。已修改测试在源码不完整时明确跳过，完整源码时仍执行；两种路径本地均验证。`7f107268` 的集成 workflow 中 backend、connector、snowluma 已通过，两个 manager 任务及固件矩阵仍在运行；修复需新提交及新 SHA 检查。
+- 部分源码测试修复已提交并推送 `55b235f0d9be2e007e1a79849d9b27347dbce91b`。已启动该 SHA 的 [协议服务](https://github.com/bboytang/Youmi/actions/runs/40618011509)、[集成](https://github.com/bboytang/Youmi/actions/runs/40618018917)、[固件构建](https://github.com/bboytang/Youmi/actions/runs/40618020943)、[授权](https://github.com/bboytang/Youmi/actions/runs/40618069747)、[管理端](https://github.com/bboytang/Youmi/actions/runs/40618071374)、[记忆兼容](https://github.com/bboytang/Youmi/actions/runs/40618075755) 和 [语义向量](https://github.com/bboytang/Youmi/actions/runs/40618070992)；初查均排队或运行中。被新提交替代的旧固件矩阵已请求取消，不把其结果当新 SHA 证据。
+- GitHub 集成工作流 `40617699170` 对旧提交 `7f107268` 的 backend、connector、snowluma、manager、manager-legacy 全部成功；这是旧 SHA 证据，不能冒充最新 `55b235f0`。最新 SHA 的对应任务仍在运行。
+- 最新 SHA `55b235f0` 的 [协议服务工作流](https://github.com/bboytang/Youmi/actions/runs/40618011509) 已成功；集成 workflow 的 SnowLuma 成功，其余任务仍运行。固件矩阵展开 185 个任务，AI Passport 当前排队；不得将排队或运行视为通过。
+- 最新提交 `55b235f0` 的 GitHub [集成工作流](https://github.com/bboytang/Youmi/actions/runs/40618018917) 全部成功（backend、connector、snowluma、manager、manager-legacy）；[协议](https://github.com/bboytang/Youmi/actions/runs/40618011509)、[授权](https://github.com/bboytang/Youmi/actions/runs/40618069747)、[管理端基线](https://github.com/bboytang/Youmi/actions/runs/40618071374) 和 [记忆兼容](https://github.com/bboytang/Youmi/actions/runs/40618075755) 成功。固件与向量检查仍运行；生产和实机尚未验证。
+- `55b235f0` 的 [语义向量检查](https://github.com/bboytang/Youmi/actions/runs/40618070992) 也已成功；集成、协议、授权、Manager 基线、记忆兼容及语义向量检查均为 GitHub 成功。完整固件构建尚在运行，AI Passport 尚无终态，不可提前部署或标为通过。
+- 当前环境未发现生产容器或已配置 SSH 主机别名，已向用户请求现有运维入口（不请求密码或密钥）；等待回复期间未更改生产。`55b235f0` 固件矩阵已有 41 项完成、无失败，AI Passport 任务正在运行，完整矩阵及实机仍待验收。
+- 固定上游 TTS 本地临时探针扩展验证：实际文本消费者在 `client_abort` 时丢弃待处理文本，回合 ID 改变后现有 GuardedTTSQueue 拒绝旧文本；模拟合成器未收到旧内容。该证据不覆盖设备真实录音、网络或播放。
+
+## Manager 发布制品修正
+
+- 核查 `55b235f0` 的成功集成工作流发现，当前类名 Manager 制品仅含 Controller；新实体设备接口还依赖同一提交的 `YoumiDeviceAuthorizationService.requirePhysical`。仅替换 Controller 会造成方法缺失，不能用于上线。
+- 已调整工作流，先逐一检查当前类名 Controller、Service 及 Service 的 Binding 内部类存在，再将三者一起上传。旧类名补丁保持原有严格预像核对。需新 SHA GitHub 运行和实际制品内容检查，不能沿用旧制品或覆盖整份定制 JAR。

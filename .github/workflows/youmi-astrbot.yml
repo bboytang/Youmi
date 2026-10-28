@@ -86,11 +86,20 @@ jobs:
       - run: |
           cd "${YOUMI_REPO_ROOT:-$GITHUB_WORKSPACE}"
           python scripts/ci/verify_astrbot_fusion.py manager
+      - name: Verify Passport manager classes are present
+        if: ${{ !env.ACT }}
+        run: |
+          test -f '${{ runner.temp }}/youmi-fusion-sources/manager-candidate/main/manager-api/target/classes/xiaozhi/modules/device/controller/YoumiDeviceAuthorizationController.class'
+          test -f '${{ runner.temp }}/youmi-fusion-sources/manager-candidate/main/manager-api/target/classes/xiaozhi/modules/device/service/impl/YoumiDeviceAuthorizationService.class'
+          test -f '${{ runner.temp }}/youmi-fusion-sources/manager-candidate/main/manager-api/target/classes/xiaozhi/modules/device/service/impl/YoumiDeviceAuthorizationService$Binding.class'
       - uses: actions/upload-artifact@v4
         if: ${{ !env.ACT }}
         with:
           name: autonomous-admin-manager-current
-          path: ${{ runner.temp }}/youmi-fusion-sources/manager-candidate/main/manager-api/target/classes/xiaozhi/modules/device/controller/YoumiDeviceAuthorizationController.class
+          path: |
+            ${{ runner.temp }}/youmi-fusion-sources/manager-candidate/main/manager-api/target/classes/xiaozhi/modules/device/controller/YoumiDeviceAuthorizationController.class
+            ${{ runner.temp }}/youmi-fusion-sources/manager-candidate/main/manager-api/target/classes/xiaozhi/modules/device/service/impl/YoumiDeviceAuthorizationService.class
+            ${{ runner.temp }}/youmi-fusion-sources/manager-candidate/main/manager-api/target/classes/xiaozhi/modules/device/service/impl/YoumiDeviceAuthorizationService$Binding.class
           if-no-files-found: error
 
   manager-legacy:
