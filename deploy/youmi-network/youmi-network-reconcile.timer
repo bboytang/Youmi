@@ -1,0 +1,11 @@
+[Unit]
+Description=Check Youmi network namespace dependencies
+
+[Timer]
+OnBootSec=30s
+OnUnitActiveSec=30s
+AccuracySec=1s
+Unit=youmi-network-reconcile.service
+
+[Install]
+WantedBy=timers.target

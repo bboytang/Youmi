@@ -4,6 +4,7 @@ import subprocess
 import sys
 import unittest
 from unittest.mock import patch
+from types import SimpleNamespace
 
 
 root = Path(__file__).resolve().parents[1]
@@ -14,6 +15,12 @@ spec.loader.exec_module(module)
 
 
 class InstallRulesTests(unittest.TestCase):
+    def test_public_ipv6_route_is_rejected_before_iptables_changes(self):
+        with patch.object(module, '_run', return_value=SimpleNamespace(stdout='default via fe80::1 dev eth0\n')) as run:
+            with self.assertRaisesRegex(RuntimeError, 'ipv6_public_route_not_supported'):
+                module.preflight()
+        self.assertEqual(run.call_count, 1)
+
     def test_wrong_namespace_changes_nothing(self):
         with patch('os.stat') as stat:
             stat.return_value.st_ino = 12

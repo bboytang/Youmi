@@ -27,9 +27,15 @@ def _undo(command):
 
 
 def preflight():
-    ipv6 = _run(['ip', '-6', 'route', 'show', 'default'])
-    if ipv6.stdout.strip():
-        raise RuntimeError('ipv6_default_route_not_supported')
+    ipv6 = _run(['ip', '-6', 'route', 'show', 'table', 'all'])
+    for line in ipv6.stdout.splitlines():
+        if not line.strip():
+            continue
+        first = line.split()[0]
+        # Local, rejected, multicast and link-local routes cannot provide a
+        # public IPv6 exit. Any other route needs IPv6 interception first.
+        if first not in {'local', 'unreachable', 'blackhole', 'prohibit', 'throw'} and not first.startswith(('fe80:', 'ff')):
+            raise RuntimeError('ipv6_public_route_not_supported')
     for table, chain in (('nat', TCP_CHAIN), ('mangle', UDP_CHAIN)):
         if _run(['iptables', '-t', table, '-S', chain], check=False).returncode == 0:
             raise RuntimeError('network_chain_already_exists')

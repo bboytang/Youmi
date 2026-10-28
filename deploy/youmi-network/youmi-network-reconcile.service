@@ -1,0 +1,9 @@
+[Unit]
+Description=Reconcile Youmi network namespace dependencies
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/python3 /opt/xiaozhi-server/youmi-network/reconcile.py --config /opt/xiaozhi-server/youmi-network/reconcile.json
+TimeoutStartSec=300
