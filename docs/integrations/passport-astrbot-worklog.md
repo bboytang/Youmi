@@ -96,3 +96,9 @@
 - 通过真实本地 HTTP 复现多句、5000 字符回复：现有输出检查和认领允许该长度，但设备队列原本只接受 4096 字符，回传失败且无法完成。已将设备回复队列上限与现有已检查输出上限统一为 16000 字符，设备输入上限仍为 4096；不截断原回复。新增回传完成和 16000/16001 边界测试，Passport 本地服务测试 39 项通过。设备实际长语音播放未验证。
 - 本机未发现可执行的 ESP-IDF 环境或直连 ESP32 串口；这不代表联网设备离线，实机仍须在生产部署并通过设备网络验收。公开推送仍受自动审批拒绝限制。
 - 进一步复现 UTF-8/JSON 编码边界：含表情的 16000 字符合规回复在默认 ASCII 转义下超过桥接请求体限制。客户端改用 UTF-8 JSON，并将检查/认领的响应读取上限设为有界 256 KiB；真实本地 `BridgeClient`→HTTP→设备队列→完成账本已验证该长度，设备服务 40 项和 AstrBot/Passport 回归 45 项通过。首次编码测试出现 `payload_too_large`，修复后通过；仍需真实设备播放验收。
+- 最新隔离提交 `5e8dde69fc0c03c162bd7cc59fc1d6f0da906c8f` 的 CI 同款本地后端检查终态：813 项通过、57 项跳过；固件脚本 98 项、CI 辅助 39 项及 Compose 检查通过。连接器主测试 69 项、上游 Meme 1045 项及 85 个子测试通过，上游 1 项因缺 `botpy` 跳过。日志 `/tmp/youmi-passport-unicode-backend.log` 与 `/tmp/youmi-passport-unicode-connector.log`；仍非 GitHub Actions 或实机结果。
+
+## 固定上游设备 MCP 协议验证
+
+- 在 CI 同款固定 xiaozhi 源码上，直接使用上游 `MCPClient` 和 `DeviceMCPExecutor`，通过模拟设备 WebSocket 验证 `self.audio_speaker.set_volume` 的名称转换、`tools/call` 消息、参数、正常返回和设备错误映射。只替换测试中的音频模块、日志和设备链路；不声称实体硬件动作通过。
+- 新增上游协议回归：CI 未提供固定源码时明确跳过；标准 backend 验证脚本提供固定上游源码，因此会执行该测试。本地定向测试通过。
