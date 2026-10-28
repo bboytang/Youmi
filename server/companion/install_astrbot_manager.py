@@ -1,4 +1,4 @@
-"""Offline legacy-name build and strictly scoped JAR patch; never modifies a running service."""
+"""Offline, preimage-checked Manager class overlays; never modifies a running service."""
 
 import argparse
 import copy
@@ -16,6 +16,11 @@ PREIMAGES = {
     PREFIX + 'controller/MiaDeviceAuthorizationController.class': '3d7b75e9d0449fa73a99858223815642a120c9511a37d868a903419c7fc52530',
     PREFIX + 'service/impl/MiaDeviceAuthorizationService.class': 'd169784e9b60d5c95de210b202383e804c56ee497a0cfbb5fb356abc6c3c4917',
     PREFIX + 'service/impl/MiaDeviceAuthorizationService$Binding.class': '893f6e4a8e7e75112a855e2978a15ccb9be3910d88ac00e8372e480645514262',
+}
+CURRENT_PREIMAGES = {
+    PREFIX + 'controller/YoumiDeviceAuthorizationController.class': '3b4fcec653729e67d55afed2bf38a8a3d5fe5b9f915d742e3a97d34051b44c71',
+    PREFIX + 'service/impl/YoumiDeviceAuthorizationService.class': '88602cbdab4cd6f6f105acbd84dd48e00923d56eaea36907acc02656d772122f',
+    PREFIX + 'service/impl/YoumiDeviceAuthorizationService$Binding.class': '8266dd94ac34459026581b31f0e9108591c84acf81a23387f58152a90a53d499',
 }
 TYPES = ('DeviceAuthorizationController', 'DeviceAuthorizationService')
 
@@ -42,18 +47,20 @@ def legacy_sources(upstream):
     return changes
 
 
-def package(classes, output):
+def package(classes, output, *, current=False):
+    expected = CURRENT_PREIMAGES if current else PREIMAGES
+    forbidden = b'MiaDeviceAuthorization' if current else b'YoumiDeviceAuthorization'
     payload = {}
-    for name in PREIMAGES:
+    for name in expected:
         path = classes / name.removeprefix('BOOT-INF/classes/')
         data = path.read_bytes()
         if data[:4] != b'\xca\xfe\xba\xbe' or int.from_bytes(data[6:8], 'big') != 65:
-            raise ValueError('Expected compiled Java 21 legacy class: ' + name)
-        if b'YoumiDeviceAuthorization' in data:
-            raise ValueError('Current-name class cannot be overlaid on the legacy runtime')
+            raise ValueError('Expected compiled Java 21 class: ' + name)
+        if forbidden in data:
+            raise ValueError('Class name does not match the target runtime')
         payload[name] = data
     revision = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=Path(__file__).parents[2], text=True).strip()
-    manifest = {'protocol_version': 1, 'source_sha': revision, 'expected': PREIMAGES,
+    manifest = {'protocol_version': 1, 'source_sha': revision, 'expected': expected,
                 'replacement': {name: hashlib.sha256(data).hexdigest() for name, data in payload.items()}}
     with output.open('xb') as stream, zipfile.ZipFile(stream, 'w') as archive:
         archive.writestr('manifest.json', json.dumps(manifest, sort_keys=True, indent=2))
@@ -70,27 +77,29 @@ def entry_digest(archive, name):
     return digest.hexdigest()
 
 
-def apply(original, patch, output):
+def apply(original, patch, output, *, current=False):
+    expected_preimages = CURRENT_PREIMAGES if current else PREIMAGES
+    forbidden = 'MiaDeviceAuthorization' if current else 'YoumiDeviceAuthorization'
     if output.exists() or original.resolve() == output.resolve():
         raise ValueError('Output must be a new candidate JAR, never the original')
     with zipfile.ZipFile(patch) as incoming, zipfile.ZipFile(original) as before:
         manifest = json.loads(incoming.read('manifest.json'))
         names = incoming.namelist()
-        if (manifest.get('protocol_version') != 1 or manifest.get('expected') != PREIMAGES
-                or set(manifest.get('replacement', {})) != set(PREIMAGES)
-                or len(names) != len(set(names)) or set(names) != {'manifest.json', *PREIMAGES}):
+        if (manifest.get('protocol_version') != 1 or manifest.get('expected') != expected_preimages
+                or set(manifest.get('replacement', {})) != set(expected_preimages)
+                or len(names) != len(set(names)) or set(names) != {'manifest.json', *expected_preimages}):
             raise ValueError('Unreviewed patch manifest or entries')
         originals = before.namelist()
         if len(originals) != len(set(originals)):
             raise ValueError('Duplicate original JAR entries')
         if any(name.startswith('META-INF/') and name.upper().endswith(('.RSA', '.DSA', '.EC')) for name in originals):
             raise ValueError('Signed JAR requires a separately reviewed signing process')
-        for name, expected in PREIMAGES.items():
+        for name, expected in expected_preimages.items():
             if name not in originals or entry_digest(before, name) != expected:
                 raise ValueError('Unreviewed production class preimage: ' + name)
-        if any('YoumiDeviceAuthorization' in name for name in originals):
+        if any(forbidden in name for name in originals):
             raise ValueError('Mixed legacy/current authorization classes')
-        replacements = {name: incoming.read(name) for name in PREIMAGES}
+        replacements = {name: incoming.read(name) for name in expected_preimages}
         if any(hashlib.sha256(data).hexdigest() != manifest['replacement'][name]
                for name, data in replacements.items()):
             raise ValueError('Patch payload checksum mismatch')
@@ -131,10 +140,12 @@ def main():
     bundle = commands.add_parser('package')
     bundle.add_argument('classes', type=Path)
     bundle.add_argument('output', type=Path)
+    bundle.add_argument('--current', action='store_true')
     overlay = commands.add_parser('apply')
     overlay.add_argument('original', type=Path)
     overlay.add_argument('patch', type=Path)
     overlay.add_argument('output', type=Path)
+    overlay.add_argument('--current', action='store_true')
     args = parser.parse_args()
     if args.command == 'legacy-source':
         changes = legacy_sources(args.upstream)
@@ -145,9 +156,9 @@ def main():
                     original.unlink()
         print(json.dumps({'legacy_source_files': len(changes), 'applied': args.apply}))
     elif args.command == 'package':
-        print(json.dumps(package(args.classes, args.output), indent=2))
+        print(json.dumps(package(args.classes, args.output, current=args.current), indent=2))
     else:
-        print(json.dumps(apply(args.original, args.patch, args.output), indent=2))
+        print(json.dumps(apply(args.original, args.patch, args.output, current=args.current), indent=2))
     print('Offline candidates only; no running service, grant or database changed.')
 
 

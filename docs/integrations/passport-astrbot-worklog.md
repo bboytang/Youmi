@@ -121,3 +121,10 @@
 
 - 核查 `55b235f0` 的成功集成工作流发现，当前类名 Manager 制品仅含 Controller；新实体设备接口还依赖同一提交的 `YoumiDeviceAuthorizationService.requirePhysical`。仅替换 Controller 会造成方法缺失，不能用于上线。
 - 已调整工作流，先逐一检查当前类名 Controller、Service 及 Service 的 Binding 内部类存在，再将三者一起上传。旧类名补丁保持原有严格预像核对。需新 SHA GitHub 运行和实际制品内容检查，不能沿用旧制品或覆盖整份定制 JAR。
+- `55b235f0` 的 [AI Passport 固件任务](https://github.com/bboytang/Youmi/actions/runs/40618020943) 已成功；当时完整矩阵 61 项完成且无失败。随后发现当前 Manager 制品缺少 Service，修复并推送新提交 `2963608dc12f58d7a803298273bcb26d4ea0d3d9`；为避免重复占用运行器，已请求取消被替代的旧矩阵，旧构建不能充作新 SHA 证据。
+- 新 SHA 已启动 [集成及制品](https://github.com/bboytang/Youmi/actions/runs/40619401069)、[固件矩阵](https://github.com/bboytang/Youmi/actions/runs/40619402329)、[协议](https://github.com/bboytang/Youmi/actions/runs/40619402030)、[授权](https://github.com/bboytang/Youmi/actions/runs/40619402191)、[Manager](https://github.com/bboytang/Youmi/actions/runs/40619402753)、[记忆兼容](https://github.com/bboytang/Youmi/actions/runs/40619401695) 和 [向量](https://github.com/bboytang/Youmi/actions/runs/40619402323) 检查，初查均排队；须确认实际制品包含全部三类文件。
+
+## 生产只读核查与当前类名离线补丁
+
+- 用户提供生产主机及本机既有凭证后，只读确认语音、Manager、AstrBot 和相关容器运行；语音容器未设置 Passport 设备开关。生产 SQLite `quick_check=ok`、迁移版本 18，尚无 V19 共享历史表。生产 Manager 使用 Youmi 类名，三个授权类均已只读计算哈希；未读取聊天内容或凭据，未修改生产。
+- 扩展离线 Manager 补丁工具以支持当前 Youmi 类名：严格核对本次生产三类原始哈希、候选 class 版本和清单，仅输出新 JAR，保留其他条目和元数据；拒绝原始类不匹配、混合类名或覆盖原文件。原 Mia 流程保持默认行为。合成归档的当前/旧流程 4 项测试通过，生产 JAR 尚未生成或替换；当前类名 CI 产物必须先核验三个类。

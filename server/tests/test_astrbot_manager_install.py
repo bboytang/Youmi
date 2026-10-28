@@ -102,3 +102,50 @@ class LegacyManagerCandidateTests(unittest.TestCase):
         self.assertEqual(extra.read_text(), 'class Unrelated {}')
         with self.assertRaisesRegex(ValueError, 'Unreviewed or already converted'):
             installer.legacy_sources(self.root)
+
+
+class CurrentManagerCandidateTests(unittest.TestCase):
+    def test_current_overlay_requires_exact_preimages_and_preserves_other_entries(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            original, bundle, output = root / 'original.jar', root / 'patch.zip', root / 'candidate.jar'
+            classes = root / 'classes'
+            old = {name: b'original-' + name.encode() for name in installer.CURRENT_PREIMAGES}
+            preimages = {name: hashlib.sha256(data).hexdigest() for name, data in old.items()}
+            for name in old:
+                path = classes / name.removeprefix('BOOT-INF/classes/')
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_bytes(b'\xca\xfe\xba\xbe\0\0\0A' + name.encode())
+            with original.open('wb') as stream:
+                stream.write(b'#!/bin/sh\n')
+                with zipfile.ZipFile(stream, 'w') as jar:
+                    jar.comment = b'preserve'
+                    for name, data in old.items():
+                        jar.writestr(name, data)
+                    jar.writestr('BOOT-INF/lib/unchanged.jar', b'unchanged', compress_type=zipfile.ZIP_STORED)
+            original_bytes = original.read_bytes()
+            with patch.object(installer, 'CURRENT_PREIMAGES', preimages):
+                manifest = installer.package(classes, bundle, current=True)
+                installer.apply(original, bundle, output, current=True)
+                with self.assertRaisesRegex(ValueError, 'new candidate'):
+                    installer.apply(original, bundle, output, current=True)
+            self.assertEqual(original.read_bytes(), original_bytes)
+            self.assertTrue(output.read_bytes().startswith(b'#!/bin/sh\n'))
+            with zipfile.ZipFile(original) as before, zipfile.ZipFile(output) as after:
+                self.assertEqual(before.namelist(), after.namelist())
+                self.assertEqual(before.comment, after.comment)
+                for name in before.namelist():
+                    expected = manifest['replacement'].get(name, hashlib.sha256(before.read(name)).hexdigest())
+                    self.assertEqual(hashlib.sha256(after.read(name)).hexdigest(), expected)
+                    self.assertEqual(before.getinfo(name).compress_type, after.getinfo(name).compress_type)
+            with self.assertRaisesRegex(ValueError, 'Unreviewed patch'):
+                installer.apply(original, bundle, root / 'wrong.jar', current=True)
+            self.assertFalse((root / 'wrong.jar').exists())
+            drifted = root / 'drifted.jar'
+            with zipfile.ZipFile(drifted, 'w') as jar:
+                for name, data in old.items():
+                    jar.writestr(name, data + b'drift')
+            with patch.object(installer, 'CURRENT_PREIMAGES', preimages):
+                with self.assertRaisesRegex(ValueError, 'Unreviewed production class preimage'):
+                    installer.apply(drifted, bundle, root / 'drift-output.jar', current=True)
+            self.assertFalse((root / 'drift-output.jar').exists())

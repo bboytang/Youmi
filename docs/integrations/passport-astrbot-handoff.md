@@ -75,3 +75,7 @@ GitHub `7f107268` 的协议服务检查失败：该工作流只提供单个 ASR 
 生产运维入口仍需确认；当前工作环境没有生产容器或 SSH 主机别名，已向用户请求既有连接方式。`55b235f0` 固件矩阵仍运行，AI Passport 任务进行中；不得将本地机器视为生产主机。
 
 发现 `55b235f0` 的当前类名 Manager CI 制品只包含 Controller，缺少新增实体设备授权所需 Service；不能用于部署。已修改工作流逐一检查并导出 Controller、Service 和 Binding 类，待新提交 CI 及制品内容核验。
+
+最新公开提交 `2963608dc12f58d7a803298273bcb26d4ea0d3d9` 修复 Manager 制品缺少 Service；其完整 GitHub 检查已启动，链接见工作记录。旧 SHA `55b235f0` 的 Passport 固件任务通过，但旧完整矩阵因被新提交替代已请求取消，不能将旧结果作为新 SHA 验证。新制品需实际下载核对三个 class，生产运维入口仍待用户回复。
+
+生产只读检查：语音、Manager 和 AstrBot 容器运行，语音尚未开启 Passport；SQLite `quick_check=ok`、版本 V18，Manager 使用 Youmi 类名。已新增严格校验生产三类原始哈希的当前类名离线补丁模式并以合成归档测试；未生成或替换生产 JAR、未迁移数据库。实际发布仍需最新 SHA CI 成功、下载核实三类制品及重新复核生产哈希。
