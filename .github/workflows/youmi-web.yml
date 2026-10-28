@@ -1,0 +1,40 @@
+name: Verify Youmi web tools
+on:
+  push:
+    paths:
+      - 'integrations/astrbot_plugin_youmi_web/**'
+      - 'integrations/tests/test_youmi_web.py'
+      - 'integrations/tests/test_youmi_web_authorization.py'
+      - 'deploy/youmi-network/**'
+      - '.github/workflows/youmi-web.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install aiohttp beautifulsoup4
+      - run: python -m unittest integrations.tests.test_youmi_web integrations.tests.test_youmi_web_authorization -v
+      - run: python -m unittest discover -s deploy/youmi-network/tests -v
+      - run: python -m compileall -q integrations/astrbot_plugin_youmi_web
+      - name: Package web plugin
+        run: |
+          mkdir web-artifact
+          python - <<'PY'
+          from pathlib import Path
+          from zipfile import ZipFile
+          root = Path('integrations/astrbot_plugin_youmi_web')
+          with ZipFile('web-artifact/youmi-web.zip', 'w') as archive:
+              for file in root.iterdir():
+                  if file.is_file(): archive.write(file, file.name)
+          PY
+          sha256sum web-artifact/youmi-web.zip > web-artifact/SHA256SUMS
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Youmi-web-${{ github.sha }}
+          path: web-artifact/

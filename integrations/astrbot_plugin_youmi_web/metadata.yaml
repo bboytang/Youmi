@@ -1,0 +1,7 @@
+name: astrbot_plugin_youmi_web
+display_name: 晓筱的联网工具
+desc: 自主搜索和读取公开网页，使用专用代理并记录访问。
+version: v1.0.0
+author: bboytang
+repo: https://github.com/bboytang/Youmi
+astrbot_version: '>=4.29.3,<4.30.0'
