@@ -19,6 +19,41 @@ class WebTests(unittest.TestCase):
         self.assertLessEqual(len(text), 12000)
 
 
+class WebFetchTests(unittest.IsolatedAsyncioTestCase):
+    async def test_json_is_returned_as_bounded_text(self):
+        import tempfile
+        from pathlib import Path
+        from unittest.mock import patch
+        from aiohttp import web
+        from integrations.astrbot_plugin_youmi_web import web as module
+
+        body = '{"value":"' + '中' * 20000 + '<script>kept</script>"}'
+        async def handle(request):
+            return web.Response(text=body, content_type=request.match_info['content_type'].replace('_', '/'))
+
+        app = web.Application()
+        app.router.add_get('/{content_type}', handle)
+        runner = web.AppRunner(app)
+        await runner.setup()
+        site = web.TCPSite(runner, '127.0.0.1', 0)
+        await site.start()
+        port = site._server.sockets[0].getsockname()[1]
+        try:
+            with tempfile.TemporaryDirectory() as directory:
+                credentials = Path(directory) / 'proxy.json'
+                credentials.write_text('{"username":"test","password":"test"}')
+                with patch.object(module, 'PROXY', None), patch.object(module, 'PROXY_CREDENTIALS', credentials):
+                    for content_type in ('application_json', 'application_problem+json'):
+                        result = await module.Web(Path(directory)).fetch(f'http://127.0.0.1:{port}/{content_type}')
+                        self.assertEqual(result['text'], body[:12000])
+                        self.assertEqual(result['title'], '')
+                        self.assertEqual(result['links'], [])
+                    result = await module.Web(Path(directory)).fetch(f'http://127.0.0.1:{port}/text_plain')
+                    self.assertEqual(result['error'], 'unsupported_content_type')
+        finally:
+            await runner.cleanup()
+
+
 if __name__ == '__main__':
     unittest.main()
 

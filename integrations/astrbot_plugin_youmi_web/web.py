@@ -1,5 +1,6 @@
 """Scoped, unauthenticated web retrieval through the dedicated proxy."""
 import asyncio
+import codecs
 import json
 import time
 from datetime import datetime
@@ -71,7 +72,18 @@ class Web:
                                 continue
                             if response.status != 200:
                                 return {'url': url, 'status': response.status, 'error': 'http_error'}
-                            if 'html' not in response.headers.get('Content-Type', '').lower():
+                            content_type = response.headers.get('Content-Type', '').split(';', 1)[0].strip().lower()
+                            if content_type == 'application/json' or content_type.endswith('+json'):
+                                decoder = codecs.getincrementaldecoder(response.charset or 'utf-8')(errors='replace')
+                                text = ''
+                                async for chunk in response.content.iter_chunked(4096):
+                                    text += decoder.decode(chunk)
+                                    if len(text) >= 12000:
+                                        break
+                                else:
+                                    text += decoder.decode(b'', final=True)
+                                return {'url': url, 'status': response.status, 'title': '', 'text': text[:12000], 'links': []}
+                            if 'html' not in content_type:
                                 return {'url': url, 'status': response.status, 'error': 'unsupported_content_type'}
                             body = bytearray()
                             async for chunk in response.content.iter_chunked(65536):
