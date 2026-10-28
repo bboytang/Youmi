@@ -18,6 +18,7 @@ from .authorization import AuthenticatedScope, PrivateAuthorizationRequired, req
 from .persona import PersonaAgent, GuardedTTSQueue, SAFE_REPLY
 from .context import ContextError
 from . import reply
+from .passport_voice import enabled as passport_enabled, chat as passport_chat
 
 
 logger = logging.getLogger(__name__)

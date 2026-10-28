@@ -168,6 +168,7 @@ class YoumiPrivateAuthorizationTest {
             assertNotEquals(0, post("/config/mia-auth/bridge-config", snapshot, userToken(USER_B)).path("code").asInt());
             JsonNode bridge = post("/config/mia-auth/bridge-config", snapshot, server);
             assertEquals(0, bridge.path("code").asInt());
+            assertNotEquals(0, post("/config/mia-auth/passport-config", snapshot, server).path("code").asInt());
             assertEquals(verified.path("data").path("owner"), bridge.path("data").path("mia_scope").path("owner"));
             assertEquals(bridge.path("data").path("mia_scope"), bridge.path("data").path("youmi_scope"));
             bridge.path("data").fieldNames().forEachRemaining(key -> assertTrue(
@@ -400,8 +401,15 @@ class YoumiPrivateAuthorizationTest {
         assertNotEquals(0, post("/config/mia-auth/check-scope", snapshot, userToken(USER_B)).path("code").asInt());
         assertEquals(0, post("/config/mia-auth/check-scope", snapshot, server).path("code").asInt());
         assertNotEquals(0, post("/config/mia-auth/bridge-config", snapshot, server).path("code").asInt());
+        assertNotEquals(0, post("/config/mia-auth/passport-config", snapshot, userToken(USER_B)).path("code").asInt());
+        JsonNode passport = post("/config/mia-auth/passport-config", snapshot, server);
+        assertEquals(0, passport.path("code").asInt());
+        assertEquals(scope.path("owner"), passport.path("data").path("mia_scope").path("owner"));
+        passport.path("data").fieldNames().forEachRemaining(key -> assertTrue(
+                java.util.Set.of("selected_module", "LLM", "TTS", "prompt", "youmi_scope", "mia_scope").contains(key)));
         snapshot.put("owner", "user:" + USER_A + ":agent:" + AGENT_B);
         assertNotEquals(0, post("/config/mia-auth/check-scope", snapshot, server).path("code").asInt());
+        assertNotEquals(0, post("/config/mia-auth/passport-config", snapshot, server).path("code").asInt());
         snapshot.put("owner", scope.path("owner").asText());
         snapshot.put("credential_version", scope.path("credential_version").asLong() + 1);
         assertNotEquals(0, post("/config/mia-auth/check-scope", snapshot, server).path("code").asInt());
@@ -411,6 +419,7 @@ class YoumiPrivateAuthorizationTest {
         snapshot.put("binding_version", scope.path("binding_version").asLong());
         assertEquals(0, post("/device/mia-auth/revoke", Map.of("device_id", DEVICE_B), userToken(USER_B)).path("code").asInt());
         assertNotEquals(0, post("/config/mia-auth/check-scope", snapshot, server).path("code").asInt());
+        assertNotEquals(0, post("/config/mia-auth/passport-config", snapshot, server).path("code").asInt());
         assertEquals(USER_B, grant().path("scope").path("user_id").asLong());
         assertNotEquals(0, post("/config/mia-auth/check-scope", snapshot, server).path("code").asInt());
     }

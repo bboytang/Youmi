@@ -4,6 +4,7 @@
   "service_credential_file": {"description": "Mounted independent service credential path; never paste a token here", "type": "string", "default": "/run/secrets/youmi_bridge_token"},
   "allow_internal_http": {"description": "Explicitly allow trusted isolated Docker HTTP transport", "type": "bool", "default": false},
   "qq_platform_id": {"description": "AstrBot OneBot adapter instance ID", "type": "string", "default": ""},
+  "passport_enabled": {"description": "Enable the separately authorized Passport voice event consumer", "type": "bool", "default": false},
   "scheduled_bot_uin": {"description": "QQ bot identity for native scheduled events (no user/owner credential)", "type": "string", "default": ""},
   "timeout_prepare": {"type": "int", "default": 15, "description": "Prepare timeout seconds"},
   "timeout_complete": {"type": "int", "default": 10, "description": "Complete timeout seconds"},

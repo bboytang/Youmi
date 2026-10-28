@@ -2,6 +2,11 @@
 
 
 def remove_v18(db):
+    if db.execute("SELECT 1 FROM sqlite_master WHERE name='youmi_shared_history_turns'").fetchone():
+        assert db.execute('SELECT COUNT(*) FROM youmi_shared_history_turns').fetchone()[0] == 0
+    db.execute('DROP TABLE IF EXISTS youmi_shared_history_summaries')
+    db.execute('DROP TABLE IF EXISTS youmi_shared_history_turns')
+    db.execute('DROP TABLE IF EXISTS youmi_shared_history_settings')
     db.execute('DROP TABLE IF EXISTS youmi_memory_engine')
 
 

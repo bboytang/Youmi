@@ -399,7 +399,7 @@ migrate(db)
         self.assertEqual(result.returncode, 77)
         old(self.store.db)
         migrate(self.store.db)
-        self.assertEqual(self.store.db.execute('SELECT MAX(version) FROM mia_schema_migrations').fetchone()[0], 18)
+        self.assertEqual(self.store.db.execute('SELECT MAX(version) FROM mia_schema_migrations').fetchone()[0], 19)
 
 
 class NativeLinkCompletionTests(unittest.IsolatedAsyncioTestCase):

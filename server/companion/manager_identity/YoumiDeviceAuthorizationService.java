@@ -166,6 +166,15 @@ public class YoumiDeviceAuthorizationService {
                         Integer.class, scope.get("device_id")) != 1) throw new RenException(ErrorCode.NO_PERMISSION);
     }
 
+    /** Physical grants use an actual MAC device and cannot be a virtual bridge device. */
+    public void requirePhysical(Map<String, Object> scope) {
+        if (!(scope.get("device_id") instanceof String device)
+                || !device.matches("(?i)(?:[0-9a-f]{2}:){5}[0-9a-f]{2}")
+                || !(scope.get("client_id") instanceof String client) || client.startsWith("astrbot:")
+                || db.queryForObject("SELECT COUNT(*) FROM ai_device WHERE id=? AND COALESCE(board,'') <> 'youmi-astrbot'",
+                        Integer.class, device) != 1) throw new RenException(ErrorCode.NO_PERMISSION);
+    }
+
     // Six digits identify a pending device request; they are never a bearer proof.
     @Transactional(rollbackFor = Exception.class)
     public Map<String, Object> approveHardwareCode(String deviceId, String code) {

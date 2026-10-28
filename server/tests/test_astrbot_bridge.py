@@ -569,12 +569,26 @@ class BridgeHTTPTests(unittest.IsolatedAsyncioTestCase):
         await self.claim(next_body)
         await self.post('complete', next_body)
         self.assertEqual(self.count('mia_jobs'), 0)
+        self.assertEqual(self.count('youmi_shared_history_turns'), 0)
         await self.post('manage', {key: self.body[key] for key in ('bot_uin', 'sender_uin', 'conversation_key')}
                         | {'request': {'action': 'resume'}})
         after = self.completion(await self.prepare(source_message_id='resumed'), completion_id='resumed')
         await self.claim(after)
         await self.post('complete', after)
         self.assertEqual(self.count('mia_jobs'), 1)
+        self.assertEqual(self.count('youmi_shared_history_turns'), 1)
+
+    async def test_shared_history_management_requires_scope_and_invalidates_pending_turn(self):
+        body = self.completion(await self.prepare())
+        await self.claim(body)
+        data = {key: self.body[key] for key in ('bot_uin', 'sender_uin', 'conversation_key')}
+        result = await self.post('manage', data | {'request': {'action': 'shared_history_pause', 'paused': True}})
+        self.assertTrue(result['paused'])
+        await self.post('complete', body, 409)
+        self.assertEqual(self.count('youmi_shared_history_turns'), 0)
+        await self.post('manage', data | {'request': {'action': 'shared_history_pause', 'paused': 'true'}}, 400)
+        self.auth.active = False
+        await self.post('manage', data | {'request': {'action': 'shared_history_clear'}}, 403)
 
     async def test_management_reuses_owner_store_and_permission(self):
         data = {key: self.body[key] for key in ('bot_uin', 'sender_uin', 'conversation_key')}

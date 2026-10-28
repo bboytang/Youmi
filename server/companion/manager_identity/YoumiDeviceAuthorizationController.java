@@ -94,6 +94,18 @@ public class YoumiDeviceAuthorizationController {
     public Result<Map<String, Object>> bridgeConfig(@RequestBody Map<String, Object> snapshot) {
         Map<String, Object> scope = grants.requireSnapshot(snapshot, true);
         grants.requireVirtual(scope);
+        return bridgeModels(scope);
+    }
+
+    @PostMapping({"/config/youmi-auth/passport-config", "/config/mia-auth/passport-config"})
+    @Transactional(rollbackFor = Exception.class)
+    public Result<Map<String, Object>> passportConfig(@RequestBody Map<String, Object> snapshot) {
+        Map<String, Object> scope = grants.requireSnapshot(snapshot, true);
+        grants.requirePhysical(scope);
+        return bridgeModels(scope);
+    }
+
+    private Result<Map<String, Object>> bridgeModels(Map<String, Object> scope) {
         Map<String, Object> models = configService.getAgentModels((String) scope.get("device_id"), Map.of());
         if (!scope.get("owner").equals(models.get("mia_owner"))) throw new RenException(ErrorCode.NO_PERMISSION);
         Map<String, Object> allowed = new java.util.HashMap<>();

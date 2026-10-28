@@ -10,6 +10,7 @@ from astrbot.api import logger
 from astrbot.api.event import AstrMessageEvent, filter
 from astrbot.api.star import Context, Star
 from astrbot.core.agent.message import Message, TextPart
+from astrbot.core.agent.tool import FunctionTool, ToolSet
 from astrbot.core.message.components import Plain, Record
 from astrbot.core.message.message_event_result import MessageChain
 from astrbot.core.pipeline.context_utils import call_event_hook
@@ -20,6 +21,7 @@ from .client import BridgeClient, BridgeError
 from .admin import AdminClient, ADMIN_INSTRUCTION
 from .media import original_text, prune_media, save_wav, selected_image_file, source_kind
 from .turn_state import CompletionOutbox, CONTEXT_MARKER, TurnState, merge_system
+from .passport import PassportEvent, poll_passport
 
 
 class YoumiConnector(Star):
@@ -32,12 +34,18 @@ class YoumiConnector(Star):
         self.directory.mkdir(parents=True, exist_ok=True, mode=0o700)
         self.outbox = CompletionOutbox(self.directory / 'completion-outbox')
         self.retry_task = None
+        self.passport_task = None
         self.admin = None
 
     async def initialize(self):
         self.retry_task = asyncio.create_task(self.retry_completions())
+        if self.config.get('passport_enabled', False):
+            self.passport_task = asyncio.create_task(poll_passport(self.context, self.client))
 
     async def terminate(self):
+        if self.passport_task:
+            self.passport_task.cancel()
+            await asyncio.gather(self.passport_task, return_exceptions=True)
         if self.retry_task:
             self.retry_task.cancel()
             await asyncio.gather(self.retry_task, return_exceptions=True)
@@ -54,7 +62,7 @@ class YoumiConnector(Star):
         return self.admin
 
     def _admin_identity(self, event):
-        if not self.supports(event):
+        if not self.supports(event) or isinstance(event, PassportEvent):
             raise BridgeError('admin_not_authorized', 403)
         bot = (self.config['scheduled_bot_uin'] if event.get_platform_name() == 'cron'
                else str(event.message_obj.self_id))
@@ -167,7 +175,7 @@ class YoumiConnector(Star):
         return [segment for segment in segments if segment]
 
     def supports(self, event):
-        return (event.get_platform_id() == self.config['qq_platform_id']
+        return isinstance(event, PassportEvent) or (event.get_platform_id() == self.config['qq_platform_id']
                 and not event.get_group_id() and event.get_platform_name() in {'aiocqhttp', 'cron'})
 
     @filter.event_message_type(filter.EventMessageType.ALL, priority=100000)
@@ -269,6 +277,9 @@ class YoumiConnector(Star):
         if not attempt:
             attempt = uuid.uuid4().hex
             event.set_extra('youmi_attempt_id', attempt)
+        if isinstance(event, PassportEvent):
+            return await self.client.call('passport-prepare', {'handle': event.handle,
+                'attempt_id': attempt, 'model': model})
         bot = str(event.message_obj.self_id) if origin == 'user' else self.config['scheduled_bot_uin']
         return await self.client.call('prepare', {
             'bot_uin': bot, 'sender_uin': str(event.get_sender_id()),
@@ -277,6 +288,41 @@ class YoumiConnector(Star):
             'query_text': query, 'model': model, 'external_input_bytes': budget,
             'origin': origin, 'source_kind': kind})
 
+    async def passport_tools(self, event, req, state):
+        tools = event.get_extra('youmi_passport_tools')
+        if tools is None:
+            response = await self.client.call('passport-tools', {'handle': event.handle,
+                'turn_token': state.prepared['turn_token']})
+            tools = response.get('tools')
+            if not isinstance(tools, list) or len(tools) > 32:
+                raise ValueError('invalid_passport_tools')
+            event.set_extra('youmi_passport_tools', tools)
+        result = ToolSet(tools=list(req.func_tool.tools) if req.func_tool else [])
+        def handler_for(name):
+            async def invoke(target, **arguments):
+                if target is not event:
+                    raise ValueError('invalid_passport_tool_event')
+                reply = await self.client.call('passport-tool', {'handle': event.handle,
+                    'turn_token': state.prepared['turn_token'], 'call_id': uuid.uuid4().hex,
+                    'name': name, 'arguments': arguments})
+                if not isinstance(reply.get('text'), str):
+                    raise ValueError('invalid_passport_tool_reply')
+                return reply['text']
+            invoke._youmi_passport = True
+            return invoke
+        for item in tools:
+            if (not isinstance(item, dict) or set(item) != {'name', 'description', 'parameters'}
+                    or not isinstance(item['name'], str)
+                    or not re.fullmatch(r'passport_device_[0-9a-f]{24}', item['name'])
+                    or not isinstance(item['description'], str) or not isinstance(item['parameters'], dict)):
+                raise ValueError('invalid_passport_tool')
+            previous = result.get_tool(item['name'])
+            if previous and not getattr(previous.handler, '_youmi_passport', False):
+                raise ValueError('passport_tool_name_collision')
+            result.add_tool(FunctionTool(name=item['name'], description=item['description'],
+                                         parameters=item['parameters'], handler=handler_for(item['name'])))
+        req.func_tool = result
+
     @filter.on_llm_request(priority=100000)
     async def request(self, event: AstrMessageEvent, req: ProviderRequest):
         if not self.supports(event) or not event.get_extra('youmi_primary_chat', False):
@@ -284,7 +330,7 @@ class YoumiConnector(Star):
         try:
             state = event.get_extra('youmi_turn')
             if state is None:
-                kind = source_kind(event.message_obj.raw_message)
+                kind = 'asr' if isinstance(event, PassportEvent) else source_kind(event.message_obj.raw_message)
                 text = ''.join(part.text for part in event.get_messages() if isinstance(part, Plain)).strip()
                 if kind == 'text':
                     text = original_text(event.message_obj.raw_message)
@@ -307,6 +353,8 @@ class YoumiConnector(Star):
                 prepared = await self.prepare(event, model, query, budget, kind)
                 state = TurnState(prepared, kind)
                 event.set_extra('youmi_turn', state)
+            if isinstance(event, PassportEvent):
+                await self.passport_tools(event, req, state)
             if event.get_extra('youmi_stt_failed'):
                 await self.notice(event, state, '这段语音没能识别成功，请改发文字或稍后重试。')
                 event.stop_event()
@@ -372,6 +420,10 @@ class YoumiConnector(Star):
         state = event.get_extra('youmi_turn')
         if state and tool.name not in state.tools:
             state.tools.append(tool.name)
+        if isinstance(event, PassportEvent) and tool.name == 'send_message_to_user' and isinstance(tool_args, dict):
+            # Passport permits one claimed final reply, not an early side send.
+            tool_args.clear()
+            return
         if self.supports(event) and tool.name == 'send_message_to_user' and isinstance(tool_args, dict):
             if not state or event.get_extra('youmi_scheduled_failed'):
                 if event.get_platform_name() == 'cron':
@@ -493,6 +545,22 @@ class YoumiConnector(Star):
         claimed = False
         try:
             text = ''.join(part.text for part in result.chain if isinstance(part, Plain))
+            if isinstance(event, PassportEvent):
+                text = re.sub(r'&&[a-zA-Z]*&&', '', text).strip()
+                if any(not isinstance(part, Plain) for part in result.chain):
+                    text = (text + ' ' if text else '') + '还有一项内容暂时无法在设备上展示。'
+                if not text:
+                    text = '这条内容暂时无法在设备上展示。'
+                checked = await self.client.call('check', {'turn_token': state.prepared['turn_token'], 'final_text': text})
+                state.final_text = checked['checked_text']
+                state.components = ['plain']
+                await self.client.call('claim', {'turn_token': state.prepared['turn_token'],
+                    'completion_id': state.completion_id, 'final_text': state.final_text})
+                claimed = True
+                await event.send(MessageChain([Plain(state.final_text)]))
+                state.sent = True
+                await self.complete(state)
+                return
             checked = await self.client.call('check', {'turn_token': state.prepared['turn_token'], 'final_text': text})
             visible = checked['checked_text']
             plain = [part for part in result.chain if isinstance(part, Plain)]

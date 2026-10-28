@@ -60,6 +60,13 @@ class TurnLedger:
     def validate(self, scope, payload):
         if tuple(payload['snapshot']) != self.builder._versions(scope):
             raise ContextError('context_changed')
+        shared = payload.get('shared_history')
+        if shared is not None:
+            state = self.store.db.execute('SELECT paused,revision FROM youmi_shared_history_settings WHERE owner=?',
+                                          (scope.owner,)).fetchone()
+            if (state is None or state['revision'] != shared['revision'] or bool(state['paused']) != shared['paused']
+                    or shared['expires_at'] is not None and shared['expires_at'] <= int(self.store.clock())):
+                raise ContextError('context_changed')
 
     def claim(self, row, scope, completion, text):
         with self.store.lock, self.store.db:
@@ -95,6 +102,10 @@ class TurnLedger:
                 if payload['excerpt']:
                     from .memory_state import try_capture_turn
                     try_capture_turn(self.store, scope.owner, payload['session'], row['turn_key'], payload['excerpt'])
+                if payload.get('shared_input') and text.strip():
+                    from .shared_history import record_locked
+                    record_locked(self.store, scope.owner, row['turn_key'],
+                                  'passport' if payload.get('passport_handle') else 'qq', payload['shared_input'], text)
             effects = {'emotion': emotion, 'events': activated}
             # Events may advance their own epoch; save it with the same commit.
             payload['snapshot'] = self.builder._versions(scope)

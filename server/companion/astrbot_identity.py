@@ -51,11 +51,37 @@ class BridgeIdentity:
         return scope
 
     async def config(self, scope):
+        return await self._config(scope, '/config/youmi-auth/bridge-config')
+
+    async def _config(self, scope, endpoint):
         await self.authorization.require(scope, 'memory:read')
         from .authorization import _manager_scope
-        models = await self.authorization._request('/config/youmi-auth/bridge-config', scope.snapshot())
+        models = await self.authorization._request(endpoint, scope.snapshot())
         if not isinstance(models, dict) or _manager_scope(models.get('youmi_scope', models.get('mia_scope'))) != scope:
             raise PrivateAuthorizationRequired()
         if models.get('prompt') is None:
             models['prompt'] = ''  # Manager uses null for an unconfigured owner role.
+        return models
+
+
+class PassportIdentity(BridgeIdentity):
+    """Resolve only a claimed live physical connection, never a client-provided owner."""
+
+    def __init__(self, authorization, handle, dispatch):
+        super().__init__(authorization, [])
+        self.handle, self.dispatch = handle, dispatch
+
+    async def source(self):
+        turn, query = await self.dispatch.request_for(self.handle)
+        await self.authorization.require(turn.scope, 'memory:read')
+        return turn, query
+
+    async def config(self, scope):
+        turn = await self.dispatch.tickets.resolve(self.handle)
+        if turn.scope != scope or scope.device_id.startswith('astrbot-'):
+            raise PrivateAuthorizationRequired()
+        models = await self._config(scope, '/config/youmi-auth/passport-config')
+        current = await self.dispatch.tickets.resolve(self.handle)
+        if current is not turn:
+            raise PrivateAuthorizationRequired()
         return models

@@ -13,12 +13,15 @@ import weakref
 
 from aiohttp import web
 
-from .astrbot_identity import BridgeIdentity, canonical, digest, identifier, secret_file
+from .astrbot_identity import BridgeIdentity, PassportIdentity, canonical, digest, identifier, secret_file
 from .astrbot_turns import TurnConflict, TurnLedger
 from .authorization import PrivateAuthorization, PrivateAuthorizationRequired
 from .context import ContextError, ContextLimits
 from .memory import MemoryError, SECRET
 from .persona import PersonaAgent
+from .passport_tickets import passport_tickets
+from .passport_dispatch import passport_dispatch
+from .passport_mcp import passport_mcp
 
 
 _runtime = None
@@ -69,7 +72,7 @@ class AstrBotHandler:
                 schema_version = self.store.db.execute('SELECT MAX(version) FROM mia_schema_migrations').fetchone()[0]
                 return web.json_response({'protocol_version': 1, 'schema': schema_version,
                     'worker_available': bool(self.worker and not self.worker.closing)})
-            if request.method != 'POST' or action not in {'prepare', 'check', 'claim', 'complete', 'tts', 'manage', 'status', 'transcribe', 'admin-session'}:
+            if request.method != 'POST' or action not in {'prepare', 'check', 'claim', 'complete', 'tts', 'manage', 'status', 'transcribe', 'admin-session', 'passport-open', 'passport-check', 'passport-close', 'passport-next', 'passport-reply', 'passport-prepare', 'passport-tools', 'passport-tool'}:
                 raise TurnConflict('invalid_request', 400)
             raw = bytearray()
             async for chunk in request.content.iter_chunked(4096):
@@ -79,6 +82,114 @@ class AstrBotHandler:
             data = json.loads(raw)
             if not isinstance(data, dict) or type(data.get('protocol_version')) is not int or data['protocol_version'] != 1:
                 raise ValueError()
+            if action == 'passport-next':
+                if set(data) != {'protocol_version'}:
+                    raise ValueError()
+                event = await passport_dispatch.next_event()
+                return web.json_response({'event': event}, headers={'Cache-Control': 'no-store'})
+            if action in {'passport-tools', 'passport-tool'}:
+                required = {'protocol_version', 'handle', 'turn_token'}
+                if action == 'passport-tool':
+                    required |= {'call_id', 'name', 'arguments'}
+                if set(data) != required:
+                    raise ValueError()
+                row = ledger.by_token(identifier(data['turn_token']))
+                scope = await ledger.authorize(row)
+                payload = json.loads(row['payload_json']) if row['payload_json'] else {}
+                if row['status'] != 'prepared' or payload.get('passport_handle') != data['handle']:
+                    raise TurnConflict('passport_tool_not_authorized')
+                identity = PassportIdentity(authorization, data['handle'], passport_dispatch)
+                models = await identity.config(scope)
+                if digest(models.get('prompt', '')) != payload['role_hash']:
+                    raise ContextError('context_changed')
+                def validate_tool():
+                    with self.store.lock:
+                        current = self.store.db.execute('SELECT * FROM mia_astrbot_turns WHERE turn_key=?',
+                                                        (row['turn_key'],)).fetchone()
+                        if current is None or current['status'] != 'prepared' or not current['payload_json']:
+                            raise TurnConflict('passport_tool_not_authorized')
+                        current_payload = json.loads(current['payload_json'])
+                        if current_payload.get('passport_handle') != data['handle']:
+                            raise TurnConflict('passport_tool_not_authorized')
+                        ledger.validate(scope, current_payload)
+                try:
+                    if action == 'passport-tools':
+                        result = {'tools': await passport_mcp.list_tools(data['handle'], row['turn_key'], validate_tool)}
+                    else:
+                        result = await passport_mcp.execute(data['handle'], row['turn_key'], data['call_id'],
+                                                           data['name'], data['arguments'], validate_tool)
+                except RuntimeError as error:
+                    if str(error) in {'passport_mcp_duplicate', 'passport_mcp_changed'}:
+                        raise TurnConflict(str(error)) from None
+                    raise
+                return web.json_response(result, headers={'Cache-Control': 'no-store'})
+            if action == 'passport-prepare':
+                if set(data) != {'protocol_version', 'handle', 'attempt_id', 'model'}:
+                    raise ValueError()
+                identifier(data['attempt_id'])
+                if (not isinstance(data['model'], str) or not 1 <= len(data['model']) <= 128
+                        or any(ord(c) < 32 for c in data['model'])):
+                    raise ValueError()
+                identity = PassportIdentity(authorization, data['handle'], passport_dispatch)
+                turn, query = await asyncio.wait_for(identity.source(), 10)
+                key = digest(['passport', turn.scope.device_id, turn.scope.client_id, turn.session_id, turn.turn_id])
+                session = digest(['passport', turn.scope.owner, turn.scope.device_id, turn.scope.client_id])
+                prepared_data = {'attempt_id': data['attempt_id'], 'model': data['model'], 'query_text': query,
+                                 'origin': 'user', 'source_kind': 'asr', 'handle': data['handle']}
+                async with self._lock(key):
+                    result = await asyncio.wait_for(self.prepare(prepared_data, ledger, identity, key=key,
+                        scope=turn.scope, session=session, passport_handle=data['handle']), 15)
+                return web.json_response(result, headers={'Cache-Control': 'no-store'})
+            if action == 'passport-reply':
+                if set(data) != {'protocol_version', 'handle', 'turn_token', 'completion_id', 'text'}:
+                    raise ValueError()
+                checked = self.checked(data['text'])
+                identifier(data['completion_id'])
+                row = ledger.by_token(identifier(data['turn_token']))
+                scope = await ledger.authorize(row)
+                payload = json.loads(row['payload_json']) if row['payload_json'] else {}
+                if (row['status'] != 'sending' or row['completion_id'] != data['completion_id']
+                        or row['text_hash'] != digest(checked) or checked != data['text']
+                        or payload.get('passport_handle') != data['handle']):
+                    raise TurnConflict('passport_reply_not_claimed')
+                identity = PassportIdentity(authorization, data['handle'], passport_dispatch)
+                models = await identity.config(scope)
+                if digest(models.get('prompt', '')) != payload['role_hash']:
+                    raise ContextError('context_changed')
+                def validate_reply():
+                    with self.store.lock:
+                        current = self.store.db.execute('SELECT * FROM mia_astrbot_turns WHERE turn_key=?',
+                                                        (row['turn_key'],)).fetchone()
+                        if (current is None or current['status'] != 'sending'
+                                or current['completion_id'] != data['completion_id']
+                                or current['text_hash'] != digest(checked) or not current['payload_json']):
+                            raise TurnConflict('passport_reply_not_claimed')
+                        current_payload = json.loads(current['payload_json'])
+                        if current_payload.get('passport_handle') != data['handle']:
+                            raise TurnConflict('passport_reply_not_claimed')
+                        ledger.validate(scope, current_payload)
+                try:
+                    await asyncio.wait_for(passport_dispatch.reply(data['handle'], checked, validate=validate_reply,
+                        receipt=(row['turn_key'], data['completion_id'])), 10)
+                except RuntimeError as error:
+                    if str(error) == 'passport_turn_not_waiting':
+                        raise TurnConflict('passport_turn_not_waiting') from None
+                    raise
+                return web.json_response({'accepted': True}, headers={'Cache-Control': 'no-store'})
+            if action in {'passport-open', 'passport-check', 'passport-close'}:
+                required = 'ticket' if action == 'passport-open' else 'handle'
+                if set(data) != {'protocol_version', required}:
+                    raise ValueError()
+                if action == 'passport-open':
+                    handle, turn = await asyncio.wait_for(passport_tickets.open(data['ticket']), 10)
+                    return web.json_response({'handle': handle, 'session_id': turn.session_id, 'turn_id': turn.turn_id},
+                                             headers={'Cache-Control': 'no-store'})
+                if action == 'passport-check':
+                    turn = await asyncio.wait_for(passport_tickets.resolve(data['handle']), 10)
+                    return web.json_response({'session_id': turn.session_id, 'turn_id': turn.turn_id},
+                                             headers={'Cache-Control': 'no-store'})
+                await passport_tickets.close(data['handle'])
+                return web.json_response({'closed': True}, headers={'Cache-Control': 'no-store'})
             if action in {'manage', 'transcribe', 'admin-session'}:
                 key = digest([data.get('bot_uin'), data.get('conversation_key')])
             elif action == 'prepare':
@@ -166,9 +277,18 @@ class AstrBotHandler:
             await ledger.authorization.require(scope, 'memory:manage')
             command = data['request']
             if not isinstance(command, dict) or command.get('action') not in {'list', 'update', 'delete', 'pause', 'resume',
-                                                                             'feature_settings', 'events', 'emotion_status'}:
+                    'feature_settings', 'events', 'emotion_status', 'shared_history_status',
+                    'shared_history_pause', 'shared_history_clear'}:
                 raise ValueError()
-            if command['action'] == 'resume':
+            if command['action'].startswith('shared_history_'):
+                from . import shared_history
+                action = command['action']
+                required = {'action', 'paused'} if action == 'shared_history_pause' else {'action'}
+                if set(command) != required or action == 'shared_history_pause' and type(command['paused']) is not bool:
+                    raise ValueError()
+                result = shared_history.configure(self.store, scope.owner,
+                    paused=command.get('paused'), clear=action == 'shared_history_clear')
+            elif command['action'] == 'resume':
                 session = digest(['qq', data['bot_uin'], data['conversation_key']])
                 with self.store.lock, self.store.db:
                     self.store.db.execute("UPDATE mia_astrbot_turns SET memory_suppressed=0 WHERE session_id=? "
@@ -193,8 +313,11 @@ class AstrBotHandler:
                 'completion': json.loads(row['result_json']) if row['result_json'] else None,
                 'memory_job': dict(job) if job else {'state': 'not_submitted'}})
         if row['payload_json']:
+            payload = json.loads(row['payload_json'])
+            if payload.get('passport_handle'):
+                identity = PassportIdentity(ledger.authorization, payload['passport_handle'], passport_dispatch)
             models = await identity.config(scope)
-            if digest(models.get('prompt', '')) != json.loads(row['payload_json'])['role_hash']:
+            if digest(models.get('prompt', '')) != payload['role_hash']:
                 raise ContextError('context_changed')
         if action == 'complete':
             if set(data) != {'protocol_version', 'turn_token', 'completion_id', 'result', 'final_text',
@@ -208,6 +331,10 @@ class AstrBotHandler:
                     identifier(item)
             if self.checked(data['final_text']) != data['final_text']:
                 raise ValueError()
+            if row['payload_json'] and json.loads(row['payload_json']).get('passport_handle'):
+                accepted = passport_dispatch.accepted((row['turn_key'], data['completion_id']))
+                if (data['result'] == 'adapter_accepted') != accepted:
+                    raise TurnConflict('passport_delivery_unconfirmed')
             return web.json_response(await ledger.complete(row, scope, data))
         if row['status'] not in {'prepared', 'sending'}:
             raise TurnConflict('turn_not_active')
@@ -242,9 +369,10 @@ class AstrBotHandler:
             raise ValueError()
         return PersonaAgent().checked_text(text)
 
-    async def prepare(self, data, ledger, identity):
-        key = self.prepare_key(data)
-        scope = await identity.resolve(data)
+    async def prepare(self, data, ledger, identity, *, key=None, scope=None, session=None, passport_handle=None):
+        if key is None:
+            key = self.prepare_key(data)
+            scope = await identity.resolve(data)
         previous = ledger.find(key)
         if previous:
             await ledger.authorize(previous)
@@ -274,7 +402,8 @@ class AstrBotHandler:
             limits = ContextLimits(data['model'], profile['context_window'], profile['response_tokens'],
                                    profile['capacity_source'], profile['context_window'] - profile['response_tokens'])
         limits.input_limit()
-        session = digest(['qq', data['bot_uin'], data['conversation_key']])
+        if session is None:
+            session = digest(['qq', data['bot_uin'], data['conversation_key']])
         with self.store.lock:
             row = self.store.db.execute("SELECT memory_suppressed FROM mia_astrbot_turns WHERE session_id=? "
                 "AND json_extract(scope_json,'$.owner')=? ORDER BY rowid DESC LIMIT 1", (session, scope.owner)).fetchone()
@@ -282,11 +411,31 @@ class AstrBotHandler:
         notice, skip_memory, priority = None, False, False
         if data['origin'] == 'user' and data['source_kind'] in {'text', 'asr'}:
             command = data['query_text'].strip().rstrip('。.!！ ')
-            if command in {'这段别记', '这段不要记', '米娅，这段别记'}:
+            if command in {'暂停跨设备对话共享', '恢复跨设备对话共享', '清除跨设备对话记录'}:
+                await ledger.authorization.require(scope, 'memory:manage')
+                from . import shared_history
+                if command == '清除跨设备对话记录':
+                    shared_history.configure(self.store, scope.owner, clear=True)
+                    notice = '已清除跨设备近期对话；原平台聊天、长期记忆和笔记未删除。'
+                else:
+                    paused = command == '暂停跨设备对话共享'
+                    shared_history.configure(self.store, scope.owner, paused=paused)
+                    notice = ('已暂停跨设备对话共享，已有记录保留。' if paused else '已恢复跨设备对话共享。')
+                skip_memory = True
+            elif command in {'恢复本会话记忆', '恢复这段记忆'}:
+                await ledger.authorization.require(scope, 'memory:write')
+                with self.store.lock, self.store.db:
+                    self.store.db.execute("UPDATE mia_astrbot_turns SET memory_suppressed=0 WHERE session_id=? "
+                        "AND json_extract(scope_json,'$.owner')=?", (session, scope.owner))
+                    self.store.set_paused(scope.owner, self.store.snapshot(scope.owner)['paused'])
+                suppressed, skip_memory = False, True
+                notice = '已恢复本会话的新记忆提炼；全局暂停状态不变。'
+            elif command in {'这段别记', '这段不要记', '米娅，这段别记'}:
                 await ledger.authorization.require(scope, 'memory:write')
                 self.store.set_paused(scope.owner, self.store.snapshot(scope.owner)['paused'])
                 suppressed = True
-                notice = 'QQ当前私聊暂停提炼新记忆；用 /youmi_memory resume 明确恢复。原App自动保存开关不变，已有事实未删除。'
+                notice = ('当前设备会话暂停提炼新记忆；已有事实未删除。' if passport_handle else
+                          'QQ当前私聊暂停提炼新记忆；用 /youmi_memory resume 明确恢复。原App自动保存开关不变，已有事实未删除。')
             elif command in {'忘掉这件事', '米娅，忘掉这件事'}:
                 notice, skip_memory = '未确定要删除的记忆；请用户选择，尚未删除。', True
             else:
@@ -378,26 +527,60 @@ class AstrBotHandler:
             'proposal': proposal, 'affect_version': current['version'] if current else None,
             'affect_status': affect_status, 'role_hash': digest(models.get('prompt', '')),
             'pending_events': [item['id'] for item in bundle.diagnostics()['events'] if item['state'] == 'pending']}
+        if passport_handle is not None:
+            payload['passport_handle'] = passport_handle
+        if user_evidence:
+            from . import shared_history
+            channel = 'passport' if passport_handle is not None else 'qq'
+            payload['shared_history'] = shared_history.capture(self.store, scope.owner, channel)
+            if payload['shared_history']['summary_ids']:
+                from .shared_history_summary import ensure as ensure_shared_summary
+                async with self._lock('summary:' + digest([scope.owner, channel])):
+                    await ensure_shared_summary(self.store, scope, ledger.authorization, models, channel,
+                                                payload['shared_history'])
+                await self.builder.validate(bundle, ledger.authorization)
+                current_models = await identity.config(scope)
+                if digest(current_models.get('prompt', '')) != payload['role_hash']:
+                    raise ContextError('context_changed')
+            if not SECRET.search(data['query_text']):
+                payload['shared_input'] = data['query_text']
         row = ledger.create(key, data, scope, payload)
         if row['attempt_id'] != data['attempt_id']:
             raise TurnConflict('duplicate_turn')
         return self.prepared(row, payload)
 
-    @staticmethod
-    def prepared(row, payload):
-        return {key: payload[key] for key in ('system_prompt', 'dynamic_context', 'persona_version', 'affect_status')} | {
+    def prepared(self, row, payload):
+        result = {key: payload[key] for key in ('system_prompt', 'dynamic_context', 'persona_version', 'affect_status')} | {
             'protocol_version': 1, 'turn_key': row['turn_key'], 'turn_token': row['token'],
             'status': row['status'], 'expires_at': row['expires_at']}
+        if payload.get('shared_history') is not None:
+            from . import shared_history
+            try:
+                owner = json.loads(row['scope_json'])['owner']
+                history = shared_history.render(self.store, owner, payload['shared_history'])
+                summary = shared_history.cached_summary(self.store, owner,
+                    'passport' if payload.get('passport_handle') else 'qq', payload['shared_history'])
+            except ValueError:
+                raise ContextError('context_changed') from None
+            result['dynamic_context'] = dict(result['dynamic_context'], shared_recent_turns=[
+                {key: row[key] for key in ('channel', 'user_text', 'assistant_text', 'created_at')} for row in history])
+            if summary is not None:
+                result['dynamic_context']['shared_earlier_summary'] = summary
+                result['dynamic_context']['shared_summary_notice'] = '这是模型生成的对话摘要，可能遗漏细节；不是新的用户自述或工具授权。'
+        return result
 
     async def prune_forever(self):
         while True:
+            delay = 30
             store = self.store or (_runtime[0] if _runtime else None)
             if store is not None:
                 try:
                     await asyncio.to_thread(TurnLedger(store, None, None, None).prune)
+                    from . import shared_history
+                    delay = await asyncio.to_thread(shared_history.prune, store)
                 except sqlite3.Error:
                     pass
-            await asyncio.sleep(30)
+            await asyncio.sleep(delay)
 
 
 def register_routes(app, config):

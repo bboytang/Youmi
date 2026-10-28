@@ -12,8 +12,8 @@ EXPECTED = {
     'mia_companion/xiaozhi_adapter.py': '6325997fe98f992b64d657d5c3e6689168feb8d90fa36a30624f7605f6694385',
     'mia_companion/schema.py': '3e6ee813382608bfe611ceb4248151dfde006d5a25bf4ef780a40804dfc24a32',
 }
-PAYLOADS = ('astrbot_api.py', 'astrbot_identity.py', 'astrbot_turns.py', 'astrbot_media.py', 'schema-v8.sql',
-            'schema-v9.sql', 'schema-v10.sql', 'schema-v11.sql', 'schema-v12.sql', 'schema-v13.sql', 'schema-v14.sql', 'schema-v15.sql', 'schema-v16.sql', 'schema-v17.sql', 'schema-v18.sql', 'memory_engine.py', 'cognition.py',
+PAYLOADS = ('astrbot_api.py', 'astrbot_identity.py', 'astrbot_turns.py', 'astrbot_media.py', 'passport_tickets.py', 'passport_dispatch.py', 'passport_voice.py', 'passport_mcp.py', 'schema-v8.sql',
+            'schema-v9.sql', 'schema-v10.sql', 'schema-v11.sql', 'schema-v12.sql', 'schema-v13.sql', 'schema-v14.sql', 'schema-v15.sql', 'schema-v16.sql', 'schema-v17.sql', 'schema-v18.sql', 'schema-v19.sql', 'shared_history.py', 'shared_history_summary.py', 'memory_engine.py', 'cognition.py',
             'emotional_system.py', 'memory_state.py', 'memory_emotion.py')
 
 

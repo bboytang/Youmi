@@ -80,6 +80,10 @@ def patch_connection(text):
     text = replace_once(text, '        # Define intent functions\n',
                         '        if youmi.blocked_input_reply(self, depth):\n            return\n\n'
                         '        # Define intent functions\n')
+    text = replace_once(text, '            self.sentence_id = current_sentence_id  # 更新共享属性\n',
+                        '            self.sentence_id = current_sentence_id  # 更新共享属性\n'
+                        '            if youmi.passport_enabled(self):\n'
+                        '                youmi.passport_chat(self, query)\n                return\n')
     for arguments in ('current_sentence_id, da_response', 'current_sentence_id, streamed_text',
                       'current_sentence_id, text_buff', 'self.sentence_id, text'):
         text = replace_once(text, f'self.tts.store_tts_text({arguments})', f'youmi.store_tts_text(self, {arguments})')
@@ -282,14 +286,14 @@ def install(root, changes):
         shutil.copy2(root / relative, root / (relative + ".mia-original"))
     destination.mkdir(mode=0o700)
     try:
-        for name in ["__init__.py", "memory.py", "youmi_adapter.py", "authorization.py", "schema.py", "schema.sql", "schema-v2.sql", "persona.py",
+        for name in ["__init__.py", "memory.py", "youmi_adapter.py", "authorization.py", "passport_tickets.py", "passport_dispatch.py", "passport_voice.py", "passport_mcp.py", "schema.py", "schema.sql", "schema-v2.sql", "persona.py",
                      "embedding.py", "semantic.py", "retrieval.py", "memory_runtime.py", "context.py", "reply.py", "jobs.py", "extraction.py", "proposal.py", "model_requests.py",
                      "events.py", "emotions.py", "schema-v3.sql", "schema-v4.sql", "schema-v5.sql", "schema-v6.sql", "affect.py", "features.py", "management.py", "character.py", "schema-v7.sql",
                      "request_accounting.py", "requirements-vector.txt", "schema-v8.sql", "schema-v9.sql", "schema-v10.sql", "emotional_system.py", "astrbot_api.py",
                      "astrbot_identity.py", "astrbot_turns.py", "astrbot_media.py",
                      "memory_repository.py", "memory_shadow.py", "memory_search.py", "memory_state.py", "memory_reflection.py", "schema-v11.sql", "schema-v12.sql", "memory_artifacts.py",
                      "schema-v13.sql", "memory_reflection_policy.py", "reflection_prompt.py",
-                     "schema-v14.sql", "memory_emotion.py", "memory_emotion_context.py", "memory_management.py", "memory_index_cache.py", "memory_cache_invalidations.py", "schema-v15.sql", "schema-v16.sql", "schema-v17.sql", "schema-v18.sql", "memory_engine.py", "cognition.py", "cognitive_context.py", "memory_pins.py", "memory_cache_lifecycle.py", "memory_cache_cleanup.py",
+                     "schema-v14.sql", "memory_emotion.py", "memory_emotion_context.py", "memory_management.py", "memory_index_cache.py", "memory_cache_invalidations.py", "schema-v15.sql", "schema-v16.sql", "schema-v17.sql", "schema-v18.sql", "schema-v19.sql", "shared_history.py", "shared_history_summary.py", "memory_engine.py", "cognition.py", "cognitive_context.py", "memory_pins.py", "memory_cache_lifecycle.py", "memory_cache_cleanup.py",
                      "requirements-memory-shadow.txt", "YOUMI_MEMORY_NOTICE.md", "YOUMI_MEMORY_LICENSE"]:
             shutil.copy2(Path(__file__).parent / name, destination / name)
         for relative, (_, changed) in changes.items():
