@@ -1,6 +1,6 @@
 # Passport 发布、验收与回退操作方案
 
-状态：待执行。以通过 GitHub Actions 的精确提交和实际生产清单为准；本文不是部署或设备验收记录。有关范围、进度见 [方案](passport-astrbot-plan.md) 和 [工作记录](passport-astrbot-worklog.md)。
+状态：生产已受控启用，实机验收未完成。以通过 GitHub Actions 的精确提交和实际生产清单为准；实际部署和验收证据见 [工作记录](passport-astrbot-worklog.md) 与 [交接](passport-astrbot-handoff.md)，范围见 [方案](passport-astrbot-plan.md)。
 
 ## 发布前核对
 

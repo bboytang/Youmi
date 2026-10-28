@@ -128,3 +128,39 @@
 
 - 用户提供生产主机及本机既有凭证后，只读确认语音、Manager、AstrBot 和相关容器运行；语音容器未设置 Passport 设备开关。生产 SQLite `quick_check=ok`、迁移版本 18，尚无 V19 共享历史表。生产 Manager 使用 Youmi 类名，三个授权类均已只读计算哈希；未读取聊天内容或凭据，未修改生产。
 - 扩展离线 Manager 补丁工具以支持当前 Youmi 类名：严格核对本次生产三类原始哈希、候选 class 版本和清单，仅输出新 JAR，保留其他条目和元数据；拒绝原始类不匹配、混合类名或覆盖原文件。原 Mia 流程保持默认行为。合成归档的当前/旧流程 4 项测试通过，生产 JAR 尚未生成或替换；当前类名 CI 产物必须先核验三个类。
+- 当前类名离线补丁提交 `3e28b892ab1d6c3a903f8af7f3185d99cf64632b` 已推送；该 SHA 已启动 [集成及制品](https://github.com/bboytang/Youmi/actions/runs/40619801380)、[固件矩阵](https://github.com/bboytang/Youmi/actions/runs/40619815890)、[协议](https://github.com/bboytang/Youmi/actions/runs/40619789151)、[授权](https://github.com/bboytang/Youmi/actions/runs/40619805212)、[Manager](https://github.com/bboytang/Youmi/actions/runs/40619789105)、[记忆兼容](https://github.com/bboytang/Youmi/actions/runs/40619789032) 和 [向量](https://github.com/bboytang/Youmi/actions/runs/40619801783)。同 SHA 的重复手动协议/Manager/兼容任务已请求取消，保留自动触发任务；被替代的 `2963608d` 固件矩阵也已请求取消。
+- `2963608d` 的 [集成工作流](https://github.com/bboytang/Youmi/actions/runs/40619401069) 五项成功，下载的当前类名制品确认包含 Controller、Service 和 Binding 三个类。只读提取生产现有 Controller/Service 的 class 到临时探针目录，与该制品通过 Java 21 `javap -public` 逐项比较：两类均无公开成员删除，各增加一个公开成员；Binding 原始哈希已核对。未复制生产数据库或替换生产 JAR。该制品仅证明 `2963608d`，最终仍需下载当前 `3e28b892` 的精确制品及再次核验。
+- 生产 SQLite 只读迁移审计：版本 1–18 连续，18 条迁移 SQL 的 SHA-256 与候选源码一致，当前 schema checksum 与最后迁移记录一致；未导出数据库内容、未运行迁移。当前类名 Manager 三项生产预像已固定供离线补丁校验；如生产版本变化，工具将拒绝应用。
+- 最新 `3e28b892` 的 GitHub 集成、协议、授权、Manager、记忆兼容及向量工作流均成功。已下载其当前类名 Manager 制品，核对恰好三个 Java 21 class，并用本次生产预像构建离线补丁 `/tmp/youmi-passport-release-3e28/manager.patch.zip`；未应用至生产。
+- 生产语音五个待更新模块与提交基线及生产连接入口哈希一致；AstrBot 插件生产 `main.py`、`media.py`、`admin.py` 包含后续图片压缩/管理改动。直接三方合并冲突，零上下文补丁试验虽返回成功却产生 Python 缩进错误，已拒绝该方案。只读比较确认工作区的插件 main 相对生产的 13 个精确编辑块与通过 CI 的 Passport 补丁完全一致，且生产 media/admin 与原工作区一致；实际组合版本仍需保留并单独验证，不得直接用 CI 基线文件覆盖生产。
+- 生产兼容插件组合在隔离目录执行 51 项测试通过；首次运行因工作目录导致错误导入基线模块和找不到测试 fixture，修正隔离目录及路径后重跑通过。该组合保留生产图片压缩和管理模块；已验证从生产 main 到组合 main 的 13 个编辑块与 CI Passport 补丁完全一致，但组合完整文件本身未作为 GitHub 提交测试，不把本地结果冒称 GitHub 验证。
+- 已在 `/tmp/youmi-passport-release-3e28` 准备离线语音和插件覆盖及三类 Manager 补丁。语音覆盖固定生产镜像 ID，构建前检查五个已有模块和连接入口哈希、七个新增路径不存在；插件覆盖检查三个已有文件及两个保留文件哈希、一个新增路径不存在。两份生产只读预检均零差异。当前仅形成待审查文件，未构建或部署生产镜像、未重启容器、未迁移数据库。
+- `3e28b892` 的 GitHub 集成、协议、授权、Manager、记忆兼容和向量工作流均成功；[完整固件矩阵](https://github.com/bboytang/Youmi/actions/runs/40619815890) 仍运行，AI Passport 尚在队列。
+
+## 生产候选准备（未切换服务）
+
+- `3e28b892` GitHub 的 AI Passport 固件任务成功；完整矩阵仍运行。服务端六项相关工作流成功。
+- Manager：使用精确 SHA 制品，只读访问生产原 JAR，在生产临时目录生成独立候选；工具核对三个原始哈希，并逐项验证 JAR 其他条目及元数据。候选 SHA-256 为 `c8f1b7538498f2b6cca1d2dce4b3d27857e017f08cc012d55ac30062ccd4c951`；原 JAR 和 Manager 容器未替换、未重启。较慢的本地完整 JAR 内存传输在远端独立校验成功后主动中止；未复制数据库。
+- 语音：首次 BuildKit 候选构建误将 `sha256:` 当远程镜像名称，解析超时；校验本地标签后重试时基础镜像解压导致磁盘空间明显下降，为保护生产而中止。按创建时间和依赖链仅清理本次构建的 60 个可回收缓存 ID；磁盘恢复约 12 GB，原镜像及容器未变。随后用不启动服务的独立容器仅覆盖经哈希校验的文件，`docker diff` 核对仅预期路径；低磁盘占用的镜像提交正在运行，不可视为成功或上线。
+- 精确 SHA 语音覆盖已在无网络、无数据库挂载的临时容器中验证：13 个文件哈希和 Python 语法/关键模块导入通过，现有生产服务未切换。此为低磁盘占用备选；独立镜像提交仍在运行，不应视为已生成镜像。最新 GitHub 固件矩阵 120 项完成且无失败，Passport 构建成功，完整矩阵尚未终态。
+- `docker commit` 独立候选长时间无进展；在只读挂载替代方案通过隔离容器验证后，已仅中止该任务并确认临时容器清除、候选镜像不存在、生产语音容器未重启、磁盘约 12 GB 可用。保留失败/中止记录，不将其标为镜像构建成功。
+- 已生成禁用设备开关的低磁盘 Compose 候选。通过生产原有 Compose 文件顺序在内存中比较配置：语音与 Manager 原配置/挂载均保留，仅分别新增 13 个只读文件挂载和 1 个 Manager 候选 JAR 挂载，设备开关为 `[]`。只读 `docker compose config` 验证通过，没有启动或重启服务，也没有输出环境变量值。
+- 生产 Manager 设备表只读聚合：`mia-ai-passport` 有 1 台，其授权当前有效，且与 QQ 虚拟设备的 owner/agent 一致；未输出设备 ID、凭据或会话正文。存在最近连接记录不等于当前 WebSocket 在线，需实机阶段再核验。
+- 已将精确 SHA `3e28b892` 的语音覆盖、生产兼容插件组合、禁用开关的 Compose 候选和独立 Manager 候选 JAR 暂存至生产专用发布目录 `/opt/xiaozhi-server/youmi-passport-3e28`。13 个语音文件、4 个插件文件、清单、Compose 文件及 JAR 哈希均核对一致；这仅新增发布制品，未覆盖原运行文件、未应用 Compose、未迁移数据库或重启服务。完整固件矩阵目前 150 项完成无失败，仍未终态。
+- 生产 AstrBot Connector 配置只读核查：Passport 开关不存在，按默认值为关闭。配置文件带 UTF-8 BOM，首次按普通 UTF-8 JSON 读取报 `JSONDecodeError`；使用 `utf-8-sig` 读取成功，未输出其他配置或更改文件。若后续更新，须保留 BOM 和全部无关设置。
+- 最新 SHA 固件矩阵 157 项完成无失败，Passport 构建成功；尚待完整终态。生产发布目录仅有经校验候选，不等于已部署。
+- 使用生产现有完整 Compose 文件顺序和暂存的禁用开关候选，对 Manager 与语音目标服务执行 `docker compose --dry-run up --no-deps --no-build`，退出码 0；未实际重启容器或修改原配置。完整固件矩阵尚未终态。
+- 生产插件目录含用户既有备份文件；未复制或删除该备份。已在专用发布目录生成独立组合插件目录，仅复制 7 个运行所需现有文件并叠加 4 个候选文件，逐项核对哈希，原插件目录未改。候选文件权限与现有文件对齐。AstrBot Compose 只读比较确认仅插件挂载源替换，其余配置保持一致，干运行退出码 0；无网络、无用户数据挂载的临时容器验证 7 个 Python 文件语法及 Passport 默认关闭。没有重启 AstrBot。
+- 本次首次 `docker top` 使用不含 PID 的列格式被 Docker 拒绝；改用包含 PID 的格式确认语音、AstrBot、Manager 进程当前均为 root，未变更运行进程。最新 GitHub 固件矩阵 182 项完成无失败，Passport 已通过，尚待终态。
+
+## 生产受控部署（进行中）
+
+- `3e28b892` GitHub 六项服务工作流成功，[完整固件矩阵](https://github.com/bboytang/Youmi/actions/runs/40619815890) 185 项全部成功，AI Passport 构建成功。部署前再次只读核验语音/插件预像及 V18 迁移校验和，均匹配。
+- 在设备开关关闭的前提下，仅重建 Manager 容器并以只读挂载使用已校验的独立候选 JAR；原 JAR、MySQL、Redis 和数据卷未替换。新容器运行、Java 存在、Spring 启动标记出现且无失败标记，API 文档 HTTP 200，新增 `passport-config` 路由存在。此为 Manager 路由验证，不是设备授权或语音实测。
+- 仅重建语音容器，挂载 13 个只读候选文件，设备开关保持 `[]`；原镜像、其他容器与数据卷未替换。只读检查语音容器运行且启动后无 traceback，数据库从 V18 到 V19，`quick_check=ok`、共享历史表存在。容器内部使用现有服务凭据的桥接健康检查返回 HTTP 200、schema 19、worker available；没有输出凭据或对话内容。真实设备路径尚未开启。
+- AstrBot 已切换到保留生产图片及管理修改的组合插件；完整组合文件未经 GitHub 精确提交验证，本地 51 项测试通过。容器重建暴露既有 Meme 插件的 `minio` 依赖此前仅存在于容器可写层。按官方 PyPI 哈希校验固定版本 `minio 7.2.20`、`argon2-cffi 23.1.0` 及对应 bindings，安装到独立持久目录，并以只读挂载和 PYTHONPATH 恢复；服务健康，依赖导入成功，启动未发现缺失模块错误。原插件及数据目录保留。
+- 在保留原配置值和 UTF-8 BOM 的前提下启用 AstrBot `passport_enabled` 并重启；复核唯一实体设备授权有效且与 QQ 的 owner/agent 一致后，使用单独的 Compose 覆盖仅启用该设备，语音容器已重建运行。设备 ID 与凭据未记录。语音重建时消费端出现 2 次连接告警，随后最近 15 秒无告警；需继续观察，尚不能据此判定完整链路正常。
+- 发布目录 `/opt/xiaozhi-server/youmi-passport-3e28` 包含 Manager/语音候选、AstrBot 组合插件、持久依赖及 Compose 覆盖。AstrBot 附加 `astrbot.candidate.json`、`astrbot.deps.candidate.json`，语音/Manager 附加 `compose.candidate.json`，语音启用目标再附加权限 0600 的 `compose.passport-enabled.json`。保留这些覆盖，否则重建会丢失对应更改。未新增生产数据库备份。
+- 已请求用户在 QQ 发送辨认消息后对实体设备提问，实机语音、跨端衔接、Agent 工具和设备 MCP 调用尚待验证；容器健康及构建成功不能替代实机验收。
+- 启用后复查 Manager、语音进程运行且 AstrBot 健康；最近 30 秒无新的 Passport 消费告警。设备表的最近连接时间不在过去五分钟内，不能证实设备已重连；等待用户实际说话反馈及进一步排查，不能声称链路已验收。
+- 随后再次检查：Passport 最后一次设备表连接记录约为 175 分钟前，语音服务重启后的日志未提及该设备；这不能单凭数据库证明当前连接状态，但尚无重连证据。AstrBot 容器内使用现有认证访问桥接健康接口返回 HTTP 200、schema 19、worker 可用，Passport 消费端配置开启。已请用户检查设备并重连。
