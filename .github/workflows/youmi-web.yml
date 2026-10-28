@@ -22,6 +22,7 @@ jobs:
       - run: python -m pip install aiohttp beautifulsoup4
       - run: python -m unittest integrations.tests.test_youmi_web integrations.tests.test_youmi_web_authorization integrations.tests.test_youmi_network_health -v
       - run: python -m unittest discover -s deploy/youmi-network/tests -v
+      - run: node --test deploy/youmi-network/tests/test_wait_for_proxy.js
       - run: python -m compileall -q integrations/astrbot_plugin_youmi_web
       - name: Build and smoke-test the isolated network keeper
         env:
@@ -30,6 +31,7 @@ jobs:
           YOUMI_NET_KEEPER_IMAGE: youmi-network-ci
           YOUMI_NET_PROXY_CONFIG: /tmp/youmi-fixture-xray.json
           YOUMI_NET_WAIT_SCRIPT: /tmp/youmi-fixture-wait.py
+          YOUMI_NET_BROWSER_WAIT_SCRIPT: /tmp/youmi-fixture-wait.js
         run: |
           docker build -t youmi-network-ci deploy/youmi-network
           docker compose -f deploy/astrbot-fusion/compose.yaml -f deploy/youmi-network/tests/compose-fixture.yaml -f deploy/youmi-network/compose.override.yaml config --quiet

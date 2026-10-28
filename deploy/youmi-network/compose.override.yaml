@@ -27,6 +27,13 @@ services:
       retries: 6
   youmi-browserless:
     network_mode: service:youmi-netkeeper
+    entrypoint: ["node", "/opt/youmi-network/wait_for_proxy.js"]
+    command: ["./scripts/start.sh"]
+    volumes:
+      - type: bind
+        source: ${YOUMI_NET_BROWSER_WAIT_SCRIPT:?Set_reviewed_browser_wait_script}
+        target: /opt/youmi-network/wait_for_proxy.js
+        read_only: true
     depends_on: !override
       youmi-netkeeper: {condition: service_healthy, restart: true}
       youmi-local-proxy: {condition: service_healthy, restart: true}

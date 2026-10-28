@@ -11,7 +11,8 @@ import time
 
 
 ORDER = ('youmi-netkeeper', 'youmi-local-proxy', 'youmi-browserless', 'astrbot')
-ENV_KEYS = {'YOUMI_NET_KEEPER_IMAGE', 'YOUMI_NET_PROXY_CONFIG', 'YOUMI_NET_WAIT_SCRIPT'}
+ENV_KEYS = {'YOUMI_NET_KEEPER_IMAGE', 'YOUMI_NET_PROXY_CONFIG', 'YOUMI_NET_WAIT_SCRIPT',
+            'YOUMI_NET_BROWSER_WAIT_SCRIPT'}
 
 
 def load_config(path):
