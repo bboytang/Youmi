@@ -39,8 +39,16 @@ class ManagementHandler:
             action = command.get('action')
             if action == 'reset_mia_emotion':
                 action = 'reset_youmi_emotion'  # Historical clients retain their reset operation.
-            if action not in {'status', 'pause', 'set_feature_settings', 'emotion_consent', 'reset_youmi_emotion', 'memory_list', 'memory_delete', 'set_character', 'affect_system', 'memory_system'}:
+            if action not in {'status', 'pause', 'set_feature_settings', 'emotion_consent', 'reset_youmi_emotion', 'memory_list', 'memory_delete', 'set_character', 'affect_system', 'memory_system', 'notebook'}:
                 raise ValueError()
+            if action == 'notebook':
+                if set(command) != {'action', 'operation'}:
+                    raise ValueError()
+                from .notebook_management import read_notebook
+                result = await read_notebook(authorization, owner, command['operation'])
+                if await authorization._request('/config/youmi-management/verify', proof) != grant:
+                    raise PrivateAuthorizationRequired()
+                return web.json_response({'code': 0, 'data': result}, headers={'Cache-Control': 'no-store'})
             if self.store is None:
                 from .youmi_adapter import _store
                 store = _store()

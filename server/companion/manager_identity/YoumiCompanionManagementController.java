@@ -19,6 +19,7 @@ import org.springframework.web.client.HttpClientErrorException;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import xiaozhi.common.constant.Constant;
 import xiaozhi.common.exception.ErrorCode;
@@ -76,7 +77,7 @@ public class YoumiCompanionManagementController {
         long operator = SecurityUser.getUserId();
         grant(agentId, operator);
         if (!(command.get("action") instanceof String action)
-                || !Set.of("status", "pause", "set_feature_settings", "emotion_consent", "reset_youmi_emotion", "reset_mia_emotion", "memory_list", "memory_delete", "set_character", "affect_system", "memory_system").contains(action)) {
+                || !Set.of("status", "pause", "set_feature_settings", "emotion_consent", "reset_youmi_emotion", "reset_mia_emotion", "memory_list", "memory_delete", "set_character", "affect_system", "memory_system", "notebook").contains(action)) {
             throw new RenException(ErrorCode.PARAMS_GET_ERROR);
         }
         var factory = new SimpleClientHttpRequestFactory();
@@ -120,5 +121,13 @@ public class YoumiCompanionManagementController {
     public Result<Object> memorySystem(@PathVariable String agentId, @RequestBody Map<String, Object> operation,
                                       HttpServletRequest request) {
         return manage(agentId, Map.of("action", "memory_system", "operation", operation), request);
+    }
+
+    @PostMapping("/agent/{agentId}/notebook")
+    @RequiresPermissions("sys:role:normal")
+    public Result<Object> notebook(@PathVariable String agentId, @RequestBody Map<String, Object> operation,
+                                   HttpServletRequest request, HttpServletResponse response) {
+        response.setHeader("Cache-Control", "no-store");
+        return manage(agentId, Map.of("action", "notebook", "operation", operation), request);
     }
 }

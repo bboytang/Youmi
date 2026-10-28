@@ -26,6 +26,26 @@
           <el-button :disabled="busy" @click="checkCleanup">核对缓存清理进度</el-button>
         </section>
         <el-tabs v-model="tab">
+          <el-tab-pane label="晓筱的笔记本" name="notebook">
+            <p>这里查看晓筱在 QQ 中写的笔记，与记忆整理条目分开保存。</p>
+            <el-button :disabled="busy" @click="loadNotebook('important')">重要记事</el-button>
+            <el-button :disabled="busy" @click="loadNotebook('secret')">私密心事</el-button>
+            <template v-if="notebook">
+              <h2>{{ notebookKind === 'secret' ? '私密心事' : '重要记事' }}</h2>
+              <p v-if="!notebook.entries.length">暂无笔记。</p>
+              <article v-for="entry in notebook.entries" :key="entry.id">
+                <h3>{{ entry.title }}</h3><p>{{ notebookTime(entry.created_at) }}</p>
+                <el-button :disabled="busy" @click="openNotebook(entry.id)">查看正文</el-button>
+              </article>
+              <el-button v-if="notebook.next_before_id" :disabled="busy" @click="loadNotebook(notebookKind, notebook.next_before_id)">下一页</el-button>
+              <el-button :disabled="busy" @click="loadNotebook(notebookKind)">返回第一页</el-button>
+            </template>
+            <section v-if="notebookEntry" aria-label="笔记正文">
+              <h2>{{ notebookEntry.title }}</h2><p>{{ notebookTime(notebookEntry.created_at) }}</p>
+              <p class="notebook-content">{{ notebookEntry.content }}</p>
+              <el-button @click="notebookEntry = null">关闭正文</el-button>
+            </section>
+          </el-tab-pane>
           <el-tab-pane label="记忆与来源" name="memories">
             <p v-if="listing">共 {{ listing.total }} 条；已确认不代表永久固定，待确认和已合并记忆保留原状态。</p>
             <article v-for="memory in memories" :key="memory.id">
@@ -159,6 +179,7 @@ export default {
   },
   data() {
     return { agents: [], agentId: '', state: null, listing: null, artifacts: [], detail: null, edit: null,
+      notebook: null, notebookEntry: null, notebookKind: 'important',
       originalEdit: '', draft: {}, originals: {}, blocked: {}, factBlocked: false, selected: [],
       busy: false, engineBlocked: false, error: '', tab: 'memories', generation: 0, discardOpen: false, discardResolve: null,
       kinds: { profile: '画像', note: '笔记', retirement: '退役候选', merge: '合并候选' },
@@ -226,6 +247,15 @@ export default {
       });
     },
     call(command) { return this.request('/agent/' + encodeURIComponent(this.agentId) + '/memory-system', command); },
+    notebookCall(command) { return this.request('/agent/' + encodeURIComponent(this.agentId) + '/notebook', command); },
+    async loadNotebook(kind, beforeId = 0) {
+      this.notebook = null; this.notebookEntry = null; this.notebookKind = kind;
+      await this.run(async () => { this.notebook = await this.notebookCall({ kind, before_id: beforeId }); });
+    },
+    async openNotebook(id) {
+      this.notebookEntry = null;
+      await this.run(async () => { const result = await this.notebookCall({ kind: this.notebookKind, entry_id: id }); this.notebookEntry = result.entry; });
+    },
     async run(operation) {
       if (this.busy) return;
       const generation = this.generation;
@@ -242,6 +272,7 @@ export default {
     },
     async loadAgent(id, memoryId) {
       this.state = null; this.listing = null; this.detail = null; this.edit = null;
+      this.notebook = null; this.notebookEntry = null;
       this.draft = {}; this.originals = {}; this.artifacts = []; this.selected = []; this.factBlocked = false; this.engineBlocked = false;
       if (!this.agents.some(agent => agent.id === id)) throw new Error('该智能体不可管理，请重新选择。');
       this.agentId = id;
@@ -379,7 +410,8 @@ export default {
       await this.run(async () => { await this.call(command); await this.reloadFacts(); this.$message.success('记忆已合并'); });
     },
     memoryState(row) { return row.state === 'superseded' ? '已合并退役' : row.confirmed && row.state === 'active' ? (row.pinned ? '已确认 · 固定记忆' : '已确认') : '待确认或不可用'; },
-    time(value) { return value ? new Date(value * 1000).toLocaleString() : '尚无记录'; }
+    time(value) { return value ? new Date(value * 1000).toLocaleString() : '尚无记录'; },
+    notebookTime(value) { return value ? new Date(value).toLocaleString() : '尚无记录'; }
   }
 };
 </script>

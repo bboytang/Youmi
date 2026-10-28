@@ -156,6 +156,17 @@ class YoumiPrivateManagementTest {
         assertEquals(1, calls.get());
     }
 
+    @Test void notebookUsesOwnerLoginAndForwardsOnlyTheNotebookRequest() throws Exception {
+        String path = "/agent/" + AGENT + "/notebook";
+        assertNotEquals(0, post(path, Map.of("kind", "secret"), token(OTHER)).path("code").asInt());
+        assertNotEquals(0, post(path, Map.of("kind", "secret"), null).path("code").asInt());
+        assertEquals(0, calls.get());
+        assertEquals(0, post(path, Map.of("kind", "secret"), token(OWNER)).path("code").asInt());
+        assertEquals("notebook", forwarded.get().path("request").path("action").asText());
+        assertEquals("secret", forwarded.get().path("request").path("operation").path("kind").asText());
+        assertEquals(OWNER, forwarded.get().path("operator_id").asLong());
+    }
+
     @Test void memoryConflictsAndUnavailableServiceNeverLookLikeSavedSettings() throws Exception {
         String path = "/agent/" + AGENT + "/memory-system";
         String ownerToken = token(OWNER);

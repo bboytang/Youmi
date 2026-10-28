@@ -288,7 +288,7 @@ def install(root, changes):
     try:
         for name in ["__init__.py", "memory.py", "youmi_adapter.py", "authorization.py", "passport_tickets.py", "passport_dispatch.py", "passport_voice.py", "passport_mcp.py", "schema.py", "schema.sql", "schema-v2.sql", "persona.py",
                      "embedding.py", "semantic.py", "retrieval.py", "memory_runtime.py", "context.py", "reply.py", "jobs.py", "extraction.py", "proposal.py", "model_requests.py",
-                     "events.py", "emotions.py", "schema-v3.sql", "schema-v4.sql", "schema-v5.sql", "schema-v6.sql", "affect.py", "features.py", "management.py", "character.py", "schema-v7.sql",
+                     "events.py", "emotions.py", "schema-v3.sql", "schema-v4.sql", "schema-v5.sql", "schema-v6.sql", "affect.py", "features.py", "management.py", "notebook_management.py", "character.py", "schema-v7.sql",
                      "request_accounting.py", "requirements-vector.txt", "schema-v8.sql", "schema-v9.sql", "schema-v10.sql", "emotional_system.py", "astrbot_api.py",
                      "astrbot_identity.py", "astrbot_turns.py", "astrbot_media.py",
                      "memory_repository.py", "memory_shadow.py", "memory_search.py", "memory_state.py", "memory_reflection.py", "schema-v11.sql", "schema-v12.sql", "memory_artifacts.py",

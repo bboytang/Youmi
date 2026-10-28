@@ -97,6 +97,25 @@ async function setup(page, query = 'agentId=first', cleanup = null) {
   return { backend, states, commands };
 }
 
+test('phone notebook separates categories and shows escaped read-only content', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await setup(page);
+  await page.route('**/xiaozhi/agent/*/notebook', async route => {
+    const command = route.request().postDataJSON();
+    const entry = { id: 1, title: command.kind === 'secret' ? '私密标题' : '重要标题', created_at: '2026-01-01T12:00:00+08:00', content: '<script>unsafe</script>正文' };
+    await route.fulfill({ json: { code: 0, data: command.entry_id ? { entry } : { entries: [entry], next_before_id: null } } });
+  });
+  await page.getByRole('tab', { name: '晓筱的笔记本' }).click();
+  await page.getByRole('button', { name: '重要记事', exact: true }).click();
+  await expect(page.getByRole('heading', { name: '重要标题' })).toBeVisible();
+  await page.getByRole('button', { name: '查看正文' }).click();
+  await expect(page.locator('.notebook-content')).toHaveText('<script>unsafe</script>正文');
+  await expect(page.locator('.notebook-content script')).toHaveCount(0);
+  await page.getByRole('button', { name: '私密心事', exact: true }).click();
+  await expect(page.getByRole('heading', { name: '私密标题' })).toBeVisible();
+  await expect(page.locator('.notebook-content')).toHaveCount(0);
+});
+
 test('independent memory page saves only the selected agent and sends the existing login', async ({ page }) => {
   const { states, commands } = await setup(page);
   await page.getByRole('tab', { name: '反思设置', exact: true }).click();
