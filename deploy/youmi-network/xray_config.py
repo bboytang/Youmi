@@ -10,6 +10,7 @@ import tempfile
 OUTBOUND_MARK = 255
 TCP_PORT = 31990
 UDP_PORT = 31991
+DNS_PORT = 31993
 
 
 def make_config(original):
@@ -18,8 +19,15 @@ def make_config(original):
     outbounds = config.get('outbounds')
     if not isinstance(inbounds, list) or not isinstance(outbounds, list) or not outbounds:
         raise ValueError('invalid_xray_config')
-    if any(item.get('port') in {TCP_PORT, UDP_PORT} for item in inbounds):
+    if 'dns' in config:
+        raise ValueError('existing_dns_config')
+    if any(item.get('port') in {TCP_PORT, UDP_PORT, DNS_PORT} or item.get('tag') in {'youmi-transparent-tcp', 'youmi-transparent-udp', 'youmi-dns'} for item in inbounds):
         raise ValueError('transparent_port_in_use')
+    if any(item.get('tag') == 'youmi-dns-out' for item in outbounds):
+        raise ValueError('dns_outbound_in_use')
+    routing = config.get('routing', {})
+    if not isinstance(routing.get('rules'), list):
+        raise ValueError('invalid_xray_routing')
     for outbound in outbounds:
         stream = outbound.setdefault('streamSettings', {})
         options = stream.setdefault('sockopt', {})
@@ -36,6 +44,14 @@ def make_config(original):
             'streamSettings': {'sockopt': {'tproxy': mode}},
             'sniffing': {'enabled': True, 'destOverride': ['http', 'tls', 'quic']},
         })
+    inbounds.append({'tag': 'youmi-dns', 'listen': '127.0.0.1', 'port': DNS_PORT,
+                     'protocol': 'dokodemo-door',
+                     'settings': {'address': '1.1.1.1', 'port': 53, 'network': 'tcp,udp'}})
+    outbounds.append({'tag': 'youmi-dns-out', 'protocol': 'dns'})
+    routing['rules'].insert(0, {'type': 'field', 'inboundTag': ['youmi-dns'],
+                                'outboundTag': 'youmi-dns-out'})
+    config['dns'] = {'servers': [{'address': '223.5.5.5', 'domains': ['geosite:cn'],
+                                 'skipFallback': True}, '1.1.1.1']}
     return config
 
 

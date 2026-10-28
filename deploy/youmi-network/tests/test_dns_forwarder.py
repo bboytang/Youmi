@@ -52,7 +52,7 @@ class DNSForwarderTests(unittest.TestCase):
             thread.start()
         try:
             with patch.object(module, 'LOCAL_DNS', local.server_address), \
-                    patch.object(module, 'PUBLIC_DNS', public.server_address):
+                    patch.object(module, 'GEO_DNS', public.server_address):
                 self.assertTrue(module.forward(query('backend'))[2] & 0x80)
                 self.assertTrue(module.forward(query('www.example.org'))[2] & 0x80)
             self.assertEqual(seen, ['local', 'public'])
@@ -72,7 +72,7 @@ class DNSForwarderTests(unittest.TestCase):
         server = socketserver.TCPServer(('127.0.0.1', 0), Handler)
         threading.Thread(target=server.serve_forever, daemon=True).start()
         try:
-            with patch.object(module, 'PUBLIC_DNS', server.server_address):
+            with patch.object(module, 'GEO_DNS', server.server_address):
                 self.assertTrue(module.forward(query('example.org'), tcp=True)[2] & 0x80)
         finally:
             server.shutdown()

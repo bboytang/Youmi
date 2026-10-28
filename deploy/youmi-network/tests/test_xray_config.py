@@ -30,11 +30,14 @@ class XrayConfigTests(unittest.TestCase):
         before = json.loads(json.dumps(self.original))
         config = module.make_config(self.original)
         self.assertEqual(self.original, before)
-        self.assertEqual(config['routing'], before['routing'])
+        self.assertEqual(config['routing']['rules'][1:], before['routing']['rules'])
+        self.assertEqual(config['routing']['rules'][0]['outboundTag'], 'youmi-dns-out')
         self.assertEqual(config['inbounds'][0], before['inbounds'][0])
         self.assertEqual(config['outbounds'][0]['streamSettings']['security'], 'reality')
-        self.assertTrue(all(x['streamSettings']['sockopt']['mark'] == 255 for x in config['outbounds']))
-        tcp, udp = config['inbounds'][-2:]
+        self.assertTrue(all(x['streamSettings']['sockopt']['mark'] == 255 for x in config['outbounds'][:-1]))
+        tcp, udp, dns = config['inbounds'][-3:]
+        self.assertEqual(dns['port'], 31993)
+        self.assertEqual(config['dns']['servers'][0]['domains'], ['geosite:cn'])
         self.assertEqual(tcp['listen'], '127.0.0.1')
         self.assertEqual(udp['listen'], '127.0.0.1')
         self.assertEqual(tcp['settings'], {'network': 'tcp', 'followRedirect': True})
@@ -50,6 +53,11 @@ class XrayConfigTests(unittest.TestCase):
         self.original['inbounds'].pop()
         self.original['outbounds'][0]['streamSettings']['sockopt'] = {'mark': 12}
         with self.assertRaisesRegex(ValueError, 'outbound_mark_conflict'):
+            module.make_config(self.original)
+
+    def test_rejects_existing_dns_configuration(self):
+        self.original['dns'] = {'servers': ['127.0.0.1']}
+        with self.assertRaisesRegex(ValueError, 'existing_dns_config'):
             module.make_config(self.original)
 
     def test_output_permissions_and_source_protection(self):

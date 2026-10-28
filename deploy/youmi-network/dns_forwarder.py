@@ -8,6 +8,7 @@ import threading
 
 LOCAL_DNS = ('127.0.0.11', 53)
 PUBLIC_DNS = ('1.1.1.1', 53)
+GEO_DNS = ('127.0.0.1', 31993)
 MAX_QUERY = 4096
 
 
@@ -59,8 +60,9 @@ def read_exact(sock, size):
 
 
 def forward(query, tcp=False):
-    name = query_name(query)
-    destination = LOCAL_DNS if is_internal(name) else PUBLIC_DNS
+    name, end = parse_question(query)
+    query_type = struct.unpack('!H', query[end - 4:end - 2])[0]
+    destination = LOCAL_DNS if is_internal(name) else GEO_DNS if query_type in (1, 28) else PUBLIC_DNS
     kind = socket.SOCK_STREAM if tcp else socket.SOCK_DGRAM
     with socket.socket(socket.AF_INET, kind) as upstream:
         upstream.settimeout(5)
