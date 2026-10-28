@@ -128,6 +128,18 @@ test('phone shows every memory tab without horizontal paging', async ({ page }) 
   await expect(page.locator('.memory-main .el-tabs__nav-next')).toBeHidden();
 });
 
+test('notebook request that never completes releases the loading state', async ({ page }) => {
+  await setup(page);
+  let pending;
+  await page.route('**/xiaozhi/agent/*/notebook', route => { pending = route; });
+  await page.getByRole('tab', { name: '晓筱的笔记本' }).click();
+  await page.getByRole('button', { name: '重要记事', exact: true }).click();
+  await expect.poll(() => !!pending).toBe(true);
+  await expect(page.getByRole('alert')).toContainText('请求超时', { timeout: 25000 });
+  await expect(page.getByRole('button', { name: '重要记事', exact: true })).toBeEnabled();
+  await pending.abort();
+});
+
 test('independent memory page saves only the selected agent and sends the existing login', async ({ page }) => {
   const { states, commands } = await setup(page);
   await page.getByRole('tab', { name: '反思设置', exact: true }).click();

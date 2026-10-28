@@ -232,12 +232,14 @@ export default {
         if (location.protocol !== 'https:' || url.protocol !== 'https:' || url.origin !== location.origin) {
           reject(new Error('请通过同源 HTTPS 打开管理页')); return;
         }
-        const failed = info => reject(new Error(info && info.data && info.data.code === 409
+        const timer = setTimeout(() => reject(new Error('请求超时，请刷新后重试。')), 20000);
+        const failed = info => { clearTimeout(timer); reject(new Error(info && info.data && info.data.code === 409
           ? '记忆或配置已变化，草稿已保留，请刷新核对后再保存。'
-          : '操作结果未确认，请刷新核对；草稿仍然保留。'));
+          : '操作结果未确认，请刷新核对；草稿仍然保留。')); };
         const request = RequestService.sendRequest().sensitive().url(url.href).method(command ? 'POST' : 'GET');
         if (command) request.data(command);
         request.success(res => {
+          clearTimeout(timer);
           if (generation !== this.generation) { reject(new Error('页面已切换')); return; }
           const body = res.data;
           if (body && body.code === 0 && body.data) resolve(body.data);
