@@ -1,0 +1,7 @@
+name: astrbot_plugin_youmi_chat_policy
+display_name: Youmi 对话提示词
+desc: 可开关的用户原文提示词附加插件，仅用于已认证 Youmi 前台请求。
+version: v1.0.0
+author: bboytang
+repo: https://github.com/bboytang/Youmi
+astrbot_version: '>=4.29.3,<4.30.0'

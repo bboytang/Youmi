@@ -1,0 +1,28 @@
+name: Verify Youmi chat policy plugin
+on:
+  workflow_dispatch:
+  push:
+    branches: [codex/youmi-unified-network]
+    paths:
+      - 'integrations/astrbot_plugin_youmi_chat_policy/**'
+      - 'integrations/tests/test_chat_policy.py'
+      - '.github/workflows/youmi-chat-policy.yml'
+permissions:
+  contents: read
+jobs:
+  plugin:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m unittest discover -s integrations/tests -p test_chat_policy.py -v
+      - name: Package plugin
+        run: |
+          cd integrations
+          zip -r ../youmi-chat-policy.zip astrbot_plugin_youmi_chat_policy -x '*/__pycache__/*'
+      - uses: actions/upload-artifact@v4
+        with:
+          name: youmi-chat-policy
+          path: youmi-chat-policy.zip

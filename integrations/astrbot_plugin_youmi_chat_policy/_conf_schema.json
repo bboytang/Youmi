@@ -1,0 +1,7 @@
+{
+  "enabled": {
+    "description": "在已认证的 Youmi 前台对话请求中附加用户提供的原文提示词；不修改模型、权限、性格或历史。",
+    "type": "bool",
+    "default": false
+  }
+}
