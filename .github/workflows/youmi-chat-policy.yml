@@ -2,7 +2,7 @@ name: Verify Youmi chat policy plugin
 on:
   workflow_dispatch:
   push:
-    branches: [codex/youmi-unified-network]
+    branches: [codex/youmi-chat-policy]
     paths:
       - 'integrations/astrbot_plugin_youmi_chat_policy/**'
       - 'integrations/tests/test_chat_policy.py'
